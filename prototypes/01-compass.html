@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story Compass — plan your Story Bookcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4EFE6;
+    --ink: #1D1B19;
+    --muted: #7A736A;
+    --line: #DCD4C7;
+    --petal: #FDC7FA;
+    --accent: #B0389F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.45 'Space Grotesk', system-ui, sans-serif; }
+  header { display: flex; align-items: center; gap: 20px; padding: 18px 32px; border-bottom: 1px solid var(--line); }
+  .brand { font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
+  .brand span { font-family: 'DM Mono', monospace; font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 8px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .spacer { flex: 1; }
+  .seg { display: inline-flex; border: 1px solid var(--ink); border-radius: 999px; overflow: hidden; }
+  .seg button { border: 0; background: transparent; padding: 7px 16px; font: inherit; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .btn { border: 1px solid var(--ink); background: transparent; border-radius: 999px; padding: 7px 16px; font: inherit; cursor: pointer; }
+  .btn.solid { background: var(--ink); color: var(--paper); }
+  .btn:hover { background: var(--petal); color: var(--ink); }
+
+  header { flex-wrap: wrap; }
+  main { display: grid; grid-template-columns: minmax(260px, 380px) minmax(0, 1fr) 300px; gap: 0; min-height: calc(100vh - 71px); }
+  .col { padding: 28px 32px; }
+  .col + .col { border-left: 1px solid var(--line); }
+  .eyebrow { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+  #elev { width: 100%; height: calc(100vh - 170px); min-height: 460px; display: block; }
+
+  .center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+  .stepper { display: flex; align-items: center; gap: 18px; }
+  .stepper button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--ink); background: transparent; font-size: 18px; cursor: pointer; }
+  .stepper button:hover { background: var(--petal); }
+  .shelfnum { font-size: 44px; font-weight: 700; letter-spacing: -0.03em; min-width: 190px; text-align: center; }
+  .shelfnum small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+
+  .compass { position: relative; width: min(56vh, 460px, 100%); aspect-ratio: 1; }
+  .compass .ring { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, #fff 0 52%, var(--petal) 52.2% 100%); }
+  .compass svg { position: absolute; inset: 15%; width: 70%; height: 70%; }
+  .petal { position: absolute; border: 0; background: transparent; font: 500 13px 'DM Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); cursor: pointer; padding: 10px 14px; border-radius: 999px; }
+  .petal:hover { background: #fff; }
+  .petal[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .petal.B { top: 2.5%; left: 50%; transform: translateX(-50%); }
+  .petal.F { bottom: 2.5%; left: 50%; transform: translateX(-50%); }
+  .petal.L { left: 1%; top: 50%; transform: translateY(-50%); }
+  .petal.R { right: 1%; top: 50%; transform: translateY(-50%); }
+  .hint { color: var(--muted); font-size: 13px; text-align: center; max-width: 420px; }
+  kbd { font-family: 'DM Mono', monospace; font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; background: #fff; }
+
+  .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .sw { border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 8px; cursor: pointer; text-align: left; font: inherit; font-size: 13px; }
+  .sw i { display: block; height: 34px; border-radius: 7px; margin-bottom: 6px; border: 1px solid #0001; }
+  .sw[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .custom { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 13px; }
+  .custom input[type=color] { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 2px; background: #fff; cursor: pointer; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; }
+  .presets .btn { font-size: 13px; padding: 6px 12px; }
+  section + section { margin-top: 30px; }
+  .tally { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-family: 'DM Mono', monospace; font-size: 12px; text-align: center; }
+  .tally div { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 0; }
+  .tally b { display: block; font-family: 'Space Grotesk'; font-size: 22px; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px; opacity: 0; transition: .25s; pointer-events: none; font-size: 13px; max-width: 90vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+  @media (max-width: 1100px) {
+    main { grid-template-columns: 1fr; }
+    .col + .col { border-left: 0; border-top: 1px solid var(--line); }
+    #elev { height: 60vh; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Story Compass<span>shelf-by-shelf planner</span></div>
+  <div class="spacer"></div>
+  <div class="seg" id="size"></div>
+  <button class="btn" id="share">Copy link</button>
+  <button class="btn solid" id="print">Print build sheet</button>
+</header>
+<main>
+  <div class="col">
+    <p class="eyebrow">Front view · click a shelf</p>
+    <svg id="elev" role="img" aria-label="Front view of the bookcase"></svg>
+  </div>
+  <div class="col center">
+    <div class="stepper">
+      <button id="down" aria-label="Shelf below">↓</button>
+      <div class="shelfnum" id="shelfnum"></div>
+      <button id="up" aria-label="Shelf above">↑</button>
+    </div>
+    <div class="compass">
+      <div class="ring"></div>
+      <svg id="plan" role="img" aria-label="Top view of selected shelf"></svg>
+      <button class="petal B" data-dir="B">Back</button>
+      <button class="petal L" data-dir="L">Left</button>
+      <button class="petal R" data-dir="R">Right</button>
+      <button class="petal F" data-dir="F">Front</button>
+    </div>
+    <p class="hint">Looking down from above. Pick where this shelf should point. <kbd>↑</kbd><kbd>↓</kbd> change shelf, <kbd>←</kbd><kbd>→</kbd> rotate.</p>
+  </div>
+  <div class="col">
+    <section>
+      <p class="eyebrow">Herman Miller colors</p>
+      <div class="swatches" id="swatches"></div>
+      <label class="custom"><input type="color" id="picker"> <span>Custom color <span class="note" id="customNote"></span></span></label>
+    </section>
+    <section>
+      <p class="eyebrow">Start from a pattern</p>
+      <div class="presets" id="presets"></div>
+    </section>
+    <section>
+      <p class="eyebrow">Shelves facing</p>
+      <div class="tally" id="tally"></div>
+    </section>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+<script src="shared/story-core.js"></script>
+<script>
+  const S = Story;
+  let state = S.readHash()[0] || S.createState();
+  let sel = 0;
+  const $ = (id) => document.getElementById(id);
+
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  function update() {
+    S.writeHash(state);
+    const n = state.dirs.length;
+    sel = Math.min(sel, n - 1);
+    S.renderElevation($('elev'), state, { selected: sel, accent: '#B0389F', labels: true, labelColor: '#7A736A', font: 'DM Mono', onSelect: (i) => { sel = i; update(); } });
+    S.renderPlan($('plan'), state, { index: sel, accent: '#B0389F', ink: '#1D1B19', font: 'DM Mono', frontLabel: 'FRONT · ROOM SIDE' });
+    $('shelfnum').innerHTML = `Shelf ${sel + 1}<small>of ${n} · ${sel === 0 ? 'lowest' : sel === n - 1 ? 'top' : ''}</small>`;
+    document.querySelectorAll('.petal').forEach((p) => p.setAttribute('aria-pressed', p.dataset.dir === state.dirs[sel]));
+    document.querySelectorAll('#size button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.size === state.size));
+    document.querySelectorAll('.sw').forEach((b) => b.setAttribute('aria-pressed', b.dataset.hex.toLowerCase() === state.color.toLowerCase()));
+    $('picker').value = state.color;
+    $('customNote').textContent = S.isCatalogColor(state.color) ? '' : '· not a Herman Miller color';
+    const c = S.counts(state.dirs);
+    $('tally').innerHTML = S.DIRS.map((d) => `<div><b>${c[d]}</b>${S.DIR_LABEL[d]}</div>`).join('');
+  }
+
+  $('size').innerHTML = Object.values(S.SIZES).map((s) => `<button data-size="${s.id}">${s.label} · ${s.shelves}</button>`).join('');
+  $('size').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { state = S.resize(state, b.dataset.size); update(); } });
+  $('swatches').innerHTML = S.COLORS.map((c) => `<button class="sw" data-hex="${c.hex}"><i style="background:${c.hex}"></i>${c.name}</button>`).join('');
+  $('swatches').addEventListener('click', (e) => { const b = e.target.closest('.sw'); if (b) { state.color = b.dataset.hex; update(); } });
+  $('picker').addEventListener('input', (e) => { state.color = e.target.value.toUpperCase(); update(); });
+  $('presets').innerHTML = S.PRESETS.map((p) => `<button class="btn" data-p="${p.id}">${p.name}</button>`).join('');
+  $('presets').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; const p = S.PRESETS.find((x) => x.id === b.dataset.p); state.dirs = p.make(state.dirs.length); update(); });
+  document.querySelectorAll('.petal').forEach((p) => p.addEventListener('click', () => { state.dirs[sel] = p.dataset.dir; update(); }));
+  $('up').onclick = () => { sel = Math.min(sel + 1, state.dirs.length - 1); update(); };
+  $('down').onclick = () => { sel = Math.max(sel - 1, 0); update(); };
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowUp') { sel = Math.min(sel + 1, state.dirs.length - 1); }
+    else if (e.key === 'ArrowDown') { sel = Math.max(sel - 1, 0); }
+    else if (e.key === 'ArrowRight') { state.dirs[sel] = S.rotate(state.dirs[sel], 1); }
+    else if (e.key === 'ArrowLeft') { state.dirs[sel] = S.rotate(state.dirs[sel], -1); }
+    else return;
+    e.preventDefault();
+    update();
+  });
+  $('share').onclick = async () => { const r = await S.share(state); toast(r.copied ? 'Link copied — open it anytime to see this design' : r.url); };
+  $('print').onclick = () => S.printBuildSheet(state);
+  update();
+</script>
+</body>
+</html>

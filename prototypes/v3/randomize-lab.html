@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story — Randomize lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&display=swap" rel="stylesheet">
+<style>
+  :root { --cream: #FFF8EE; --ink: #2B1E16; --muted: #94857A; --hair: #F0E4D4; --accent: #FF6B4A; --butter: #FFD66B; --card: #FFFFFF; --wall: #EEEAE3; --spring: cubic-bezier(.3,1.6,.5,1); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--cream); color: var(--ink); font: 15px/1.5 'Bricolage Grotesque', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
+  header { display: flex; align-items: center; gap: 18px; padding: 14px 32px; flex-wrap: wrap; }
+  .word { font-weight: 800; font-size: 26px; letter-spacing: -0.04em; }
+  .word i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin-left: 2px; }
+  .variants { display: flex; gap: 6px; background: var(--card); padding: 5px; border-radius: 999px; box-shadow: 0 0 0 1.5px var(--hair); }
+  .variants button { border: 0; background: none; border-radius: 999px; padding: 8px 14px; font: 600 13px 'Bricolage Grotesque', sans-serif; color: var(--muted); cursor: pointer; }
+  .variants button b { font-weight: 800; margin-right: 4px; }
+  .variants button.on { background: var(--ink); color: #fff; }
+  .vdesc { color: var(--muted); font-size: 13px; max-width: 420px; }
+
+  main { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; padding: 0 16px 16px; min-height: 0; }
+  .stage { position: relative; overflow: hidden; border-radius: 28px; background: var(--wall); }
+  .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 18%; background: repeating-linear-gradient(90deg, #0000 0 99px, #00000014 99px 100px), linear-gradient(#E3C8A6, #D2B48E); }
+  #hero { position: absolute; inset: 0; }
+  .caption { position: absolute; left: 30px; top: 26px; }
+  .caption h1 { margin: 0; font-weight: 800; font-size: 44px; line-height: .95; letter-spacing: -0.05em; }
+  .caption p { margin: 8px 0 0; color: #2B1E16AA; font-size: 14px; }
+  .strip { position: absolute; left: 24px; bottom: 22px; display: flex; gap: 3px; background: #FFFFFFCC; backdrop-filter: blur(10px); padding: 6px 8px; border-radius: 14px; align-items: end; }
+  .strip span { display: grid; justify-items: center; font-size: 10px; color: var(--muted); font-weight: 600; }
+  .strip span.lk svg { outline: 2px solid var(--accent); border-radius: 4px; }
+
+  .panel { background: var(--card); border-radius: 28px; overflow: auto; padding: 8px 26px 40px; }
+  .blk { padding: 18px 0; }
+  .blk + .blk { border-top: 2px dotted var(--hair); }
+  h2 { margin: 0 0 12px; font-weight: 700; font-size: 20px; letter-spacing: -0.03em; display: flex; justify-content: space-between; align-items: baseline; }
+  h2 small { font-weight: 500; font-size: 13px; color: var(--muted); letter-spacing: 0; }
+  .ghost { color: var(--muted); font-size: 13px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
+  .chip { border: 0; background: var(--cream); border-radius: 999px; padding: 8px 14px 8px 8px; font: 600 13px 'Bricolage Grotesque', sans-serif; color: var(--ink); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: transform .3s var(--spring); }
+  .chip:hover { transform: translateY(-2px); }
+  .chip.on { background: var(--ink); color: #fff; }
+  .chip svg { background: #fff; border-radius: 50%; padding: 3px; }
+  .chip.dice { background: var(--butter); }
+  .chip.dice.on { background: var(--accent); color: #fff; }
+  .chip.dice .die { width: 22px; height: 22px; display: grid; place-items: center; background: #fff; border-radius: 50%; font-size: 13px; }
+  .split { display: flex; }
+  .split .chip:first-child { border-radius: 999px 0 0 999px; }
+  .split .chip.gear { border-radius: 0 999px 999px 0; padding: 8px 12px; margin-left: 2px; }
+  .badge { background: var(--ink); color: #fff; border-radius: 999px; font-size: 10px; padding: 1px 6px; }
+
+  .roll { border: 0; background: var(--accent); color: #fff; border-radius: 999px; padding: 12px 22px; font: 700 15px 'Bricolage Grotesque', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: transform .25s var(--spring); }
+  .roll:hover { transform: scale(1.04) rotate(-1deg); }
+  .roll:active { transform: scale(.96); }
+  .roll.rolling .d { animation: tumble .45s linear infinite; }
+  @keyframes tumble { to { transform: rotate(360deg); } }
+  .soft { border: 0; background: var(--cream); color: var(--ink); border-radius: 999px; padding: 10px 16px; font: 600 13px 'Bricolage Grotesque', sans-serif; cursor: pointer; }
+  .soft:disabled { opacity: .4; cursor: default; }
+
+  .allow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .al { border: 0; background: var(--cream); border-radius: 16px; padding: 10px 6px 8px; font: 600 13px 'Bricolage Grotesque', sans-serif; color: var(--ink); cursor: pointer; display: grid; justify-items: center; gap: 4px; position: relative; transition: transform .3s var(--spring), opacity .2s; }
+  .al svg { background: #fff; border-radius: 8px; padding: 3px; }
+  .al.off { opacity: .45; }
+  .al.off::after { content: ''; position: absolute; left: 18%; right: 18%; top: 50%; height: 2.5px; background: var(--accent); transform: rotate(-24deg); border-radius: 2px; }
+  .al.pill { display: flex; padding: 7px 12px 7px 7px; border-radius: 999px; gap: 6px; }
+  .switch { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-weight: 600; font-size: 14px; cursor: pointer; width: max-content; }
+  .switch .tog { width: 44px; height: 26px; border-radius: 999px; background: #E9DCCB; position: relative; transition: background .25s; }
+  .switch .tog::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #00000033; transition: transform .35s var(--spring); }
+  .switch.on .tog { background: var(--accent); }
+  .switch.on .tog::after { transform: translateX(18px); }
+  .note { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 20px; }
+  .note b { color: var(--accent); }
+
+  .pop { position: absolute; top: calc(100% + 8px); right: 0; z-index: 5; width: 330px; background: var(--card); border-radius: 22px; padding: 16px; box-shadow: 0 20px 50px #0000002e, 0 0 0 1.5px var(--hair); }
+  .pop h3 { margin: 0 0 10px; font-size: 14px; font-weight: 700; }
+  .card { margin-top: 12px; background: var(--cream); border-radius: 22px; padding: 16px; }
+  .card .al { background: #fff; }
+  .card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 700; }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+  .hist { display: flex; gap: 5px; margin-left: auto; }
+  .hist button { width: 14px; height: 14px; border-radius: 50%; border: 0; background: #E9DCCB; cursor: pointer; padding: 0; }
+  .hist button.on { background: var(--accent); }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  .compass { display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: center; }
+  .compass svg .side { cursor: pointer; transition: opacity .2s; }
+  .compass svg .side:hover { opacity: .8; }
+  .compass .say { font-weight: 700; font-size: 20px; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 14px; }
+  .compass .say em { font-style: normal; color: var(--accent); }
+
+  .reel { display: grid; gap: 4px; margin-top: 12px; }
+  .rl { display: grid; grid-template-columns: 26px 26px 1fr 36px; gap: 10px; align-items: center; padding: 5px 8px; border-radius: 12px; background: var(--cream); font-size: 13px; font-weight: 600; }
+  .rl .n { color: var(--muted); font-weight: 700; text-align: center; }
+  .rl.lk { background: #FFF1E6; box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .rl.spin .dirn, .rl.spin svg { animation: blur .12s linear infinite; }
+  @keyframes blur { 50% { opacity: .35; transform: translateY(-2px); } }
+  .lock { border: 0; background: #fff; border-radius: 10px; height: 28px; cursor: pointer; font-size: 13px; }
+  .rl.lk .lock { background: var(--accent); color: #fff; }
+
+  .sentence { font-weight: 700; font-size: 24px; letter-spacing: -0.03em; line-height: 1.6; }
+  .tok { display: inline-flex; align-items: center; gap: 4px; border: 0; background: #FFE3DB; color: var(--accent); border-radius: 999px; padding: 0 12px; font: 700 20px 'Bricolage Grotesque', sans-serif; cursor: pointer; vertical-align: middle; height: 36px; }
+  .tok.add { background: var(--cream); color: var(--muted); }
+  .tok.word { background: var(--cream); color: var(--ink); text-decoration: underline dotted; }
+  .menu { display: inline-flex; gap: 4px; vertical-align: middle; animation: rise .3s var(--spring) both; }
+  .menu button { border: 0; background: var(--ink); color: #fff; border-radius: 999px; padding: 4px 10px; font: 600 13px 'Bricolage Grotesque', sans-serif; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <div class="word">story<i></i></div>
+  <div class="variants" id="variants"></div>
+  <div class="vdesc" id="vdesc"></div>
+</header>
+<main>
+  <div class="stage">
+    <div class="floor"></div>
+    <div id="hero"></div>
+    <div class="caption"><h1 id="title"></h1><p id="sub"></p></div>
+    <div class="strip" id="strip"></div>
+  </div>
+  <div class="panel">
+    <div class="blk"><h2>Shelf pattern <small id="pname"></small></h2><div class="chips" id="pats"></div><div id="rz"></div></div>
+    <div class="blk"><h2>Fine-tune <small>or click a shelf</small></h2><div class="ghost">Out of scope for this lab. A rolled pattern is a starting point; fine-tune takes over from here.</div></div>
+  </div>
+</main>
+
+<script src="../shared/story-core.js"></script>
+<script src="../v2/shared/story-v2.js"></script>
+<script>
+  const S = Story;
+  const VARIANTS = [
+    { id: 'A', name: 'Quick dice', desc: 'One-tap Randomize chip. Rules hide in a small gear popover; a badge shows how many directions are blocked.' },
+    { id: 'B', name: 'Rules card', desc: 'Randomize opens a card under the chips with direction tiles, a no-repeat switch, Roll, and a history of recent rolls.' },
+    { id: 'C', name: 'Compass', desc: 'A top-down plan of the base. Tap a side to block it, then roll. The constraint is read back as a sentence.' },
+    { id: 'D', name: 'Lock & roll', desc: 'Slot machine. Lock the shelves you already like; rolling only reshuffles the unlocked ones.' },
+    { id: 'E', name: 'Say it', desc: 'Mad-libs sentence. "Surprise me, but never face Back." Tap a token to remove it, + to add one.' },
+  ];
+
+  let variant = localStorage.getItem('rz-variant') || 'A';
+  let state = S.createState('tall', '#E2B062', S.PRESETS[1].make(11));
+  let allowed = new Set(S.DIRS);
+  let noRepeat = false;
+  let locks = new Set();
+  let history = [];
+  let hIdx = -1;
+  let rolled = false;
+  let rolling = false;
+  let popOpen = false;
+  let cardOpen = false;
+  let addOpen = false;
+  let note = '';
+  const $ = (id) => document.getElementById(id);
+  const hero = Story3D.mount($('hero'), { state, fit: 0.68, floor: 0.86, yaw: -24, accent: '#FF6B4A' });
+
+  function randomDirs(n, current) {
+    const pool = S.DIRS.filter((d) => allowed.has(d));
+    let out;
+    for (let tries = 0; tries < 40; tries++) {
+      out = [];
+      for (let i = 0; i < n; i++) {
+        if (locks.has(i)) { out.push(current[i]); continue; }
+        let opts = pool;
+        if (noRepeat) {
+          const nextLocked = locks.has(i + 1) ? current[i + 1] : null;
+          const f = pool.filter((d) => d !== out[i - 1] && d !== nextLocked);
+          if (f.length) opts = f;
+        }
+        out.push(opts[Math.floor(Math.random() * opts.length)]);
+      }
+      if (out.join('') !== current.join('')) break;
+    }
+    return out;
+  }
+
+  function roll() {
+    if (rolling) return;
+    if (hIdx < 0) { history = [state.dirs.slice()]; hIdx = 0; }
+    const final = randomDirs(state.dirs.length, state.dirs);
+    const pool = S.DIRS.filter((d) => allowed.has(d));
+    rolling = true;
+    rolled = true;
+    let f = 0;
+    const tick = () => {
+      if (f++ < 7) {
+        state.dirs = state.dirs.map((d, i) => (locks.has(i) ? d : pool[Math.floor(Math.random() * pool.length)]));
+        paint(true);
+        setTimeout(tick, 65);
+        return;
+      }
+      state.dirs = final;
+      rolling = false;
+      history = history.slice(0, hIdx + 1).concat([final.slice()]).slice(-6);
+      hIdx = history.length - 1;
+      note = 'Like it? Fine-tune any shelf below, or roll again.';
+      render();
+    };
+    render();
+    tick();
+  }
+
+  function toggleDir(d) {
+    if (allowed.has(d) && allowed.size === 1) {
+      note = '<b>Keep at least one direction.</b> Shelves have to face somewhere.';
+      render();
+      return;
+    }
+    allowed.has(d) ? allowed.delete(d) : allowed.add(d);
+    note = allowed.size === 1 ? `Only <b>${S.DIR_LABEL[[...allowed][0]]}</b> left, so every roll is the same. Allow one more for variety.` : '';
+    render();
+  }
+
+  function blockedText() {
+    const b = S.DIRS.filter((d) => !allowed.has(d)).map((d) => S.DIR_LABEL[d].toLowerCase());
+    return b.length ? `never facing ${b.join(' or ')}` : 'any direction';
+  }
+
+  const glyph = (d, size = 22, c = '#2B1E16') => S.planGlyph(d, c, size);
+  const allowTiles = (cls = '') => `<div class="allow">${S.DIRS.map((d) => `<button class="al ${cls} ${allowed.has(d) ? '' : 'off'}" data-act="dir" data-dir="${d}">${glyph(d, 26)}${S.DIR_LABEL[d]}</button>`).join('')}</div>`;
+  const repSwitch = () => `<div class="switch ${noRepeat ? 'on' : ''}" data-act="norep"><span class="tog"></span>No two neighbours alike</div>`;
+  const rollBtn = (label = 'Roll') => `<button class="roll ${rolling ? 'rolling' : ''}" data-act="roll"><span class="d">🎲</span>${label}</button>`;
+  const undoBtns = () => `<button class="soft" data-act="undo" ${hIdx > 0 ? '' : 'disabled'}>↶ Undo</button>`;
+  const noteHtml = () => `<div class="note">${note}</div>`;
+
+  function compassSvg() {
+    const b = S.GEO.base / 2;
+    const g = 0.5, c = 1.6;
+    const WEDGE = {
+      F: [[-b + g, b], [b - g, b], [0, c]], B: [[-b + g, -b], [b - g, -b], [0, -c]],
+      L: [[-b, -b + g], [-b, b - g], [-c, 0]], R: [[b, -b + g], [b, b - g], [c, 0]],
+    };
+    const sides = S.DIRS.map((d) => {
+      const on = allowed.has(d);
+      const [lx, ly] = [S.DIR_VEC[d][0] * b * 0.6, S.DIR_VEC[d][1] * b * 0.6 + 0.35];
+      return `<g class="side" data-act="dir" data-dir="${d}">
+        <polygon points="${WEDGE[d].map((p) => p.join(',')).join(' ')}" stroke-linejoin="round" fill="${on ? state.color : 'url(#hatch)'}" stroke="${on ? '#2B1E16' : '#FF6B4A'}" stroke-width=".18"/>
+        <text x="${lx}" y="${ly}" text-anchor="middle" font-size="1" font-weight="700" fill="${on ? '#2B1E16' : '#FF6B4A'}">${on ? '' : '✕ '}${S.DIR_LABEL[d].toUpperCase()}</text></g>`;
+    }).join('');
+    return `<svg viewBox="-11 -11 22 23.5" width="200" height="214" font-family="Bricolage Grotesque">
+      <defs><pattern id="hatch" width=".8" height=".8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width=".8" height=".8" fill="#FFF1E6"/><rect width=".25" height=".8" fill="#FF6B4A55"/></pattern></defs>
+      <rect x="${-b}" y="${-b}" width="${2 * b}" height="${2 * b}" rx="1" fill="none" stroke="#2B1E16" stroke-width=".08" stroke-dasharray=".4 .3" opacity=".5"/>
+      ${sides}<circle r="${S.GEO.col / 2}" fill="${S.shade(state.color, -0.25)}"/>
+      <text x="0" y="12" text-anchor="middle" font-size=".9" letter-spacing=".15" fill="#94857A">ROOM ↓</text></svg>`;
+  }
+
+  const UI = {
+    A: () => ({
+      chip: `<div class="split"><button class="chip dice ${rolled ? 'on' : ''}" data-act="roll"><span class="die">🎲</span>Randomize</button><button class="chip dice gear ${rolled ? 'on' : ''}" data-act="pop" title="Rules">⚙${allowed.size < 4 || noRepeat ? ` <span class="badge">${4 - allowed.size + (noRepeat ? 1 : 0)}</span>` : ''}</button></div>` +
+        (popOpen ? `<div class="pop"><h3>Shelves can face</h3>${allowTiles()}${repSwitch()}${noteHtml()}</div>` : ''),
+      body: '',
+    }),
+    B: () => ({
+      chip: `<button class="chip dice ${cardOpen ? 'on' : ''}" data-act="card"><span class="die">🎲</span>Randomize</button>`,
+      body: cardOpen ? `<div class="card"><h3>Shelves can face</h3>${allowTiles()}${repSwitch()}
+        <div class="row">${rollBtn(rolled ? 'Roll again' : 'Roll')}${undoBtns()}<div class="hist">${history.map((_, i) => `<button class="${i === hIdx ? 'on' : ''}" data-act="hist" data-i="${i}" title="Roll ${i + 1}"></button>`).join('')}</div></div>${noteHtml()}</div>` : '',
+    }),
+    C: () => ({
+      chip: '',
+      body: `<div class="card"><div class="compass">${compassSvg()}<div><div class="say">Random shelves,<br><em>${blockedText()}</em>.</div>
+        <div class="ghost" style="margin-bottom:14px">Tap a side of the base to block it.</div>${rollBtn('Randomize')}${repSwitch()}${noteHtml()}</div></div></div>`,
+    }),
+    D: () => ({
+      chip: '',
+      body: `<div class="card"><h3>Shelves can face</h3><div class="chips">${S.DIRS.map((d) => `<button class="al pill ${allowed.has(d) ? '' : 'off'}" data-act="dir" data-dir="${d}">${glyph(d, 20)}${S.DIR_LABEL[d]}</button>`).join('')}</div>
+        <div class="reel">${state.dirs.map((d, i) => i).reverse().map((i) => `<div class="rl ${locks.has(i) ? 'lk' : ''} ${rolling && !locks.has(i) ? 'spin' : ''}"><span class="n">${i + 1}</span>${glyph(state.dirs[i], 24)}<span class="dirn">${S.DIR_LABEL[state.dirs[i]]}</span><button class="lock" data-act="lock" data-i="${i}" title="${locks.has(i) ? 'Unlock' : 'Keep this shelf'}">${locks.has(i) ? '🔒' : '🔓'}</button></div>`).join('')}</div>
+        <div class="row">${rollBtn(locks.size ? `Roll ${state.dirs.length - locks.size} shelves` : 'Roll all')}${undoBtns()}<button class="soft" data-act="unlock" ${locks.size ? '' : 'disabled'}>Unlock all</button></div>${noteHtml()}</div>`,
+    }),
+    E: () => {
+      const blocked = S.DIRS.filter((d) => !allowed.has(d));
+      const addable = S.DIRS.filter((d) => allowed.has(d));
+      const toks = blocked.length ? blocked.map((d, i) => `${i ? ' or ' : ''}<button class="tok" data-act="dir" data-dir="${d}">${S.DIR_LABEL[d]} ✕</button>`).join('') : '';
+      return {
+        chip: '',
+        body: `<div class="card"><div class="sentence">Surprise me${blocked.length ? ', but never face ' : ' '}${toks}
+          ${addable.length > 1 ? (addOpen ? `<span class="menu">${addable.map((d) => `<button data-act="dir" data-dir="${d}">${S.DIR_LABEL[d]}</button>`).join('')}</span>` : `<button class="tok add" data-act="add">+ ${blocked.length ? 'or' : 'but never face…'}</button>`) : ''}<br>
+          and <button class="tok word" data-act="norep">${noRepeat ? "don't" : 'do'}</button> let neighbours match.</div>
+          <div class="row">${rollBtn('Surprise me')}${undoBtns()}</div>${noteHtml()}</div>`,
+      };
+    },
+  };
+
+  function paint(fast) {
+    hero.update(state, { selected: -1 });
+    const preset = S.PRESETS.find((p) => p.make(state.dirs.length).join('') === state.dirs.join(''));
+    const label = preset ? preset.name : rolled ? 'Random roll' : 'Your own';
+    $('title').innerHTML = rolling ? 'Rolling…' : label;
+    $('sub').textContent = `${state.dirs.length} shelves · ${blockedText()}${noRepeat ? ' · no neighbours alike' : ''}${locks.size ? ` · ${locks.size} locked` : ''}`;
+    $('pname').textContent = label;
+    $('strip').innerHTML = state.dirs.map((d, i) => `<span class="${locks.has(i) ? 'lk' : ''}">${glyph(d, 20)}${i + 1}</span>`).join('');
+    if (fast && variant === 'D') $('rz').innerHTML = UI.D().body;
+  }
+
+  function render() {
+    paint();
+    const code = state.dirs.join('');
+    const ui = UI[variant]();
+    $('pats').innerHTML = S.PRESETS.map((p) => `<button class="chip ${p.make(state.dirs.length).join('') === code ? 'on' : ''}" data-p="${p.id}">${glyph(p.make(4)[1])}${p.name}</button>`).join('') + ui.chip;
+    $('rz').innerHTML = ui.body;
+    $('variants').innerHTML = VARIANTS.map((v) => `<button data-v="${v.id}" class="${v.id === variant ? 'on' : ''}"><b>${v.id}</b>${v.name}</button>`).join('');
+    $('vdesc').textContent = VARIANTS.find((v) => v.id === variant).desc;
+  }
+
+  function act(e) {
+    const p = e.target.closest('[data-p]');
+    if (p) {
+      state.dirs = S.PRESETS.find((x) => x.id === p.dataset.p).make(state.dirs.length);
+      rolled = false; popOpen = false; note = '';
+      return render();
+    }
+    const t = e.target.closest('[data-act]');
+    if (!t) return;
+    const a = t.dataset.act;
+    if (a === 'roll') { popOpen = false; return roll(); }
+    if (a === 'pop') { popOpen = !popOpen; return render(); }
+    if (a === 'card') { cardOpen = !cardOpen; if (cardOpen && !rolled) return roll(); return render(); }
+    if (a === 'dir') { addOpen = false; return toggleDir(t.dataset.dir); }
+    if (a === 'norep') { noRepeat = !noRepeat; return render(); }
+    if (a === 'add') { addOpen = true; return render(); }
+    if (a === 'lock') { const i = +t.dataset.i; locks.has(i) ? locks.delete(i) : locks.add(i); return render(); }
+    if (a === 'unlock') { locks.clear(); return render(); }
+    if (a === 'undo' && hIdx > 0) { hIdx--; state.dirs = history[hIdx].slice(); return render(); }
+    if (a === 'hist') { hIdx = +t.dataset.i; state.dirs = history[hIdx].slice(); return render(); }
+  }
+
+  $('pats').onclick = act;
+  $('rz').onclick = act;
+  $('variants').onclick = (e) => {
+    const b = e.target.closest('[data-v]');
+    if (!b) return;
+    variant = b.dataset.v;
+    localStorage.setItem('rz-variant', variant);
+    popOpen = false; cardOpen = false; addOpen = false; note = '';
+    render();
+  };
+  document.addEventListener('click', (e) => {
+    if (popOpen && e.target.isConnected && !e.target.closest('.pop, [data-act="pop"]')) { popOpen = false; render(); }
+  });
+  render();
+</script>
+</body>
+</html>
