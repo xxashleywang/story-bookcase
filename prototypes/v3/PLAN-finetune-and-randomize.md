@@ -8,7 +8,7 @@ Two changes to the Playroom configurator (`prototypes/v3/g-playroom.html`):
 1. **Fine-tune is hard to find.** It sits at the bottom of the Style pane, so clicking a shelf changes nothing visible on the right. Clicking a shelf should scroll the pane to Fine-tune and highlight it. Arrow keys should also pick and rotate shelves, with the same highlight.
 2. **Randomize.** Add a Randomize option next to the shelf pattern chips. It rolls a random pattern as a starting point, within rules the user sets first (for example "never face back").
 
-The randomize UX is being chosen from 5 designs in `prototypes/v3/randomize-lab.html`.
+Randomize shipped as **variant A · Quick dice** (chip + rules popover). The five options remain in `prototypes/v3/randomize-lab.html`.
 
 ## Scope
 **In scope:**
@@ -37,14 +37,14 @@ The randomize UX is being chosen from 5 designs in `prototypes/v3/randomize-lab.
 - **Keyboard mapping (proposed, needs sign-off):** ↑ / ↓ move the selected shelf up/down (first press selects shelf 1). ← / → rotate the shelf through Front → Left → Back → Right using the existing `rotate()`. Keys are ignored while typing in an input, when the Get inspired drawer is open, or on the Build tab. Handled keys call `preventDefault` so the pane doesn't scroll.
 
 ## Open questions for Ashley
-1. Which randomize variant (A–E) or which mix? See the lab.
+1. ~~Which randomize variant (A–E)?~~ **A · Quick dice.**
 2. Keep ←/→ as "rotate", or add letter keys (F/L/B/R) for absolute directions?
-3. The screenshot you sent has a different header ("Plan it, paint the wall…", "Buy at Herman Miller", a $595 sticker) from `g-playroom.html` on disk ("Every shelf has a story", "Get inspired"). Which file is the live one?
+3. ~~Which header is live?~~ Playroom is the live file: wordmark **twistory**, tagline "Every shelf has a story.", **Get inspired** (no Herman Miller buy link or prices).
 
 ## Tasks
 
 - [x] 🟩 **Step 0: Branch**
-  - [x] 🟩 Already on `feature/story-configurator-prototypes` (not main). Branch has no commits yet; everything under `prototypes/` is untracked.
+  - [x] 🟩 On `feature/story-configurator-prototypes`. Pushed to https://github.com/xxashleywang/story-bookcase.
 
 - [x] 🟩 **Step 1: Randomize design lab**
   - [x] 🟩 `prototypes/v3/randomize-lab.html` with 5 switchable variants: A Quick dice, B Rules card, C Compass, D Lock & roll, E Say it
