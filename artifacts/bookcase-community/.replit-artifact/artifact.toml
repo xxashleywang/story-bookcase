@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Bookcase Community"
+description = "A community for sharing bookshelf and furniture builds. Members create accounts, upload photos, tag their projects, and browse an inspiration marketplace with searchable build details."
+version = "1.0.0"
+id = "artifacts/bookcase-community"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20830
+
+[services.development]
+run = "pnpm --filter @workspace/bookcase-community run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bookcase-community", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/bookcase-community/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20830"
+BASE_PATH = "/"

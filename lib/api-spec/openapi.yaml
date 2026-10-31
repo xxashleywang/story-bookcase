@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API for the Twistory bookcase configurator and build community.
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: builds
+    description: Public build gallery and member build management.
+  - name: profiles
+    description: Public usernames and member profiles.
+  - name: community
+    description: Public gallery highlights.
+  - name: Storage
+    description: Image upload and object serving.
 paths:
   /healthz:
     get:
@@ -24,6 +32,311 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /builds:
+    get:
+      operationId: listBuilds
+      tags: [builds]
+      summary: Browse community builds
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: brand
+          in: query
+          schema:
+            type: string
+        - name: color
+          in: query
+          schema:
+            type: string
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [recent, popular]
+            default: recent
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 40
+            default: 24
+      responses:
+        "200":
+          description: Matching public builds.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Build"
+    post:
+      operationId: createBuild
+      tags: [builds]
+      summary: Publish a build to the community gallery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BuildInput"
+      responses:
+        "201":
+          description: Published build.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Build"
+        "400":
+          description: Invalid build details or photo upload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Sign in required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /builds/{id}:
+    get:
+      operationId: getBuild
+      tags: [builds]
+      summary: View a community build
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Community build.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Build"
+        "404":
+          description: Build not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    patch:
+      operationId: updateBuild
+      tags: [builds]
+      summary: Edit one of your published builds
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BuildUpdate"
+      responses:
+        "200":
+          description: Updated build.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Build"
+        "401":
+          description: Sign in required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Build not found or not owned by the current user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    delete:
+      operationId: deleteBuild
+      tags: [builds]
+      summary: Remove one of your published builds
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Build removed.
+        "401":
+          description: Sign in required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Build not found or not owned by the current user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /profiles/me:
+    get:
+      operationId: getMyProfile
+      tags: [profiles]
+      summary: Get the signed-in member profile
+      responses:
+        "200":
+          description: Current member profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "401":
+          description: Sign in required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    patch:
+      operationId: updateMyProfile
+      tags: [profiles]
+      summary: Choose a public username
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Updated member profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          description: Username is invalid or unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Sign in required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /profiles/username-availability:
+    get:
+      operationId: checkUsernameAvailability
+      tags: [profiles]
+      summary: Check whether a public username is available
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 24
+            pattern: "^[A-Za-z0-9._-]+$"
+      responses:
+        "200":
+          description: Username availability.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsernameAvailability"
+        "400":
+          description: Username does not meet the rules.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /community/summary:
+    get:
+      operationId: getCommunitySummary
+      tags: [community]
+      summary: Get public community totals and popular tags
+      responses:
+        "200":
+          description: Community highlights.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunitySummary"
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [Storage]
+      summary: Request a signed photo upload URL
+      description: Requires a signed-in member. Upload file bytes directly to the returned URL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Signed upload URL and reserved object path.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          description: Invalid photo metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Sign in required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getStorageObject
+      tags: [Storage]
+      summary: Serve an uploaded photo
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Uploaded photo bytes.
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "403":
+          description: Photo is private.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Photo not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +346,227 @@ components:
           type: string
       required:
         - status
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    BuildConfiguration:
+      type: object
+      required: [size, color, shelfDirections, wallColor, floorId]
+      properties:
+        size:
+          type: string
+          enum: [standard, tall]
+        color:
+          type: string
+          description: Bookcase finish as a six-digit hex color.
+        shelfDirections:
+          type: array
+          items:
+            type: string
+            enum: [F, L, B, R]
+        wallColor:
+          type: string
+        floorId:
+          type: string
+        floorKind:
+          type: string
+          enum: [Laminate, Carpet, Custom]
+        customFloorColor:
+          type: ["string", "null"]
+    Build:
+      type: object
+      required:
+        - id
+        - title
+        - brand
+        - category
+        - colorName
+        - colorHex
+        - tags
+        - photoPaths
+        - configuration
+        - creatorUsername
+        - createdAt
+        - likesCount
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        brand:
+          type: ["string", "null"]
+        modelName:
+          type: ["string", "null"]
+        category:
+          type: string
+          default: bookcase
+        colorName:
+          type: string
+        colorHex:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        photoPaths:
+          type: array
+          items:
+            type: string
+        configuration:
+          $ref: "#/components/schemas/BuildConfiguration"
+        creatorUsername:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        likesCount:
+          type: integer
+    BuildInput:
+      type: object
+      required: [title, category, colorName, colorHex, tags, photoPaths, configuration]
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 80
+        description:
+          type: ["string", "null"]
+          maxLength: 1200
+        brand:
+          type: ["string", "null"]
+          maxLength: 80
+        modelName:
+          type: ["string", "null"]
+          maxLength: 120
+        category:
+          type: string
+          enum: [bookcase]
+        colorName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        colorHex:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+        tags:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            maxLength: 32
+        photoPaths:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            type: string
+        configuration:
+          $ref: "#/components/schemas/BuildConfiguration"
+    BuildUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 80
+        description:
+          type: ["string", "null"]
+          maxLength: 1200
+        brand:
+          type: ["string", "null"]
+          maxLength: 80
+        modelName:
+          type: ["string", "null"]
+          maxLength: 120
+        colorName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        colorHex:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+        tags:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            maxLength: 32
+        photoPaths:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            type: string
+        configuration:
+          $ref: "#/components/schemas/BuildConfiguration"
+    Profile:
+      type: object
+      required: [username, displayName, isUsernameSet]
+      properties:
+        username:
+          type: ["string", "null"]
+        displayName:
+          type: ["string", "null"]
+        isUsernameSet:
+          type: boolean
+    ProfileUpdate:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 24
+          pattern: "^[A-Za-z0-9._-]+$"
+    UsernameAvailability:
+      type: object
+      required: [username, available]
+      properties:
+        username:
+          type: string
+        available:
+          type: boolean
+    CommunitySummary:
+      type: object
+      required: [totalBuilds, totalBuilders, popularTags]
+      properties:
+        totalBuilds:
+          type: integer
+        totalBuilders:
+          type: integer
+        popularTags:
+          type: array
+          items:
+            type: string
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 180
+        size:
+          type: integer
+          minimum: 1
+          maximum: 12000000
+        contentType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp, image/avif]
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/UploadUrlRequest"
 
