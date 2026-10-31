@@ -1,0 +1,1 @@
+- [Product direction](product-direction.md) — configurator is primary, community secondary; full bookcase visible; floor/color picker preferences.
