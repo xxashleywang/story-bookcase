@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story — In the room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --wall: #EEEAE3; --ink: #23211E; --muted: #7D776F; --glass: #FFFFFFC7; --hair: #00000012; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { font: 15px/1.5 Figtree, system-ui, sans-serif; color: var(--ink); }
+  .room { position: fixed; inset: 0; background: var(--wall); transition: background .5s; }
+  .room::before { content: ''; position: absolute; inset: 0 0 22% 0; background: linear-gradient(115deg, #FFFFFF59 0%, #FFFFFF1F 28%, transparent 46%), linear-gradient(115deg, transparent 52%, #0000000a 100%); }
+  .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 22%; background: repeating-linear-gradient(90deg, #0000 0 159px, #00000010 159px 160px), linear-gradient(#CDB496, #B99C7A); }
+  .floor::before { content: ''; position: absolute; left: 0; right: 0; top: -14px; height: 14px; background: color-mix(in srgb, var(--wall) 82%, #fff); box-shadow: 0 1px 0 #00000014; transition: background .5s; }
+  .floor::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#0000001f, transparent 30%); }
+  #hero { position: fixed; inset: 0; }
+  .dim { position: fixed; width: 1px; background: #23211E40; pointer-events: none; }
+  .dim::before, .dim::after { content: ''; position: absolute; left: -4px; width: 9px; height: 1px; background: #23211E40; }
+  .dim::before { top: 0; } .dim::after { bottom: 0; }
+  .dim span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+  .top { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 24px 36px; z-index: 3; }
+  .word { font-weight: 600; font-size: 17px; letter-spacing: -0.01em; }
+  .word span { font-weight: 400; color: var(--muted); }
+  .pill { background: var(--ink); color: #fff; border: 0; border-radius: 999px; padding: 10px 18px; font: 500 14px Figtree, sans-serif; cursor: pointer; text-decoration: none; }
+  .pill.soft { background: var(--glass); color: var(--ink); backdrop-filter: blur(14px); box-shadow: inset 0 0 0 1px var(--hair); }
+  .top .r { display: flex; gap: 10px; align-items: center; }
+
+  .card { position: fixed; left: 36px; top: 50%; transform: translateY(-50%); z-index: 3; width: 340px; background: var(--glass); backdrop-filter: blur(18px) saturate(1.3); border-radius: 22px; padding: 26px; box-shadow: 0 20px 60px #0000001a, inset 0 0 0 1px #FFFFFF80; }
+  .card h1 { font-weight: 300; font-size: 34px; letter-spacing: -0.03em; line-height: 1.05; margin: 0 0 22px; }
+  .lab { font-size: 12px; color: var(--muted); margin: 18px 0 8px; display: flex; justify-content: space-between; }
+  .lab b { color: var(--ink); font-weight: 500; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: #0000000a; border-radius: 12px; padding: 3px; }
+  .seg button { border: 0; background: none; padding: 8px; border-radius: 9px; font: 500 13px Figtree, sans-serif; color: var(--muted); cursor: pointer; }
+  .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px #0000001a; }
+  .dots { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .dot { width: 32px; height: 32px; border-radius: 50%; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px #00000018; }
+  .dot.on { box-shadow: inset 0 0 0 1px #00000018, 0 0 0 2px #fff, 0 0 0 3.5px var(--ink); }
+  .dot.wall { border-radius: 9px; }
+  .pick { width: 32px; height: 32px; border-radius: 50%; position: relative; overflow: hidden; background: conic-gradient(#f2b8a8, #efe0a0, #b9dfc0, #b2cfe8, #d4c0ea, #f2b8a8); }
+  .pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 0; background: #0000000a; border-radius: 999px; padding: 7px 12px; font: 500 13px Figtree, sans-serif; color: var(--ink); cursor: pointer; }
+  .chip.on { background: var(--ink); color: #fff; }
+
+  .shelfpop { position: fixed; z-index: 4; display: none; background: #fff; border-radius: 14px; padding: 6px; box-shadow: 0 10px 30px #00000026; gap: 4px; align-items: center; font-size: 12px; }
+  .shelfpop.on { display: flex; }
+  .shelfpop span { padding: 0 8px; color: var(--muted); }
+  .shelfpop button { border: 0; background: #0000000a; border-radius: 9px; padding: 7px 10px; font: 500 12px Figtree, sans-serif; cursor: pointer; color: var(--ink); }
+  .shelfpop button.on { background: var(--ink); color: #fff; }
+
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 400px; z-index: 5; background: #FBFAF8; box-shadow: -20px 0 60px #0000001f; transform: translateX(105%); transition: transform .35s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column; }
+  .drawer.on { transform: none; }
+  .dh { padding: 26px 28px 18px; border-bottom: 1px solid var(--hair); }
+  .dh h2 { margin: 0; font-weight: 400; font-size: 24px; letter-spacing: -0.02em; display: flex; justify-content: space-between; align-items: center; }
+  .dh h2 button { border: 0; background: none; font-size: 20px; cursor: pointer; color: var(--muted); }
+  .meter { height: 6px; background: #0000000d; border-radius: 3px; margin-top: 18px; overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--ink); transition: width .3s; }
+  .dh p { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+  .list { flex: 1; overflow: auto; padding: 8px 16px; }
+  .it { display: grid; grid-template-columns: 26px 1fr 26px; gap: 14px; align-items: center; padding: 12px; border-radius: 12px; cursor: pointer; }
+  .it:hover { background: #00000006; }
+  .it .ck { width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px #00000026; display: grid; place-items: center; color: #fff; font-size: 12px; }
+  .it.done .ck { background: var(--ink); box-shadow: none; }
+  .it.done .t { color: var(--muted); }
+  .it .t b { font-weight: 500; }
+  .it .t span { display: block; font-size: 12px; color: var(--muted); }
+  .it.next { background: #fff; box-shadow: 0 2px 10px #0000000f; }
+  .df { padding: 18px 28px; border-top: 1px solid var(--hair); display: flex; gap: 10px; }
+  .df .pill { flex: 1; text-align: center; }
+</style>
+</head>
+<body>
+<div class="room" id="room"><div class="floor"></div></div>
+<div id="hero"></div>
+<div class="dim" id="dim"><span id="dimtxt"></span></div>
+
+<div class="top">
+  <div class="word">Story <span>· see it at home</span></div>
+  <div class="r"><button class="pill soft" id="plan">Build checklist</button><a class="pill" target="_blank" rel="noopener" href="https://store.hermanmiller.com/furniture-shelving-storage-bookcases/story-bookcase/2197172.html?lang=en_US" id="buy"></a></div>
+</div>
+
+<div class="card">
+  <h1>Style your corner.</h1>
+  <div class="lab">Height</div>
+  <div class="seg" id="sizes"></div>
+  <div class="lab">Finish <b id="fname"></b></div>
+  <div class="dots" id="finishes"></div>
+  <div class="lab">Shelf pattern</div>
+  <div class="chips" id="pats"></div>
+  <div class="lab">Your wall <b id="wname"></b></div>
+  <div class="dots" id="walls"></div>
+</div>
+
+<div class="shelfpop" id="pop"></div>
+
+<aside class="drawer" id="drawer">
+  <div class="dh"><h2>Build checklist <button id="close">✕</button></h2><div class="meter"><i id="meter"></i></div><p id="mtxt"></p></div>
+  <div class="list" id="list"></div>
+  <div class="df"><button class="pill soft" id="reset">Reset</button><button class="pill" id="print">Print sheet</button></div>
+</aside>
+
+<script src="../shared/story-core.js"></script>
+<script src="shared/story-v2.js"></script>
+<script>
+  const S = Story;
+  const WALLS = [['Chalk', '#EEEAE3'], ['Sage', '#D9DED3'], ['Clay', '#E7D5C6'], ['Mist', '#D8DFE4'], ['Charcoal', '#3A3C3F']];
+  let state = S.readHash()[0] || S.createState('tall', '#E4E8E7', S.PRESETS[1].make(11));
+  let wall = WALLS[2];
+  let sel = -1;
+  let lastClick = { x: 0, y: 0 };
+  const $ = (id) => document.getElementById(id);
+  const FIT = 0.62, FLOOR = 0.84;
+
+  document.addEventListener('pointerdown', (e) => { lastClick = { x: e.clientX, y: e.clientY }; }, true);
+  const hero = Story3D.mount($('hero'), { state, fit: FIT, floor: FLOOR, yaw: -24, tilt: -5, shadow: 0.32, accent: '#23211E', onSelect: (i) => { sel = i; update(); } });
+
+  function placeDim() {
+    const h = innerHeight;
+    const k = (h * FIT) / S.SIZES.tall.height;
+    const H = S.SIZES[state.size].height * k;
+    const floorY = h * FLOOR;
+    const d = $('dim');
+    d.style.left = `${innerWidth / 2 + 13 * k}px`;
+    d.style.top = `${floorY - H}px`;
+    d.style.height = `${H}px`;
+    $('dimtxt').textContent = `${S.SIZES[state.size].height}"`;
+  }
+
+  function update() {
+    S.writeHash(state);
+    hero.update(state, { selected: sel });
+    document.documentElement.style.setProperty('--wall', wall[1]);
+    const dark = S.luminance(wall[1]) < 0.4;
+    document.querySelector('.word').style.color = dark ? '#F3F1EC' : '';
+    $('dimtxt').style.color = dark ? '#B9B5AE' : '';
+    placeDim();
+    const sz = S.SIZES[state.size];
+    $('buy').textContent = `Buy · $${sz.price}`;
+    $('sizes').innerHTML = Object.values(S.SIZES).map((s) => `<button data-size="${s.id}" class="${s.id === state.size ? 'on' : ''}">${s.label} · ${s.height}"</button>`).join('');
+    $('fname').textContent = S.colorName(state.color) + (S.isCatalogColor(state.color) ? '' : ' (not a HM finish)');
+    $('finishes').innerHTML = S.COLORS.map((c) => `<button class="dot ${c.hex.toLowerCase() === state.color.toLowerCase() ? 'on' : ''}" data-hex="${c.hex}" title="${c.name}" style="background:${c.hex}"></button>`).join('') +
+      `<label class="pick" title="Custom color"><input type="color" id="picker" value="${state.color}"></label>`;
+    $('picker').oninput = (e) => { state.color = e.target.value.toUpperCase(); update(); };
+    const code = state.dirs.join('');
+    $('pats').innerHTML = S.PRESETS.map((p) => `<button class="chip ${p.make(state.dirs.length).join('') === code ? 'on' : ''}" data-p="${p.id}">${p.name}</button>`).join('');
+    $('wname').textContent = wall[0];
+    $('walls').innerHTML = WALLS.map((w) => `<button class="dot wall ${w === wall ? 'on' : ''}" data-w="${w[0]}" title="${w[0]}" style="background:${w[1]}"></button>`).join('');
+
+    const pop = $('pop');
+    pop.classList.toggle('on', sel >= 0);
+    if (sel >= 0) {
+      pop.innerHTML = `<span>Shelf ${sel + 1}</span>` + S.DIRS.map((d) => `<button data-dir="${d}" class="${state.dirs[sel] === d ? 'on' : ''}">${S.DIR_LABEL[d]}</button>`).join('') + '<button data-x="1">✕</button>';
+      pop.style.left = `${Math.min(innerWidth - 360, lastClick.x + 20)}px`;
+      pop.style.top = `${lastClick.y - 22}px`;
+    }
+    renderList();
+  }
+
+  function renderList() {
+    const prog = Story3D.getProgress(state);
+    const done = prog.filter(Boolean).length;
+    const next = prog.indexOf(false);
+    $('meter').style.width = `${(done / prog.length) * 100}%`;
+    $('mtxt').textContent = next === -1 ? 'Every shelf placed. Anchor it to the wall.' : `${done} of ${prog.length} placed · next up: shelf ${next + 1}`;
+    $('list').innerHTML = S.buildList(state).map((r, i) => `<div class="it ${prog[i] ? 'done' : ''} ${i === next ? 'next' : ''}" data-i="${i}"><span class="ck">${prog[i] ? '✓' : ''}</span><span class="t"><b>Shelf ${r.n}</b> faces ${r.label.toLowerCase()}<span>${i === 0 ? 'Lowest shelf' : i === prog.length - 1 ? 'Top shelf' : `${r.height.toFixed(1)}" from the floor (approx.)`}</span></span>${S.planGlyph(r.dir, '#23211E', 26)}</div>`).join('');
+  }
+
+  $('sizes').onclick = (e) => { const b = e.target.closest('button'); if (b) { state = S.resize(state, b.dataset.size); sel = -1; update(); } };
+  $('finishes').onclick = (e) => { const b = e.target.closest('.dot'); if (b) { state.color = b.dataset.hex; update(); } };
+  $('pats').onclick = (e) => { const b = e.target.closest('.chip'); if (b) { state.dirs = S.PRESETS.find((p) => p.id === b.dataset.p).make(state.dirs.length); update(); } };
+  $('walls').onclick = (e) => { const b = e.target.closest('.dot'); if (b) { wall = WALLS.find((w) => w[0] === b.dataset.w); update(); } };
+  $('pop').onclick = (e) => {
+    const d = e.target.closest('[data-dir]');
+    if (d) state.dirs[sel] = d.dataset.dir;
+    if (e.target.closest('[data-x]')) sel = -1;
+    update();
+  };
+  $('plan').onclick = () => $('drawer').classList.add('on');
+  $('close').onclick = () => $('drawer').classList.remove('on');
+  $('list').onclick = (e) => {
+    const it = e.target.closest('.it');
+    if (!it) return;
+    const prog = Story3D.getProgress(state);
+    prog[+it.dataset.i] = !prog[+it.dataset.i];
+    Story3D.setProgress(state, prog);
+    renderList();
+  };
+  $('reset').onclick = () => { Story3D.setProgress(state, []); renderList(); };
+  $('print').onclick = () => S.printBuildSheet(state);
+  addEventListener('resize', placeDim);
+  update();
+</script>
+</body>
+</html>

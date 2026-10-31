@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story Bookcase planner — 5 prototypes</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; background: #F5F3EF; color: #1A1A1A; }
+  main { max-width: 1100px; margin: 0 auto; padding: 56px 28px; }
+  h1 { font-size: 34px; letter-spacing: -0.02em; margin: 0 0 6px; }
+  p.lead { color: #666; margin: 0 0 36px; max-width: 640px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+  a.card { display: block; text-decoration: none; color: inherit; background: #fff; border-radius: 16px; padding: 20px 22px; border: 1px solid #E5E1DA; transition: transform .15s, box-shadow .15s; }
+  a.card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px #0000000f; }
+  .num { font: 600 12px ui-monospace, monospace; color: #999; }
+  h2 { margin: 4px 0 6px; font-size: 20px; }
+  .card p { margin: 0; color: #555; font-size: 14px; }
+  .bar { height: 6px; border-radius: 3px; margin-bottom: 14px; }
+  .data { margin-top: 40px; font-size: 13px; color: #666; border-top: 1px solid #E5E1DA; padding-top: 18px; }
+  .sw { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; }
+  .sw i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #0002; display: inline-block; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Story Bookcase planner</h1>
+  <p class="lead">Five takes on the same job: decide which way each shelf faces on the Herman Miller Story Bookcase (Standard or Tall) before you assemble it. Every prototype shares the same link format, so a design copied from one opens in any other.</p>
+  <div class="grid">
+    <a class="card" href="01-compass.html"><div class="bar" style="background:#FDC7FA"></div><span class="num">01</span><h2>Compass</h2><p>Front view plus a big top-down compass. Pick a shelf, tap where it points. Keyboard friendly.</p></a>
+    <a class="card" href="02-blueprint.html"><div class="bar" style="background:#0E2A47"></div><span class="num">02</span><h2>Blueprint</h2><p>Technical isometric drawing, numbered build list with 90° rotate buttons, four camera angles, and a tip-over estimate.</p></a>
+    <a class="card" href="03-catalog.html"><div class="bar" style="background:#D8432B"></div><span class="num">03</span><h2>Catalog</h2><p>Editorial layout. Tap shelves to turn them, preview with books, and save a shortlist to compare side by side.</p></a>
+    <a class="card" href="04-pocket.html"><div class="bar" style="background:#6FDC7F"></div><span class="num">04</span><h2>Pocket</h2><p>Phone-first. D-pad per shelf, swipe to spin, and a step-by-step Build mode to keep open while assembling.</p></a>
+    <a class="card" href="05-studio.html"><div class="bar" style="background:#99EEFF"></div><span class="num">05</span><h2>Studio</h2><p>Dark 3D studio. Drag to orbit, click shelves in 3D, and plan up to four bookcases together.</p></a>
+  </div>
+  <div class="data" id="data"></div>
+</main>
+<script src="shared/story-core.js"></script>
+<script>
+  document.getElementById('data').innerHTML =
+    '<b>Current Herman Miller finishes:</b> ' + Story.COLORS.map((c) => `<span class="sw"><i style="background:${c.hex}"></i>${c.name}</span>`).join('') +
+    '<br>Hex values are sampled from Herman Miller product photos — the brand does not publish them. Discontinued finishes are not included yet.';
+</script>
+</body>
+</html>

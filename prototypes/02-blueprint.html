@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story Blueprint — plan your Story Bookcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0E2A47;
+    --navy-2: #12355A;
+    --grid: #1E4A75;
+    --line: #8FD3FF;
+    --paper: #EAF6FF;
+    --hi: #FFC94D;
+    --dim: #6F98BE;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--paper); font: 14px/1.5 'IBM Plex Mono', ui-monospace, monospace;
+    background-color: var(--navy);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      linear-gradient(#173E66 1px, transparent 1px), linear-gradient(90deg, #173E66 1px, transparent 1px);
+    background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+  }
+  .frame { margin: 20px; border: 1.5px solid var(--line); min-height: calc(100vh - 40px); display: grid; grid-template-columns: minmax(0, 1fr) 440px; grid-template-rows: auto 1fr auto; }
+  .titleblock { grid-column: 1 / -1; display: flex; border-bottom: 1.5px solid var(--line); }
+  .titleblock > div { padding: 12px 18px; border-right: 1px solid var(--line); }
+  .titleblock .name { font-family: 'IBM Plex Sans Condensed'; font-weight: 600; font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; flex: 1; }
+  .titleblock .name small { display: block; font: 400 11px 'IBM Plex Mono'; color: var(--dim); letter-spacing: 0.12em; }
+  .titleblock label { display: block; font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
+  .titleblock > div:last-child { border-right: 0; }
+  button { font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); padding: 5px 10px; cursor: pointer; }
+  button:hover { background: var(--navy-2); }
+  button[aria-pressed="true"] { background: var(--line); color: var(--navy); }
+  .tog { display: flex; gap: 0; } .tog button + button { border-left: 0; }
+
+  .drawing { position: relative; border-right: 1.5px solid var(--line); }
+  #iso { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .views { position: absolute; left: 18px; bottom: 18px; display: flex; gap: 8px; align-items: center; }
+  .views span { font-size: 11px; color: var(--dim); letter-spacing: 0.1em; text-transform: uppercase; margin-right: 4px; }
+  .legend { position: absolute; right: 18px; top: 18px; font-size: 11px; color: var(--dim); text-align: right; }
+
+  .side { display: flex; flex-direction: column; min-height: 0; }
+  .side h2 { font: 600 12px 'IBM Plex Mono'; letter-spacing: 0.16em; text-transform: uppercase; margin: 0; padding: 12px 18px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+  .side h2 span { color: var(--dim); font-weight: 400; }
+  .list { overflow: auto; flex: 1; }
+  .row { display: grid; grid-template-columns: 38px 30px 1fr auto; align-items: center; gap: 10px; padding: 7px 18px; border-bottom: 1px dashed #2D5C8A; cursor: pointer; }
+  .row:hover, .row.sel { background: #0B2340; }
+  .row.sel { box-shadow: inset 3px 0 var(--hi); }
+  .row .n { font-weight: 600; color: var(--hi); }
+  .row .dir { font-family: 'IBM Plex Sans Condensed'; font-size: 16px; }
+  .row .rot { display: flex; gap: 6px; }
+  .row .rot button { width: 32px; padding: 3px 0; }
+  .block { padding: 14px 18px; border-top: 1px solid var(--line); }
+  .block label.t { display: block; font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: flex; align-items: center; gap: 7px; padding: 4px 9px 4px 5px; }
+  .chip i { width: 16px; height: 16px; border: 1px solid #0006; display: inline-block; }
+  .chip[aria-pressed="true"] { background: var(--paper); color: var(--navy); }
+  .custom { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 12px; color: var(--dim); }
+  .custom input { width: 36px; height: 26px; border: 1px solid var(--line); background: none; padding: 0; }
+  .balance { display: grid; grid-template-columns: 90px 1fr; gap: 14px; align-items: center; font-size: 12px; }
+  .balance svg { width: 90px; height: 90px; }
+  .balance .big { font-size: 20px; color: var(--hi); font-weight: 600; }
+  .foot { grid-column: 1 / -1; border-top: 1.5px solid var(--line); display: flex; gap: 10px; padding: 10px 18px; align-items: center; font-size: 11px; color: var(--dim); }
+  .foot .sp { flex: 1; }
+  .toast { position: fixed; left: 50%; bottom: 36px; transform: translateX(-50%); background: var(--hi); color: var(--navy); padding: 8px 14px; font-weight: 600; opacity: 0; transition: .2s; pointer-events: none; max-width: 90vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+  @media (max-width: 1000px) {
+    .frame { grid-template-columns: 1fr; }
+    .drawing { height: 70vh; border-right: 0; border-bottom: 1.5px solid var(--line); }
+    .titleblock { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="titleblock">
+    <div class="name">Story Bookcase — shelf orientation plan<small>DWG STORY-01 · Afteroom for Herman Miller · not to scale on screen</small></div>
+    <div><label>Model</label><div class="tog" id="size"></div></div>
+    <div><label>Finish</label><div id="finish"></div></div>
+    <div><label>Rev</label><div id="rev">A</div></div>
+  </div>
+
+  <div class="drawing">
+    <svg id="iso" role="img" aria-label="Isometric drawing of the bookcase"></svg>
+    <div class="legend">↻ rotates a shelf 90° clockwise, seen from above<br>Front = side facing the room</div>
+    <div class="views" id="views"><span>View from</span></div>
+  </div>
+
+  <div class="side">
+    <h2>Build list <span>top → bottom</span></h2>
+    <div class="list" id="list"></div>
+    <div class="block">
+      <label class="t">Pattern</label>
+      <div class="chips" id="presets"></div>
+    </div>
+    <div class="block">
+      <label class="t">Finish — Herman Miller catalog</label>
+      <div class="chips" id="swatches"></div>
+      <label class="custom"><input type="color" id="picker"> custom (not a Herman Miller finish)</label>
+    </div>
+    <div class="block">
+      <label class="t">Tip check — estimate</label>
+      <div class="balance">
+        <svg id="bal" viewBox="-10 -10 20 20"></svg>
+        <div id="balText"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Hex values sampled from Herman Miller product photos. Shelf spacing approximate.</span>
+    <span class="sp"></span>
+    <button id="share">Copy link</button>
+    <button id="print">Print build sheet</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="shared/story-core.js"></script>
+<script>
+  const S = Story;
+  const G = S.GEO;
+  let state = S.readHash()[0] || S.createState('tall', '#3C3C42', S.PRESETS[3].make(11));
+  let sel = -1;
+  let hover = -1;
+  let view = 0;
+  let rev = 0;
+  const VIEWS = [{ a: 45, name: 'Front-right' }, { a: 135, name: 'Back-right' }, { a: 225, name: 'Back-left' }, { a: 315, name: 'Front-left' }];
+  const $ = (id) => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  const mk = (tag, attrs, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent && parent.appendChild(n); return n; };
+
+  function project(x, y, z) {
+    const t = (VIEWS[view].a * Math.PI) / 180;
+    const xr = x * Math.cos(t) - z * Math.sin(t);
+    const zr = x * Math.sin(t) + z * Math.cos(t);
+    return { sx: xr, sy: -y + zr * 0.5, d: zr };
+  }
+
+  function box(g, b, fill, stroke, sw) {
+    const t = (VIEWS[view].a * Math.PI) / 180;
+    const P = (x, y, z) => { const p = project(x, y, z); return `${p.sx.toFixed(3)},${p.sy.toFixed(3)}`; };
+    const faces = [
+      { n: Math.sin(t), pts: [[b.x1, b.y0, b.z0], [b.x1, b.y0, b.z1], [b.x1, b.y1, b.z1], [b.x1, b.y1, b.z0]], s: -0.12 },
+      { n: -Math.sin(t), pts: [[b.x0, b.y0, b.z0], [b.x0, b.y0, b.z1], [b.x0, b.y1, b.z1], [b.x0, b.y1, b.z0]], s: -0.12 },
+      { n: Math.cos(t), pts: [[b.x0, b.y0, b.z1], [b.x1, b.y0, b.z1], [b.x1, b.y1, b.z1], [b.x0, b.y1, b.z1]], s: -0.25 },
+      { n: -Math.cos(t), pts: [[b.x0, b.y0, b.z0], [b.x1, b.y0, b.z0], [b.x1, b.y1, b.z0], [b.x0, b.y1, b.z0]], s: -0.25 },
+    ];
+    faces.filter((f) => f.n > 0.001).forEach((f) =>
+      mk('polygon', { points: f.pts.map((p) => P(...p)).join(' '), fill: S.shade(fill, f.s), stroke, 'stroke-width': sw, 'stroke-linejoin': 'round' }, g)
+    );
+    mk('polygon', { points: [[b.x0, b.y1, b.z0], [b.x1, b.y1, b.z0], [b.x1, b.y1, b.z1], [b.x0, b.y1, b.z1]].map((p) => P(...p)).join(' '), fill: S.shade(fill, 0.1), stroke, 'stroke-width': sw, 'stroke-linejoin': 'round' }, g);
+  }
+
+  function renderIso() {
+    const svg = $('iso');
+    svg.innerHTML = '';
+    const H = S.SIZES[state.size].height;
+    const tallH = S.SIZES.tall.height;
+    svg.setAttribute('viewBox', `-22 ${-tallH - 8} 44 ${tallH + 22}`);
+    const hs = S.shelfHeights(state.size);
+    const stroke = '#CFE9FF';
+    const sw = 0.09;
+    const b = G.base / 2;
+    const c = G.col / 2;
+
+    const floor = mk('g', { opacity: 0.5 }, svg);
+    const corners = [[-b, -b], [b, -b], [b, b], [-b, b]].map(([x, z]) => project(x * 1.5, 0, z * 1.5));
+    mk('polygon', { points: corners.map((p) => `${p.sx},${p.sy}`).join(' '), fill: 'none', stroke: '#2D5C8A', 'stroke-width': 0.08, 'stroke-dasharray': '0.5 0.4' }, floor);
+    const fr = project(0, 0, b * 1.9);
+    const ft = mk('text', { x: fr.sx, y: fr.sy + 1.2, 'text-anchor': 'middle', 'font-size': 1.1, fill: '#8FD3FF', 'letter-spacing': 0.2 }, floor);
+    ft.textContent = 'FRONT ▼ ROOM';
+
+    box(svg, { x0: -b, x1: b, y0: 0, y1: G.baseH, z0: -b, z1: b }, state.color, stroke, sw);
+
+    const items = hs.map((h, i) => {
+      const f = S.footprint(state.dirs[i]);
+      const center = project((f.x0 + f.x1) / 2, h, (f.z0 + f.z1) / 2);
+      return { i, h, f, d: center.d };
+    });
+    const behind = items.filter((it) => it.d < 0).sort((a, b) => a.h - b.h);
+    const ahead = items.filter((it) => it.d >= 0).sort((a, b) => a.h - b.h);
+    const drawShelf = (it) => {
+      const active = it.i === sel || it.i === hover;
+      box(svg, { x0: it.f.x0, x1: it.f.x1, y0: it.h - G.shelfT, y1: it.h, z0: it.f.z0, z1: it.f.z1 }, state.color, active ? '#FFC94D' : stroke, active ? 0.25 : sw);
+    };
+    behind.forEach(drawShelf);
+    box(svg, { x0: -c, x1: c, y0: G.baseH, y1: H, z0: -c, z1: c }, state.color, stroke, sw);
+    ahead.forEach(drawShelf);
+
+    const tags = mk('g', { 'font-size': 1.15, 'font-family': 'IBM Plex Mono' }, svg);
+    items.forEach((it) => {
+      const p = project(0, it.h, 0);
+      const x = -15.5;
+      const active = it.i === sel || it.i === hover;
+      mk('line', { x1: x + 2.6, y1: p.sy, x2: p.sx - 1.2, y2: p.sy, stroke: active ? '#FFC94D' : '#2D5C8A', 'stroke-width': 0.06, 'stroke-dasharray': active ? '' : '0.3 0.3' }, tags);
+      const t = mk('text', { x, y: p.sy + 0.4, fill: active ? '#FFC94D' : '#8FD3FF' }, tags);
+      t.textContent = String(it.i + 1).padStart(2, '0');
+    });
+
+    const top = project(0, H, 0);
+    const bot = project(0, 0, 0);
+    const dx = 17.5;
+    mk('line', { x1: dx, y1: top.sy, x2: dx, y2: bot.sy, stroke: '#8FD3FF', 'stroke-width': 0.07 }, svg);
+    [top.sy, bot.sy].forEach((y) => mk('line', { x1: dx - 0.8, y1: y, x2: dx + 0.8, y2: y, stroke: '#8FD3FF', 'stroke-width': 0.07 }, svg));
+    const dt = mk('text', { x: dx + 1.2, y: (top.sy + bot.sy) / 2, fill: '#EAF6FF', 'font-size': 1.3, transform: `rotate(-90 ${dx + 1.2} ${(top.sy + bot.sy) / 2})`, 'text-anchor': 'middle', dy: '1' }, svg);
+    dt.textContent = `${H}"  ·  ${S.SIZES[state.size].label.toUpperCase()}`;
+  }
+
+  function renderList() {
+    const rows = S.buildList(state).slice().reverse();
+    $('list').innerHTML = rows.map((r) => `
+      <div class="row ${r.n - 1 === sel ? 'sel' : ''}" data-i="${r.n - 1}">
+        <span class="n">${String(r.n).padStart(2, '0')}</span>
+        ${S.planGlyph(r.dir, '#8FD3FF', 26)}
+        <span class="dir">${r.label}</span>
+        <span class="rot"><button data-r="-1" title="Rotate counter-clockwise">↺</button><button data-r="1" title="Rotate clockwise">↻</button></span>
+      </div>`).join('');
+  }
+
+  function renderBalance() {
+    const r = S.balance(state);
+    const svg = $('bal');
+    svg.innerHTML = '';
+    const b = G.base / 2;
+    mk('rect', { x: -b, y: -b, width: G.base, height: G.base, fill: 'none', stroke: '#8FD3FF', 'stroke-width': 0.2 }, svg);
+    mk('circle', { r: 0.5, fill: '#8FD3FF' }, svg);
+    mk('line', { x1: 0, y1: 0, x2: r.dx, y2: r.dz, stroke: '#FFC94D', 'stroke-width': 0.25 }, svg);
+    mk('circle', { cx: r.dx, cy: r.dz, r: 0.9, fill: '#FFC94D' }, svg);
+    const pct = Math.round((r.offset / r.limit) * 100);
+    $('balText').innerHTML = `<div class="big">${r.offset.toFixed(1)}" off-centre</div>
+      With every shelf at its 7 lb limit, the weight centre sits ${pct}% of the way to the base edge. Lower is steadier — wall-anchor it either way (hardware included).`;
+  }
+
+  function update() {
+    S.writeHash(state);
+    renderIso();
+    renderList();
+    renderBalance();
+    document.querySelectorAll('#size button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.size === state.size));
+    document.querySelectorAll('#swatches .chip').forEach((b) => b.setAttribute('aria-pressed', b.dataset.hex.toLowerCase() === state.color.toLowerCase()));
+    document.querySelectorAll('#views button').forEach((b, i) => b.setAttribute('aria-pressed', i === view));
+    $('picker').value = state.color;
+    $('finish').textContent = `${S.colorName(state.color)} ${state.color}`;
+    $('rev').textContent = String.fromCharCode(65 + (rev % 26));
+  }
+
+  function change(fn) { fn(); rev++; update(); }
+
+  $('size').innerHTML = Object.values(S.SIZES).map((s) => `<button data-size="${s.id}">${s.label}</button>`).join('');
+  $('size').onclick = (e) => { const b = e.target.closest('button'); if (b) change(() => { state = S.resize(state, b.dataset.size); }); };
+  $('views').insertAdjacentHTML('beforeend', VIEWS.map((v, i) => `<button data-v="${i}">${v.name}</button>`).join(''));
+  $('views').onclick = (e) => { const b = e.target.closest('button'); if (b) { view = +b.dataset.v; update(); } };
+  $('presets').innerHTML = S.PRESETS.map((p) => `<button class="chip" data-p="${p.id}">${p.name}</button>`).join('');
+  $('presets').onclick = (e) => { const b = e.target.closest('button'); if (b) change(() => { state.dirs = S.PRESETS.find((p) => p.id === b.dataset.p).make(state.dirs.length); }); };
+  $('swatches').innerHTML = S.COLORS.map((c) => `<button class="chip" data-hex="${c.hex}"><i style="background:${c.hex}"></i>${c.name}</button>`).join('');
+  $('swatches').onclick = (e) => { const b = e.target.closest('button'); if (b) change(() => { state.color = b.dataset.hex; }); };
+  $('picker').oninput = (e) => { state.color = e.target.value.toUpperCase(); update(); };
+  $('list').onclick = (e) => {
+    const row = e.target.closest('.row');
+    if (!row) return;
+    const i = +row.dataset.i;
+    const r = e.target.closest('button');
+    if (r) change(() => { state.dirs[i] = S.rotate(state.dirs[i], +r.dataset.r); sel = i; });
+    else { sel = sel === i ? -1 : i; update(); }
+  };
+  $('list').onmouseover = (e) => { const row = e.target.closest('.row'); const i = row ? +row.dataset.i : -1; if (i !== hover) { hover = i; renderIso(); } };
+  $('list').onmouseleave = () => { hover = -1; renderIso(); };
+  $('share').onclick = async () => {
+    const r = await S.share(state);
+    const t = $('toast');
+    t.textContent = r.copied ? 'Link copied' : r.url;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  };
+  $('print').onclick = () => S.printBuildSheet(state);
+  update();
+</script>
+</body>
+</html>

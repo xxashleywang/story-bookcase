@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story — Workshop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #EFEFEA; --ink: #121212; --muted: #77776F; --hair: #D6D6CE; --accent: #FF5A1F; --card: #F8F8F4; --wall: #D9DED3; --mono: 'JetBrains Mono', ui-monospace, monospace; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.5 'Space Grotesk', system-ui, sans-serif; display: grid; grid-template-rows: 56px 1fr; }
+  header { display: flex; align-items: center; padding: 0 28px; border-bottom: 1px solid var(--ink); font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .word { font: 700 15px var(--mono); letter-spacing: -0.02em; }
+  .word span { color: var(--accent); }
+  nav { display: flex; gap: 2px; margin: 0 auto; }
+  nav a { color: var(--muted); text-decoration: none; padding: 6px 10px; border-radius: 4px; }
+  nav a:hover { color: var(--ink); background: #0000000a; }
+  nav a i { font-style: normal; color: var(--accent); margin-right: 6px; }
+  .cta { display: flex; align-items: center; gap: 14px; }
+  .btn { border: 0; background: var(--ink); color: #fff; border-radius: 4px; padding: 9px 14px; font: 500 12px var(--mono); text-transform: uppercase; letter-spacing: .04em; cursor: pointer; text-decoration: none; }
+  .btn:hover { background: var(--accent); }
+  .btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .btn.ghost:hover { background: var(--ink); color: #fff; }
+  .btn.hot { background: var(--accent); }
+  .btn.hot:hover { background: var(--ink); }
+
+  main { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(420px, 1fr); min-height: 0; }
+  .stage { position: relative; overflow: hidden; }
+  .wall { position: absolute; inset: 0; background: var(--wall); transition: background .6s; }
+  .grid { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, #0000 0 23px, #12121214 23px 24px), repeating-linear-gradient(90deg, #0000 0 23px, #12121214 23px 24px), repeating-linear-gradient(0deg, #0000 0 119px, #12121222 119px 120px), repeating-linear-gradient(90deg, #0000 0 119px, #12121222 119px 120px); transition: opacity 1s; }
+  .stage.dark .grid { filter: invert(1); }
+  .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 20%; background: linear-gradient(#BDB7AC, #A7A094); }
+  .floor::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--ink); opacity: .5; }
+  #hero { position: absolute; inset: 0; }
+  .dim { position: absolute; width: 1px; background: var(--accent); pointer-events: none; transition: top .5s, height .5s, opacity .3s; }
+  .stage.assembling .dim { opacity: 0; }
+  .dim::before, .dim::after { content: ''; position: absolute; left: -5px; width: 11px; height: 1px; background: var(--accent); }
+  .dim::before { top: 0; } .dim::after { bottom: 0; }
+  .dim span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font: 500 11px var(--mono); color: var(--accent); white-space: nowrap; background: var(--wall); padding: 2px 4px; transition: background .6s; }
+  .tag { position: absolute; font: 500 11px/1.6 var(--mono); text-transform: uppercase; letter-spacing: .04em; color: var(--ink); }
+  .tag.tl { top: 18px; left: 22px; } .tag.tr { top: 18px; right: 22px; text-align: right; }
+  .tag b { color: var(--accent); font-weight: 500; }
+  .stage.dark .tag, .stage.dark .modes { color: #EDEDE6; }
+
+  .modes { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); display: flex; box-shadow: inset 0 0 0 1px currentColor; border-radius: 4px; font: 500 11px var(--mono); }
+  .modes button { border: 0; background: none; padding: 7px 14px; font: inherit; color: inherit; text-transform: uppercase; letter-spacing: .05em; cursor: pointer; }
+  .modes button.on { background: var(--ink); color: #fff; }
+
+  .bench { position: absolute; z-index: 2; left: 22px; right: 22px; bottom: 20px; background: var(--card); box-shadow: 0 0 0 1px var(--ink), 6px 6px 0 var(--ink); padding: 16px 18px; display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center; transform: translateY(140%); transition: transform .5s cubic-bezier(.2,.9,.2,1); }
+  .stage.assembling .bench { transform: none; }
+  .bench .glyph { width: 64px; height: 64px; display: grid; place-items: center; background: var(--bg); }
+  .bench .step { font: 500 11px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .bench .step b { color: var(--accent); }
+  .bench h3 { margin: 2px 0 8px; font-weight: 600; font-size: 24px; letter-spacing: -0.02em; }
+  .bench h3 span { color: var(--accent); }
+  .bench .acts { display: flex; gap: 8px; align-items: center; }
+  .bench kbd { font: 400 10px var(--mono); opacity: .7; margin-left: 6px; }
+  .segs { display: flex; gap: 3px; }
+  .segs i { flex: 1; height: 6px; background: var(--hair); transition: background .3s; }
+  .segs i.on { background: var(--accent); animation: seg .4s ease-out; }
+  @keyframes seg { from { transform: scaleY(2.5); } to { transform: none; } }
+  .bench.swap h3 { animation: swap .4s cubic-bezier(.2,.9,.2,1); }
+  @keyframes swap { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  .stamp { position: absolute; z-index: 2; top: 30%; left: 24%; border: 4px solid var(--accent); color: var(--accent); font: 700 54px/1 var(--mono); padding: 10px 22px 12px; letter-spacing: .06em; transform: translate(-50%, -50%) rotate(-9deg) scale(2.4); opacity: 0; pointer-events: none; transition: transform .45s cubic-bezier(.5,1.6,.5,1), opacity .2s; mix-blend-mode: multiply; }
+  .stamp small { display: block; font: 500 11px var(--mono); letter-spacing: .1em; margin-top: 6px; }
+  .stage.dark .stamp { mix-blend-mode: normal; }
+  .stage.built .stamp { opacity: .92; transform: translate(-50%, -50%) rotate(-9deg) scale(1); }
+
+  .config { overflow: auto; border-left: 1px solid var(--ink); }
+  section { padding: 22px 28px 26px; border-bottom: 1px solid var(--hair); }
+  .sh { display: flex; justify-content: space-between; align-items: baseline; font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 14px; }
+  .sh b { color: var(--ink); font-weight: 500; } .sh i { font-style: normal; color: var(--accent); margin-right: 8px; }
+  .rows { border-top: 1px solid var(--ink); }
+  .row { display: grid; grid-template-columns: 22px 1fr auto auto; gap: 14px; align-items: center; width: 100%; padding: 12px 0; border: 0; border-bottom: 1px solid var(--hair); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+  .row .r { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .row.on .r { box-shadow: inset 0 0 0 4px var(--accent); }
+  .row .t { font-weight: 600; font-size: 18px; }
+  .row .m { font: 400 12px var(--mono); color: var(--muted); }
+  .row .p { font: 500 13px var(--mono); }
+
+  .swatches { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .sq { aspect-ratio: 1; border: 0; cursor: pointer; position: relative; box-shadow: inset 0 0 0 1px #00000018; transition: transform .15s; }
+  .sq:hover { transform: translateY(-2px); }
+  .sq.on::after { content: ''; position: absolute; inset: -4px; box-shadow: 0 0 0 1.5px var(--ink); }
+  .sq.pick { background: repeating-linear-gradient(45deg, var(--card) 0 4px, var(--hair) 4px 8px); display: grid; place-items: center; font: 500 16px var(--mono); }
+  .sq input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .readout { display: flex; justify-content: space-between; margin-top: 10px; font: 400 12px var(--mono); }
+  .readout span { color: var(--muted); }
+  .hexin { display: flex; align-items: center; gap: 8px; margin-top: 10px; font: 400 12px var(--mono); color: var(--muted); }
+  .hexin input { width: 96px; font: 500 12px var(--mono); padding: 6px 8px; border: 1px solid var(--ink); background: var(--card); text-transform: uppercase; border-radius: 0; }
+  .hexin input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+  .patterns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--ink); border-left: 1px solid var(--hair); }
+  .pat { background: none; border: 0; border-right: 1px solid var(--hair); border-bottom: 1px solid var(--hair); padding: 0 0 8px; cursor: pointer; font: 500 11px var(--mono); text-transform: uppercase; color: var(--ink); }
+  .pat.on { background: var(--card); box-shadow: inset 0 -3px 0 var(--accent); }
+  .pat .mini { height: 130px; pointer-events: none; }
+
+  .tune { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
+  .tune .which { font: 500 11px var(--mono); color: var(--muted); text-transform: uppercase; }
+  .tune .which b { display: block; font: 600 36px/1 'Space Grotesk', sans-serif; color: var(--ink); }
+  .seg { display: grid; grid-template-columns: repeat(4, 1fr); box-shadow: inset 0 0 0 1px var(--ink); }
+  .seg button { border: 0; background: none; padding: 10px 0; font: 500 11px var(--mono); text-transform: uppercase; color: var(--ink); cursor: pointer; }
+  .seg button + button { box-shadow: inset 1px 0 0 var(--ink); }
+  .seg button.on { background: var(--ink); color: #fff; }
+  .stepper { grid-column: 1 / -1; display: flex; gap: 6px; justify-content: flex-end; }
+
+  .list { border-top: 1px solid var(--ink); }
+  .item { display: grid; grid-template-columns: 30px 18px 26px 1fr auto; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--hair); cursor: pointer; font: 400 13px var(--mono); }
+  .item .n { color: var(--muted); }
+  .item .box { width: 16px; height: 16px; box-shadow: inset 0 0 0 1.5px var(--ink); display: grid; place-items: center; color: #fff; font-size: 11px; transition: background .2s; }
+  .item.done .box { background: var(--accent); box-shadow: none; }
+  .item.done .lbl { color: var(--muted); }
+  .item.next { background: linear-gradient(90deg, #FF5A1F14, transparent); }
+  .item .h { color: var(--muted); font-size: 11px; }
+  .upload { margin-top: 14px; border: 1.5px dashed var(--hair); padding: 14px; font: 400 12px var(--mono); color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+  .upload b { color: var(--ink); font-weight: 500; }
+</style>
+</head>
+<body>
+<header>
+  <div class="word">STORY<span>/</span>PLANNER</div>
+  <nav><a href="#s1"><i>01</i>Height</a><a href="#s2"><i>02</i>Finish</a><a href="#s3"><i>03</i>Wall</a><a href="#s4"><i>04</i>Pattern</a><a href="#s5"><i>05</i>Tune</a><a href="#s6"><i>06</i>Build</a></nav>
+  <div class="cta"><span id="price"></span><a class="btn" target="_blank" rel="noopener" href="https://store.hermanmiller.com/furniture-shelving-storage-bookcases/story-bookcase/2197172.html?lang=en_US">Buy at HM ↗</a></div>
+</header>
+<main>
+  <div class="stage" id="stage">
+    <div class="wall"></div>
+    <div class="grid" id="grid"></div>
+    <div class="floor"></div>
+    <div id="hero"></div>
+    <div class="dim" id="dim"><span id="dimtxt"></span></div>
+    <div class="tag tl" id="tagl"></div>
+    <div class="tag tr" id="tagr"></div>
+    <div class="modes" id="modes"><button data-m="design" class="on">Design</button><button data-m="assemble">Assemble</button></div>
+    <div class="stamp" id="stamp">BUILT<small id="stampdate"></small></div>
+    <div class="bench" id="bench"></div>
+  </div>
+  <div class="config">
+    <section id="s1"><div class="sh"><span><i>01</i>Height</span><b id="hmeta"></b></div><div class="rows" id="sizes"></div></section>
+    <section id="s2"><div class="sh"><span><i>02</i>Finish</span><b>Herman Miller colors</b></div><div class="swatches" id="swatches"></div><div class="readout" id="colorline"></div></section>
+    <section id="s3"><div class="sh"><span><i>03</i>Wall</span><b id="wname"></b></div><div class="swatches" id="walls"></div>
+      <label class="hexin">Paint code / hex <input id="hexin" maxlength="7" spellcheck="false"></label></section>
+    <section id="s4"><div class="sh"><span><i>04</i>Pattern</span><b id="pname"></b></div><div class="patterns" id="patterns"></div></section>
+    <section id="s5"><div class="sh"><span><i>05</i>Fine-tune</span><b>Click a shelf in the model</b></div><div class="tune" id="tune"></div></section>
+    <section id="s6"><div class="sh"><span><i>06</i>Build</span><b id="bmeta"></b></div>
+      <div style="display:flex;gap:6px;margin-bottom:14px"><button class="btn hot" id="start">Start assembly</button><button class="btn ghost" id="reset">Reset</button><button class="btn ghost" id="print">Print sheet</button></div>
+      <div class="list" id="list"></div>
+      <div class="upload"><span><b>Build log</b> · attach photos of your finished shelf</span><span>SOON</span></div>
+    </section>
+  </div>
+</main>
+<script src="../shared/story-core.js"></script>
+<script src="../v2/shared/story-v2.js"></script>
+<script>
+  const S = Story;
+  const WALLS = [['Chalk', '#EEEAE3'], ['Sage', '#D9DED3'], ['Clay', '#E7D5C6'], ['Mist', '#D8DFE4'], ['Concrete', '#C9C7C1'], ['Charcoal', '#3A3C3F']];
+  const FIT = 0.66, FLOOR = 0.86;
+  let state = S.readHash()[0] || S.createState('tall', '#3C3C42', S.PRESETS[4].make(11));
+  let wall = localStorage.getItem('story-wall') || '#D9DED3';
+  let sel = 0;
+  let assembling = false;
+  const $ = (id) => document.getElementById(id);
+
+  const hero = Story3D.mount($('hero'), { state, fit: FIT, floor: FLOOR, accent: '#FF5A1F', selected: sel, onSelect: (i) => { if (assembling) return; sel = i; update(); } });
+
+  const minis = S.PRESETS.map((p) => {
+    const b = document.createElement('button');
+    b.className = 'pat';
+    b.innerHTML = `<div class="mini"></div>${p.name}`;
+    b.onclick = () => { state.dirs = p.make(state.dirs.length); update(); };
+    $('patterns').appendChild(b);
+    return { p, b, view: Story3D.mount(b.querySelector('.mini'), { fit: 0.8, floor: 0.92, drag: false, shadow: 0.2 }) };
+  });
+
+  const patternName = () => (S.PRESETS.find((p) => p.make(state.dirs.length).join('') === state.dirs.join('')) || { name: 'Custom' }).name;
+  const wallName = () => (WALLS.find((w) => w[1].toLowerCase() === wall.toLowerCase()) || ['Custom'])[0];
+
+  function paint3d(extra = {}) {
+    const installed = Story3D.getProgress(state);
+    hero.update(state, { selected: assembling ? -1 : sel, build: assembling ? { installed, style: 'explode', next: installed.indexOf(false), drop: -1, ...extra } : null });
+  }
+
+  function placeDim() {
+    const st = $('stage');
+    const k = (st.clientHeight * FIT) / S.SIZES.tall.height;
+    const H = S.SIZES[state.size].height * k;
+    $('dim').style.left = `${st.clientWidth / 2 + 13 * k}px`;
+    $('dim').style.top = `${st.clientHeight * FLOOR - H}px`;
+    $('dim').style.height = `${H}px`;
+    $('dimtxt').textContent = `${S.SIZES[state.size].height}″ / ${Math.round(S.SIZES[state.size].height * 2.54)} CM`;
+  }
+
+  function update() {
+    sel = Math.min(sel, state.dirs.length - 1);
+    S.writeHash(state);
+    paint3d();
+    placeDim();
+    const sz = S.SIZES[state.size];
+    $('price').textContent = `$${sz.price}`;
+    $('hmeta').textContent = `${sz.shelves} shelves · ${sz.weight} lb`;
+    $('tagl').innerHTML = `FIG.01 — Story ${sz.label}<br><b>${S.colorName(state.color)}</b> ${state.color}`;
+
+    $('sizes').innerHTML = Object.values(S.SIZES).map((s) => `<button class="row ${s.id === state.size ? 'on' : ''}" data-size="${s.id}"><span class="r"></span><span class="t">${s.label}</span><span class="m">${s.height}″ · ${s.shelves} SH</span><span class="p">$${s.price}</span></button>`).join('');
+
+    $('swatches').innerHTML = S.COLORS.map((c) => `<button class="sq ${c.hex.toLowerCase() === state.color.toLowerCase() ? 'on' : ''}" data-hex="${c.hex}" title="${c.name}" style="background:${c.hex}"></button>`).join('') +
+      `<label class="sq pick ${S.isCatalogColor(state.color) ? '' : 'on'}" title="Custom color">+<input type="color" id="picker" value="${state.color}"></label>`;
+    $('picker').oninput = (e) => { state.color = e.target.value.toUpperCase(); update(); };
+    $('colorline').innerHTML = `<b>${S.colorName(state.color).toUpperCase()}</b><span>${S.isCatalogColor(state.color) ? 'HM FINISH' : 'PREVIEW ONLY · NOT AN HM FINISH'} · ${state.color}</span>`;
+
+    paintWall();
+
+    const code = state.dirs.join('');
+    $('pname').textContent = patternName();
+    minis.forEach((m) => {
+      const u = S.createState(state.size, state.color, m.p.make(state.dirs.length));
+      m.b.classList.toggle('on', u.dirs.join('') === code);
+      m.view.update(u);
+    });
+
+    $('tune').innerHTML = `<div class="which">Shelf<b>${String(sel + 1).padStart(2, '0')}<span style="font-size:14px;color:var(--muted)">/${state.dirs.length}</span></b></div>
+      <div class="seg">${S.DIRS.map((d) => `<button data-dir="${d}" class="${state.dirs[sel] === d ? 'on' : ''}">${S.DIR_LABEL[d]}</button>`).join('')}</div>
+      <div class="stepper"><button class="btn ghost" data-step="-1">↓ Lower</button><button class="btn ghost" data-step="1">Higher ↑</button></div>`;
+
+    renderBuild();
+  }
+
+  function paintWall() {
+    document.documentElement.style.setProperty('--wall', wall);
+    $('stage').classList.toggle('dark', S.luminance(wall) < 0.45);
+    $('wname').textContent = `${wallName()} · ${wall.toUpperCase()}`;
+    $('tagr').innerHTML = `Wall<br><b>${wallName()}</b> ${wall.toUpperCase()}`;
+    $('walls').innerHTML = WALLS.map((w) => `<button class="sq ${w[1].toLowerCase() === wall.toLowerCase() ? 'on' : ''}" data-wall="${w[1]}" title="${w[0]}" style="background:${w[1]}"></button>`).join('') +
+      `<label class="sq pick ${wallName() === 'Custom' ? 'on' : ''}" title="Custom wall">+<input type="color" id="wallpick" value="${wall}"></label>`;
+    $('wallpick').oninput = (e) => setWall(e.target.value);
+    if (document.activeElement !== $('hexin')) $('hexin').value = wall.toUpperCase();
+  }
+
+  function setWall(hex) {
+    wall = hex;
+    localStorage.setItem('story-wall', wall);
+    paintWall();
+  }
+
+  function renderBuild(swap) {
+    const prog = Story3D.getProgress(state);
+    const done = prog.filter(Boolean).length;
+    const n = prog.length;
+    const next = prog.indexOf(false);
+    const all = next === -1;
+    $('bmeta').textContent = `${done}/${n} placed`;
+    $('grid').style.opacity = assembling ? 1 - (done / n) * 0.85 : 1;
+    $('stage').classList.toggle('assembling', assembling);
+    $('stage').classList.toggle('built', assembling && all);
+    $('stampdate').textContent = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
+    document.querySelectorAll('#modes button').forEach((b) => b.classList.toggle('on', (b.dataset.m === 'assemble') === assembling));
+
+    const r = all ? null : S.buildList(state)[next];
+    $('bench').className = `bench ${swap ? 'swap' : ''}`;
+    $('bench').innerHTML = `<div class="glyph">${all ? '<b style="font:700 28px var(--mono);color:var(--accent)">✓</b>' : S.planGlyph(r.dir, '#121212', 50)}</div>
+      <div><div class="step">${all ? '<b>Complete</b> · anchor to the wall with the included strap' : `Step <b>${String(next + 1).padStart(2, '0')}</b> / ${n} · ${r.height.toFixed(1)}″ from floor`}</div>
+      <h3>${all ? 'Every shelf placed.' : `Shelf ${r.n} → faces <span>${r.label.toLowerCase()}</span>`}</h3>
+      <div class="segs">${prog.map((p) => `<i class="${p ? 'on' : ''}"></i>`).join('')}</div></div>
+      <div class="acts"><button class="btn ghost" id="undo" ${done ? '' : 'disabled'}>Undo<kbd>⌫</kbd></button>${all ? '' : '<button class="btn hot" id="place">Placed it<kbd>↵</kbd></button>'}</div>`;
+    if ($('place')) $('place').onclick = place;
+    $('undo').onclick = undo;
+
+    $('list').innerHTML = S.buildList(state).map((r, i) => `<div class="item ${prog[i] ? 'done' : ''} ${i === next ? 'next' : ''}" data-i="${i}"><span class="n">${String(r.n).padStart(2, '0')}</span><span class="box">${prog[i] ? '✓' : ''}</span>${S.planGlyph(r.dir, '#121212', 22)}<span class="lbl">FACES ${r.label.toUpperCase()}</span><span class="h">${r.height.toFixed(1)}″</span></div>`).join('');
+  }
+
+  function toggle(i) {
+    const prog = Story3D.getProgress(state);
+    prog[i] = !prog[i];
+    Story3D.setProgress(state, prog);
+    if (!assembling) setMode(true, false);
+    paint3d({ drop: prog[i] ? i : -1 });
+    renderBuild(true);
+  }
+  function place() { const i = Story3D.getProgress(state).indexOf(false); if (i >= 0) toggle(i); }
+  function undo() { const p = Story3D.getProgress(state); const i = p.lastIndexOf(true); if (i >= 0) toggle(i); }
+
+  function setMode(on, repaint = true) {
+    assembling = on;
+    hero.animateTo(on ? -38 : -32, on ? -14 : -10, 800);
+    if (repaint) paint3d({ burst: on });
+    renderBuild();
+  }
+
+  $('modes').onclick = (e) => { const b = e.target.closest('button'); if (b) setMode(b.dataset.m === 'assemble'); };
+  $('start').onclick = () => setMode(true);
+  $('sizes').onclick = (e) => { const b = e.target.closest('.row'); if (b) { state = S.resize(state, b.dataset.size); update(); } };
+  $('swatches').onclick = (e) => { const b = e.target.closest('[data-hex]'); if (b) { state.color = b.dataset.hex; update(); } };
+  $('walls').onclick = (e) => { const b = e.target.closest('[data-wall]'); if (b) setWall(b.dataset.wall); };
+  $('hexin').oninput = (e) => { const v = e.target.value.trim(); const hex = v.startsWith('#') ? v : '#' + v; if (/^#[0-9a-f]{6}$/i.test(hex)) setWall(hex); };
+  $('tune').onclick = (e) => {
+    const d = e.target.closest('[data-dir]');
+    const st = e.target.closest('[data-step]');
+    if (d) state.dirs[sel] = d.dataset.dir;
+    if (st) sel = Math.max(0, Math.min(state.dirs.length - 1, sel + +st.dataset.step));
+    if (d || st) update();
+  };
+  $('list').onclick = (e) => { const it = e.target.closest('.item'); if (it) toggle(+it.dataset.i); };
+  $('reset').onclick = () => { Story3D.setProgress(state, []); paint3d({ burst: assembling }); renderBuild(); };
+  $('print').onclick = () => S.printBuildSheet(state);
+  addEventListener('keydown', (e) => {
+    if (!assembling || e.target.tagName === 'INPUT') return;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); place(); }
+    if (e.key === 'Backspace') { e.preventDefault(); undo(); }
+    if (e.key === 'Escape') setMode(false);
+  });
+  new ResizeObserver(placeDim).observe($('stage'));
+  update();
+</script>
+</body>
+</html>

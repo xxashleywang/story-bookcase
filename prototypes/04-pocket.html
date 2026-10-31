@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pocket Story — plan your Story Bookcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+  :root { --mint: #6FDC7F; --mint-soft: #DDF7E1; --deep: #0B3D2E; --bg: #F3FBF4; --muted: #5E7A6E; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body { background: #CFEFD5; font: 16px/1.4 'Bricolage Grotesque', system-ui, sans-serif; color: var(--deep); display: flex; justify-content: center; }
+  .app { width: 100%; max-width: 430px; height: 100%; max-height: 932px; background: var(--bg); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  @media (min-width: 600px) { body { align-items: center; } .app { height: 92vh; border-radius: 44px; box-shadow: 0 30px 80px #0B3D2E33, 0 0 0 10px var(--deep); } }
+  .top { display: flex; align-items: center; justify-content: space-between; padding: 22px 22px 8px; }
+  .logo { font-weight: 800; font-size: 22px; letter-spacing: -0.03em; }
+  .logo i { font-style: normal; background: var(--mint); padding: 0 6px; border-radius: 8px; }
+  .pill { display: flex; background: var(--mint-soft); border-radius: 999px; padding: 4px; }
+  .pill button { border: 0; background: none; font: 600 14px 'Bricolage Grotesque', system-ui, sans-serif; padding: 8px 14px; border-radius: 999px; color: var(--deep); cursor: pointer; }
+  .pill button[aria-pressed="true"] { background: var(--deep); color: #fff; }
+
+  .panel { flex: 1; overflow: auto; display: none; padding: 0 22px 20px; }
+  .panel.on { display: block; }
+  #p-shelves.on { display: grid; grid-template-rows: 1fr auto; }
+  .stage { min-height: 0; touch-action: pan-y; display: flex; flex-direction: column; }
+  #elev { width: 100%; flex: 1; min-height: 320px; display: block; }
+  .swipehint { text-align: center; font-size: 13px; color: var(--muted); padding-top: 4px; }
+  .pad { background: #fff; border-radius: 28px; padding: 16px; box-shadow: 0 6px 20px #0B3D2E14; margin-top: 8px; }
+  .pad-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .pad-head b { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+  .nav { display: flex; gap: 8px; }
+  .nav button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--mint-soft); font-size: 18px; cursor: pointer; color: var(--deep); }
+  .dpad { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 54px); gap: 8px; }
+  .dpad button { border: 0; border-radius: 18px; background: var(--mint-soft); font: 600 15px 'Bricolage Grotesque', system-ui, sans-serif; color: var(--deep); cursor: pointer; }
+  .dpad button[aria-pressed="true"] { background: var(--mint); box-shadow: inset 0 -3px 0 #0B3D2E33; }
+  .dpad .c { background: none; display: flex; align-items: center; justify-content: center; }
+  .dpad .B { grid-column: 2; grid-row: 1; } .dpad .L { grid-column: 1; grid-row: 2; } .dpad .R { grid-column: 3; grid-row: 2; } .dpad .F { grid-column: 2; grid-row: 3; } .dpad .c { grid-column: 2; grid-row: 2; }
+
+  h2 { font-weight: 800; font-size: 28px; letter-spacing: -0.03em; margin: 10px 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
+  .colors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .color { border: 0; background: #fff; border-radius: 22px; padding: 10px 10px 12px; font: 600 14px 'Bricolage Grotesque', system-ui, sans-serif; color: var(--deep); cursor: pointer; box-shadow: 0 4px 14px #0B3D2E12; }
+  .color i { display: block; aspect-ratio: 1; border-radius: 16px; margin-bottom: 8px; border: 1px solid #0001; }
+  .color[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--deep); }
+  .customrow { display: flex; align-items: center; gap: 14px; background: #fff; border-radius: 22px; padding: 12px 14px; margin-top: 14px; }
+  .customrow input { width: 52px; height: 52px; border: 0; border-radius: 14px; padding: 0; background: none; }
+  .customrow small { display: block; color: var(--muted); font-size: 12px; }
+  .patterns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .pat { border: 0; background: #fff; border-radius: 22px; padding: 8px 6px 10px; font: 600 13px 'Bricolage Grotesque', system-ui, sans-serif; color: var(--deep); cursor: pointer; box-shadow: 0 4px 14px #0B3D2E12; }
+  .pat svg { width: 100%; height: 150px; display: block; }
+
+  .step { background: #fff; border-radius: 28px; padding: 22px; text-align: center; box-shadow: 0 6px 20px #0B3D2E14; }
+  .step .count { font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .step .big { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; margin: 4px 0; }
+  .step .glyph svg { width: 160px; height: 160px; }
+  .progress { height: 10px; background: var(--mint-soft); border-radius: 99px; overflow: hidden; margin: 16px 0; }
+  .progress i { display: block; height: 100%; background: var(--mint); transition: width .25s; }
+  .stepnav { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+  .stepnav button, .wide { border: 0; border-radius: 18px; height: 56px; font: 700 17px 'Bricolage Grotesque', system-ui, sans-serif; cursor: pointer; }
+  .stepnav .back { background: var(--mint-soft); color: var(--deep); }
+  .stepnav .next, .wide { background: var(--deep); color: #fff; }
+  .wide { width: 100%; margin-top: 12px; }
+  .wide.ghost { background: var(--mint-soft); color: var(--deep); }
+
+  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 12px calc(12px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid #0B3D2E14; }
+  .tabs button { border: 0; background: none; font: 600 12px 'Bricolage Grotesque', system-ui, sans-serif; color: var(--muted); padding: 6px 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .tabs button span { font-size: 20px; width: 52px; height: 30px; display: grid; place-items: center; border-radius: 999px; }
+  .tabs button[aria-selected="true"] { color: var(--deep); }
+  .tabs button[aria-selected="true"] span { background: var(--mint); }
+  .toast { position: absolute; left: 50%; bottom: 100px; transform: translateX(-50%); background: var(--deep); color: #fff; padding: 10px 16px; border-radius: 99px; font-size: 14px; opacity: 0; transition: .2s; pointer-events: none; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="logo">Pocket <i>Story</i></div>
+    <div class="pill" id="size"></div>
+  </div>
+
+  <section class="panel on" id="p-shelves">
+    <div class="stage" id="stage">
+      <svg id="elev" role="img" aria-label="Front view of the bookcase"></svg>
+      <div class="swipehint">Tap a shelf · swipe it sideways to spin</div>
+    </div>
+    <div class="pad">
+      <div class="pad-head">
+        <b id="shelfTitle"></b>
+        <div class="nav"><button id="down" aria-label="Shelf below">↓</button><button id="up" aria-label="Shelf above">↑</button></div>
+      </div>
+      <div class="dpad" id="dpad">
+        <button class="B" data-dir="B">Back</button>
+        <button class="L" data-dir="L">Left</button>
+        <div class="c" id="mini"></div>
+        <button class="R" data-dir="R">Right</button>
+        <button class="F" data-dir="F">Front</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-color">
+    <h2>Pick a finish</h2>
+    <p class="sub">The six colors Herman Miller sells right now.</p>
+    <div class="colors" id="colors"></div>
+    <label class="customrow"><input type="color" id="picker"><span><b>Custom color</b><small>Just for fun — Herman Miller doesn't make this one.</small></span></label>
+  </section>
+
+  <section class="panel" id="p-patterns">
+    <h2>Quick starts</h2>
+    <p class="sub">Tap to apply, then fine-tune shelf by shelf.</p>
+    <div class="patterns" id="patterns"></div>
+  </section>
+
+  <section class="panel" id="p-build">
+    <h2>Build mode</h2>
+    <p class="sub">Keep this open while you assemble. One shelf at a time, starting from the bottom.</p>
+    <div class="step" id="step"></div>
+    <button class="wide" id="share">Copy link to this design</button>
+    <button class="wide ghost" id="print">Print build sheet</button>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="shelves" aria-selected="true"><span>⇅</span>Shelves</button>
+    <button role="tab" data-tab="color"><span>●</span>Color</button>
+    <button role="tab" data-tab="patterns"><span>✦</span>Patterns</button>
+    <button role="tab" data-tab="build"><span>✓</span>Build</button>
+  </nav>
+  <div class="toast" id="toast"></div>
+</div>
+<script src="shared/story-core.js"></script>
+<script>
+  const S = Story;
+  let state = S.readHash()[0] || S.createState('standard', '#E2B062', S.PRESETS[3].make(9));
+  let sel = 0;
+  let step = 0;
+  const $ = (id) => document.getElementById(id);
+
+  function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200); }
+
+  function renderShelves() {
+    S.renderElevation($('elev'), state, { selected: sel, accent: '#2DBF4A', books: true, onSelect: (i) => { sel = i; renderShelves(); } });
+    $('shelfTitle').textContent = `Shelf ${sel + 1} of ${state.dirs.length}`;
+    document.querySelectorAll('#dpad button[data-dir]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.dir === state.dirs[sel]));
+    $('mini').innerHTML = S.planGlyph(state.dirs[sel], '#0B3D2E', 48);
+  }
+
+  function renderStep() {
+    const list = S.buildList(state);
+    step = Math.min(step, list.length);
+    if (step === list.length) {
+      $('step').innerHTML = `<div class="count">All ${list.length} shelves placed</div><div class="big">Done 🎉</div>
+        <p class="sub">Now anchor it to the wall with the included strap.</p>
+        <div class="progress"><i style="width:100%"></i></div>
+        <div class="stepnav"><button class="back" data-s="-1">Back</button><button class="next" data-s="reset">Start over</button></div>`;
+      return;
+    }
+    const r = list[step];
+    $('step').innerHTML = `<div class="count">Shelf ${r.n} of ${list.length} · from the bottom</div>
+      <div class="big">Face it ${r.label.toLowerCase()}</div>
+      <div class="glyph">${S.planGlyph(r.dir, '#0B3D2E', 160)}</div>
+      <p class="sub">Seen from above, standing where the room is.</p>
+      <div class="progress"><i style="width:${(step / list.length) * 100}%"></i></div>
+      <div class="stepnav"><button class="back" data-s="-1" ${step === 0 ? 'disabled' : ''}>Back</button><button class="next" data-s="1">Placed it — next</button></div>`;
+  }
+
+  function update() {
+    sel = Math.min(sel, state.dirs.length - 1);
+    S.writeHash(state);
+    renderShelves();
+    renderStep();
+    document.querySelectorAll('#size button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.size === state.size));
+    document.querySelectorAll('.color').forEach((b) => b.setAttribute('aria-pressed', b.dataset.hex.toLowerCase() === state.color.toLowerCase()));
+    $('picker').value = state.color;
+    $('patterns').innerHTML = '';
+    S.PRESETS.forEach((p) => {
+      const b = document.createElement('button');
+      b.className = 'pat';
+      const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      S.renderElevation(s, S.createState(state.size, state.color, p.make(state.dirs.length)));
+      b.appendChild(s);
+      b.append(p.name);
+      b.onclick = () => { state.dirs = p.make(state.dirs.length); update(); showTab('shelves'); toast(`${p.name} applied`); };
+      $('patterns').appendChild(b);
+    });
+  }
+
+  function showTab(name) {
+    document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === name));
+    document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('on', p.id === 'p-' + name));
+  }
+
+  $('size').innerHTML = Object.values(S.SIZES).map((s) => `<button data-size="${s.id}">${s.label}</button>`).join('');
+  $('size').onclick = (e) => { const b = e.target.closest('button'); if (b) { state = S.resize(state, b.dataset.size); update(); } };
+  $('colors').innerHTML = S.COLORS.map((c) => `<button class="color" data-hex="${c.hex}"><i style="background:${c.hex}"></i>${c.name}</button>`).join('');
+  $('colors').onclick = (e) => { const b = e.target.closest('.color'); if (b) { state.color = b.dataset.hex; update(); } };
+  $('picker').oninput = (e) => { state.color = e.target.value.toUpperCase(); update(); };
+  $('dpad').onclick = (e) => { const b = e.target.closest('button[data-dir]'); if (b) { state.dirs[sel] = b.dataset.dir; update(); } };
+  $('up').onclick = () => { sel = Math.min(sel + 1, state.dirs.length - 1); renderShelves(); };
+  $('down').onclick = () => { sel = Math.max(sel - 1, 0); renderShelves(); };
+  document.querySelector('.tabs').onclick = (e) => { const b = e.target.closest('button'); if (b) showTab(b.dataset.tab); };
+  $('step').onclick = (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    step = b.dataset.s === 'reset' ? 0 : Math.max(0, step + Number(b.dataset.s));
+    renderStep();
+  };
+
+  let swipe = null;
+  $('stage').addEventListener('pointerdown', (e) => {
+    const r = e.target.closest('rect[data-i]');
+    if (r) swipe = { i: +r.dataset.i, x: e.clientX };
+  });
+  $('stage').addEventListener('pointerup', (e) => {
+    if (!swipe) return;
+    const dx = e.clientX - swipe.x;
+    if (Math.abs(dx) > 36) {
+      sel = swipe.i;
+      state.dirs[sel] = S.rotate(state.dirs[sel], dx > 0 ? 1 : -1);
+      update();
+    }
+    swipe = null;
+  });
+
+  $('share').onclick = async () => { const r = await S.share(state); toast(r.copied ? 'Link copied' : r.url); };
+  $('print').onclick = () => S.printBuildSheet(state);
+  update();
+</script>
+</body>
+</html>

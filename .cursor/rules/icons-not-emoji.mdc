@@ -1,0 +1,6 @@
+---
+description: Use SVG icons, never emoji, in this project's UI
+alwaysApply: true
+---
+
+Never use emoji anywhere in this project (UI text, buttons, labels, toasts, placeholders, docs shown to users). Use inline SVG icons instead, stroke-based to match the existing set (see the `ICON` map in `prototypes/v3/g-playroom.html`). This also applies to emoji-like symbols used as icons (✕, ✓, ⚙, arrows): draw them as SVG.

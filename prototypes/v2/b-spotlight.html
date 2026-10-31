@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story — Spotlight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #111; --glow: #333; --text: #eee; --muted: #999; --line: #ffffff1a; --chip: #ffffff0f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 Manrope, system-ui, sans-serif; transition: background .6s, color .6s; }
+  .glow { position: fixed; inset: 0; background: radial-gradient(42% 60% at 50% 62%, var(--glow) 0%, transparent 70%); transition: background .6s; pointer-events: none; }
+  .bigname { position: fixed; left: 0; right: 0; top: 50%; transform: translateY(-58%); text-align: center; font-weight: 200; font-size: clamp(120px, 19vw, 360px); letter-spacing: -0.06em; line-height: 1; color: var(--text); opacity: 0.06; pointer-events: none; white-space: nowrap; transition: color .6s; }
+  #hero { position: fixed; inset: 0 0 0 0; }
+
+  .top { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 26px 40px; z-index: 2; pointer-events: none; }
+  .top > * { pointer-events: auto; }
+  .word { font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; font-size: 13px; }
+  .buy { display: flex; align-items: center; gap: 18px; font-size: 14px; color: var(--muted); }
+  .buy a { color: var(--bg); background: var(--text); text-decoration: none; padding: 10px 18px; border-radius: 999px; font-weight: 500; transition: background .6s, color .6s; }
+
+  .left { position: fixed; left: 40px; top: 50%; transform: translateY(-50%); z-index: 2; width: 260px; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .pats { display: flex; flex-direction: column; gap: 2px; }
+  .pats button { background: none; border: 0; color: var(--muted); font: 300 22px Manrope, sans-serif; text-align: left; padding: 4px 0; cursor: pointer; letter-spacing: -0.01em; transition: color .2s, padding .2s; }
+  .pats button:hover { color: var(--text); }
+  .pats button.on { color: var(--text); padding-left: 14px; position: relative; }
+  .pats button.on::before { content: ''; position: absolute; left: 0; top: 50%; width: 6px; height: 1px; background: var(--text); }
+
+  .right { position: fixed; right: 40px; top: 50%; transform: translateY(-50%); z-index: 2; width: 240px; text-align: right; }
+  .stat { margin-bottom: 26px; }
+  .stat b { display: block; font-weight: 200; font-size: 44px; letter-spacing: -0.04em; line-height: 1; }
+  .stat span { font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  .dock { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 18px; padding: 10px 12px 10px 20px; background: var(--chip); border: 1px solid var(--line); border-radius: 999px; backdrop-filter: blur(20px) saturate(1.4); }
+  .sizes { display: flex; gap: 2px; background: #00000033; padding: 3px; border-radius: 999px; }
+  .sizes button { background: none; border: 0; color: var(--muted); font: 500 13px Manrope, sans-serif; padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+  .sizes button.on { background: var(--text); color: var(--bg); }
+  .sws { display: flex; gap: 8px; align-items: center; }
+  .sw { width: 26px; height: 26px; border-radius: 50%; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px #ffffff26; transition: transform .2s; }
+  .sw.on { transform: scale(1.25); box-shadow: inset 0 0 0 1px #ffffff26, 0 0 0 2px var(--bg), 0 0 0 3px var(--text); }
+  .pick { width: 26px; height: 26px; border-radius: 50%; position: relative; overflow: hidden; background: conic-gradient(#e88, #ec8, #8d9, #8bd, #b9e, #e88); opacity: .8; }
+  .pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .sep { width: 1px; height: 26px; background: var(--line); }
+  .go { background: var(--text); color: var(--bg); border: 0; border-radius: 999px; padding: 10px 18px; font: 500 14px Manrope, sans-serif; cursor: pointer; transition: background .6s, color .6s; }
+
+  .tune { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); z-index: 3; display: none; align-items: center; gap: 12px; padding: 8px 8px 8px 18px; background: var(--chip); border: 1px solid var(--line); border-radius: 999px; backdrop-filter: blur(20px); font-size: 13px; }
+  .tune.on { display: flex; }
+  .tune button { background: none; border: 0; color: var(--muted); font: 500 13px Manrope, sans-serif; padding: 7px 12px; border-radius: 999px; cursor: pointer; }
+  .tune button.on { background: #ffffff1f; color: var(--text); }
+  .hint { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); font-size: 12px; color: var(--muted); z-index: 2; letter-spacing: 0.04em; }
+
+  .build { position: fixed; inset: 0; z-index: 10; background: var(--bg); display: none; grid-template-columns: 1fr 1fr; transition: background .6s; }
+  .build.on { display: grid; }
+  .build .vis { position: relative; }
+  .build .vis #mini { position: absolute; inset: 0; }
+  .build .side { display: flex; flex-direction: column; justify-content: center; padding: 0 9vw 0 2vw; }
+  .build .count { font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
+  .build h2 { font-weight: 200; font-size: 88px; letter-spacing: -0.05em; line-height: 1; margin: 14px 0 22px; }
+  .build p { color: var(--muted); margin: 0 0 30px; max-width: 380px; }
+  .segs { display: flex; gap: 4px; margin-bottom: 34px; }
+  .segs i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); cursor: pointer; }
+  .segs i.done { background: var(--text); }
+  .segs i.cur { background: var(--muted); }
+  .actions { display: flex; gap: 10px; align-items: center; }
+  .ghost { background: none; color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 10px 18px; font: 500 14px Manrope, sans-serif; cursor: pointer; }
+  .close { position: absolute; top: 26px; right: 40px; }
+  .print { margin-left: auto; color: var(--muted); background: none; border: 0; font: 400 13px Manrope, sans-serif; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="bigname" id="bigname"></div>
+<div id="hero"></div>
+
+<div class="top"><div class="word">Story</div><div class="buy"><span id="price"></span><a target="_blank" rel="noopener" href="https://store.hermanmiller.com/furniture-shelving-storage-bookcases/story-bookcase/2197172.html?lang=en_US">Buy at Herman Miller</a></div></div>
+
+<div class="left"><div class="eyebrow">Pattern</div><div class="pats" id="pats"></div></div>
+<div class="right" id="stats"></div>
+
+<div class="hint" id="hint">Drag to turn · click any shelf to change it</div>
+<div class="tune" id="tune"></div>
+
+<div class="dock">
+  <div class="sizes" id="sizes"></div>
+  <div class="sep"></div>
+  <div class="sws" id="sws"></div>
+  <div class="sep"></div>
+  <button class="go" id="open">Build mode</button>
+</div>
+
+<div class="build" id="build">
+  <div class="vis"><div id="mini"></div></div>
+  <div class="side" id="step"></div>
+  <button class="ghost close" id="close">Close</button>
+</div>
+
+<script src="../shared/story-core.js"></script>
+<script src="shared/story-v2.js"></script>
+<script>
+  const S = Story;
+  let state = S.readHash()[0] || S.createState('tall', '#6E4C42', S.PRESETS[4].make(11));
+  let sel = -1;
+  let step = 0;
+  const $ = (id) => document.getElementById(id);
+
+  const hero = Story3D.mount($('hero'), { state, fit: 0.66, floor: 0.82, turntable: true, shadow: 0.55, accent: '#fff', onSelect: (i) => { sel = i; update(); } });
+  const mini = Story3D.mount($('mini'), { fit: 0.8, floor: 0.9, shadow: 0.55, accent: '#fff', yaw: -30, tilt: -14 });
+
+  function theme() {
+    const c = state.color;
+    const light = S.luminance(c) > 0.6;
+    const r = document.documentElement.style;
+    r.setProperty('--bg', S.shade(c, light ? -0.82 : -0.84));
+    r.setProperty('--glow', S.shade(c, light ? -0.45 : -0.35));
+    r.setProperty('--text', S.shade(c, 0.88));
+    r.setProperty('--muted', S.shade(c, 0.35) + 'B3');
+  }
+
+  function update() {
+    S.writeHash(state);
+    theme();
+    hero.update(state, { selected: sel });
+    const sz = S.SIZES[state.size];
+    $('bigname').textContent = S.colorName(state.color);
+    $('price').textContent = `$${sz.price}`;
+    $('stats').innerHTML = `<div class="stat"><b>${sz.height}"</b><span>Height</span></div><div class="stat"><b>${sz.shelves}</b><span>Shelves</span></div><div class="stat"><b>15¾"</b><span>Footprint</span></div>`;
+    const code = state.dirs.join('');
+    $('pats').innerHTML = S.PRESETS.map((p) => `<button data-p="${p.id}" class="${p.make(state.dirs.length).join('') === code ? 'on' : ''}">${p.name}</button>`).join('') +
+      (S.PRESETS.some((p) => p.make(state.dirs.length).join('') === code) ? '' : '<button class="on">Your own</button>');
+    $('sizes').innerHTML = Object.values(S.SIZES).map((s) => `<button data-size="${s.id}" class="${s.id === state.size ? 'on' : ''}">${s.label}</button>`).join('');
+    $('sws').innerHTML = S.COLORS.map((c) => `<button class="sw ${c.hex.toLowerCase() === state.color.toLowerCase() ? 'on' : ''}" data-hex="${c.hex}" title="${c.name}" style="background:${c.hex}"></button>`).join('') +
+      `<label class="pick" title="Custom color (not a Herman Miller finish)"><input type="color" id="picker" value="${state.color}"></label>`;
+    $('picker').oninput = (e) => { state.color = e.target.value.toUpperCase(); update(); };
+    $('tune').classList.toggle('on', sel >= 0);
+    $('hint').style.display = sel >= 0 ? 'none' : '';
+    if (sel >= 0) $('tune').innerHTML = `Shelf ${sel + 1}` + S.DIRS.map((d) => `<button data-dir="${d}" class="${state.dirs[sel] === d ? 'on' : ''}">${S.DIR_LABEL[d]}</button>`).join('') + '<button data-x="1">✕</button>';
+    if ($('build').classList.contains('on')) renderStep();
+  }
+
+  function renderStep() {
+    const prog = Story3D.getProgress(state);
+    const n = prog.length;
+    step = Math.max(0, Math.min(step, n));
+    mini.update(state, { selected: step < n ? step : -1 });
+    const segs = prog.map((d, i) => `<i data-s="${i}" class="${d ? 'done' : i === step ? 'cur' : ''}"></i>`).join('');
+    if (step >= n) {
+      $('step').innerHTML = `<div class="count">${n} of ${n}</div><h2>All set.</h2><p>Every shelf is placed. Anchor it to the wall with the strap in the box.</p><div class="segs">${segs}</div>
+        <div class="actions"><button class="ghost" data-a="back">Back</button><button class="go" data-a="restart">Start over</button><button class="print" data-a="print">Print build sheet</button></div>`;
+      return;
+    }
+    $('step').innerHTML = `<div class="count">Shelf ${step + 1} of ${n} · from the bottom</div><h2>Faces<br>${S.DIR_LABEL[state.dirs[step]].toLowerCase()}.</h2>
+      <p>Looking down from above, with the room in front of you. The highlighted shelf is the one to place.</p><div class="segs">${segs}</div>
+      <div class="actions"><button class="ghost" data-a="back" ${step === 0 ? 'disabled' : ''}>Back</button><button class="go" data-a="next">Placed it</button><button class="print" data-a="print">Print build sheet</button></div>`;
+  }
+
+  $('pats').onclick = (e) => { const b = e.target.closest('[data-p]'); if (b) { state.dirs = S.PRESETS.find((p) => p.id === b.dataset.p).make(state.dirs.length); update(); } };
+  $('sizes').onclick = (e) => { const b = e.target.closest('button'); if (b) { state = S.resize(state, b.dataset.size); sel = -1; update(); } };
+  $('sws').onclick = (e) => { const b = e.target.closest('.sw'); if (b) { state.color = b.dataset.hex; update(); } };
+  $('tune').onclick = (e) => {
+    const d = e.target.closest('[data-dir]');
+    if (d) state.dirs[sel] = d.dataset.dir;
+    if (e.target.closest('[data-x]')) sel = -1;
+    update();
+  };
+  $('open').onclick = () => {
+    const prog = Story3D.getProgress(state);
+    step = prog.indexOf(false) === -1 ? prog.length : prog.indexOf(false);
+    $('build').classList.add('on');
+    renderStep();
+  };
+  $('close').onclick = () => $('build').classList.remove('on');
+  $('step').onclick = (e) => {
+    const seg = e.target.closest('[data-s]');
+    const a = e.target.closest('[data-a]');
+    const prog = Story3D.getProgress(state);
+    if (seg) step = +seg.dataset.s;
+    else if (!a) return;
+    else if (a.dataset.a === 'next') { prog[step] = true; Story3D.setProgress(state, prog); step++; }
+    else if (a.dataset.a === 'back') { step--; prog[step] = false; Story3D.setProgress(state, prog); }
+    else if (a.dataset.a === 'restart') { Story3D.setProgress(state, []); step = 0; }
+    else if (a.dataset.a === 'print') return S.printBuildSheet(state);
+    renderStep();
+  };
+  update();
+</script>
+</body>
+</html>
