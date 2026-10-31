@@ -22,6 +22,7 @@ import {
 } from '@workspace/api-client-react';
 import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } from 'wouter';
 import NotFound from '@/pages/not-found';
+import { ColorPicker } from '@/components/color-picker';
 
 declare global {
   interface Window {
@@ -57,13 +58,21 @@ const FLOORS = [
   { id: 'oat', name: 'Oat', kind: 'Carpet', bg: carpet('#DDD0BC', '#CDBFA9') },
   { id: 'moss', name: 'Moss', kind: 'Carpet', bg: carpet('#A3AA8C', '#8E9577') },
 ];
+// Older shared links may still reference retired floors, so FLOORS stays complete for lookups.
+const FLOOR_CHOICES = ['pale', 'walnut', 'ash', 'oat'].map((id) => FLOORS.find((f) => f.id === id)!);
+const CUSTOM_FLOOR = { id: 'custom', name: 'Custom', kind: 'Laminate', bg: '' };
+const kindLabel = (kind: string) => (kind === 'Carpet' ? 'Carpet' : 'Wood');
+const RAINBOW = 'conic-gradient(#f3c4b4,#f0e2a8,#bfe0c4,#b8d3ea,#d5c3e8,#f3c4b4)';
+const FINISH_PRESETS = ['#F4F1EA', '#D9CBB4', '#C79A5B', '#B5543C', '#E58A6B', '#7E8A6A', '#3F5B4F', '#5C7A99', '#2F3A56', '#7A5C82', '#4A3B33', '#1F1F22'];
+const WALL_PRESETS = ['#FBF8F2', '#F2E6D8', '#EFD4C8', '#F4DDA4', '#DDE7CF', '#BFD8C7', '#CFE0EE', '#A9C1D9', '#DCD3EA', '#C9B8D8', '#556B5D', '#2F3346'];
+const FLOOR_PRESETS = ['#EAD8BC', '#D9BC92', '#B98D5E', '#8C6648', '#5E4130', '#CBC5BC', '#9C968C', '#DDD0BC', '#B7A58C', '#A3AA8C', '#8A9AA8', '#4B4A48'];
 const LOOKS = [
   { name: 'Sunday spiral', color: '#E2B062', pattern: 'spiral', wall: '#CFE0EE', floor: 'pale' },
   { name: 'Moody corner', color: '#3C3C42', pattern: 'corner', wall: '#2F3346', floor: 'walnut' },
   { name: 'Soft pinwheel', color: '#E4E8E7', pattern: 'pairs', wall: '#EBD3CF', floor: 'oat' },
-  { name: 'Garden stack', color: '#8E9284', pattern: 'alternate', wall: '#D3E8DA', floor: 'honey' },
+  { name: 'Garden stack', color: '#8E9284', pattern: 'alternate', wall: '#D3E8DA', floor: 'pale' },
   { name: 'Wine bar', color: '#6E4C42', pattern: 'sides', wall: '#F6E7B8', floor: 'ash' },
-  { name: 'Quiet lines', color: '#A8967E', pattern: 'front', wall: '#F6F4F0', floor: 'white' },
+  { name: 'Quiet lines', color: '#A8967E', pattern: 'front', wall: '#F6F4F0', floor: 'ash' },
 ];
 const VIEWS = [['3/4', -32, -10], ['Front', 0, -4], ['Side', -90, -4], ['Top', -20, -62]] as const;
 const directions: Record<string, { label: string; icon: typeof ArrowDown }> = {
@@ -202,7 +211,6 @@ function Configurator({
   const [note, setNote] = useState('');
   const [rolled, setRolled] = useState(false);
   const [rolling, setRolling] = useState(false);
-  const [customFloorColor, setCustomFloorColor] = useState('#B9A48A');
   const [viewIndex, setViewIndex] = useState(0);
   const [completed, setCompleted] = useState<boolean[]>(() => {
     try {
@@ -220,6 +228,7 @@ function Configurator({
   const currentPattern = pattern?.name || (rolled ? 'Random roll' : 'Your own');
   const activeColor = COLORS.find((c) => c.hex.toLowerCase() === scene.model.color.toLowerCase());
   const floorIsCustom = scene.floor.id === 'custom';
+  const wallIsCustom = !WALLS.some(([, hex]) => hex.toLowerCase() === scene.wall.toLowerCase());
   const progress = useMemo(
     () => completed.length === scene.model.dirs.length ? completed : Array.from({ length: scene.model.dirs.length }, (_, i) => !!completed[i]),
     [completed, scene.model.dirs.length],
@@ -342,18 +351,25 @@ function Configurator({
         </section>
         <section className="section"><h2>Finish <small>{activeColor?.name || `Custom ${scene.model.color}`}</small></h2>
           <div className="color-dots">{COLORS.map((c) => <button key={c.hex} aria-label={`${c.name} finish`} title={c.name} className={`color-dot ${scene.model.color.toLowerCase() === c.hex.toLowerCase() ? 'active' : ''}`} style={{ background: c.hex }} onClick={() => updateModel((m) => ({ ...m, color: c.hex }))} />)}
-            <label className="color-input" title="Custom color"><input aria-label="Custom finish color" type="color" value={scene.model.color} onChange={(e) => updateModel((m) => ({ ...m, color: e.target.value.toUpperCase() }))} /></label></div>
-        </section>
-        <section className="section"><h2>Paint your wall <small>{WALLS.find((w) => w[1] === scene.wall)?.[0] || scene.wall}</small></h2>
-          <div className="swatches">{WALLS.map(([name, hex]) => <button key={hex} className={`swatch ${scene.wall === hex ? 'active' : ''}`} onClick={() => setWall(hex)}><i style={{ background: hex }} />{name}</button>)}
-            <label className="swatch"><i style={{ background: 'conic-gradient(#f3c4b4,#f0e2a8,#bfe0c4,#b8d3ea,#d5c3e8,#f3c4b4)' }} />Make your own<input aria-label="Custom wall color" type="color" value={scene.wall} onChange={(e) => setWall(e.target.value)} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer' }} /></label></div>
-        </section>
-        <section className="section"><h2>Pick your floor <small>{scene.floor.name} · {scene.floorKind}</small></h2>
-          <div className="floor-grid">{FLOORS.map((f) => <button key={f.id} className={`floor-swatch ${scene.floor.id === f.id ? 'active' : ''}`} onClick={() => setFloor(f)}><i style={{ background: f.bg }} />{f.name}<small>{f.kind}</small></button>)}
-            <label className={`floor-swatch ${floorIsCustom ? 'active' : ''}`}><i style={{ background: (scene.floorKind === 'Carpet' ? carpet : plank)(scene.customFloorColor, S.shade(scene.customFloorColor, -.08)) }} />Make your own<small>{floorIsCustom ? scene.floorKind : 'Any color'}</small>
-              <input aria-label="Custom floor color" type="color" value={scene.customFloorColor} onChange={(e) => { setCustomFloorColor(e.target.value); setFloor({ id:'custom',name:'Custom',kind:scene.floorKind,bg:e.target.value }, scene.floorKind, e.target.value); }} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer' }} /></label>
+            <ColorPicker title="Custom finish" value={scene.model.color} presets={FINISH_PRESETS} onChange={(hex) => updateModel((m) => ({ ...m, color: hex }))}
+              trigger={<button type="button" aria-label="Custom finish color" title="Custom color" className={`color-input ${!activeColor ? 'active' : ''}`} style={!activeColor ? { background: scene.model.color } : undefined} />} />
           </div>
-          {floorIsCustom && <div className="floor-type">Texture <div className="segment">{['Laminate','Carpet'].map((kind) => <button key={kind} className={scene.floorKind === kind ? 'active' : ''} onClick={() => setFloor(scene.floor, kind)}>{kind}</button>)}</div></div>}
+        </section>
+        <section className="section"><h2>Paint your wall <small>{WALLS.find((w) => w[1] === scene.wall)?.[0] || `Custom ${scene.wall.toUpperCase()}`}</small></h2>
+          <div className="swatches">{WALLS.map(([name, hex]) => <button key={hex} className={`swatch ${scene.wall === hex ? 'active' : ''}`} onClick={() => setWall(hex)}><i style={{ background: hex }} />{name}</button>)}
+            <ColorPicker title="Custom wall" value={scene.wall} presets={WALL_PRESETS} onChange={setWall}
+              trigger={<button type="button" className={`swatch ${wallIsCustom ? 'active' : ''}`}><i style={{ background: wallIsCustom ? scene.wall : RAINBOW }} />Make your own</button>} />
+          </div>
+        </section>
+        <section className="section"><h2>Pick your floor <small>{floorIsCustom ? 'Custom' : scene.floor.name} · {kindLabel(scene.floorKind)}</small></h2>
+          <div className="floor-grid">{FLOOR_CHOICES.map((f) => <button key={f.id} className={`floor-swatch ${scene.floor.id === f.id ? 'active' : ''}`} onClick={() => setFloor(f)}><i style={{ background: f.bg }} />{f.name}<small>{kindLabel(f.kind)}</small></button>)}
+            <ColorPicker title="Custom floor" value={scene.customFloorColor} presets={FLOOR_PRESETS}
+              onOpen={() => { if (!floorIsCustom) setFloor(CUSTOM_FLOOR, scene.floorKind === 'Carpet' ? 'Carpet' : 'Laminate', scene.customFloorColor); }}
+              onChange={(hex) => setFloor(CUSTOM_FLOOR, scene.floorKind === 'Carpet' ? 'Carpet' : 'Laminate', hex)}
+              trigger={<button type="button" className={`floor-swatch ${floorIsCustom ? 'active' : ''}`}><i style={{ background: floorIsCustom ? (scene.floorKind === 'Carpet' ? carpet : plank)(scene.customFloorColor, S.shade(scene.customFloorColor, -.08)) : RAINBOW }} />Make your own<small>{floorIsCustom ? kindLabel(scene.floorKind) : 'Any color'}</small></button>}>
+              <div className="tw-picker-texture"><span>Texture</span><div className="segment">{(['Laminate', 'Carpet'] as const).map((kind) => <button type="button" key={kind} className={scene.floorKind === kind ? 'active' : ''} onClick={() => setFloor(CUSTOM_FLOOR, kind, scene.customFloorColor)}>{kindLabel(kind)}</button>)}</div></div>
+            </ColorPicker>
+          </div>
         </section>
         <section className="section"><h2>Shelf pattern <small>{currentPattern}</small></h2>
           <div className="pattern-list">{S.PRESETS.map((p: any) => <button key={p.id} className={`pattern ${p.make(scene.model.dirs.length).join('') === scene.model.dirs.join('') ? 'active' : ''}`} onClick={() => choosePattern(p.id)}>{iconPlan(p.make(4)[1], 20)}{p.name}</button>)}
