@@ -95,7 +95,7 @@ function initialScene() {
     ? { id:'custom', name:'Custom', kind:floorKind, bg:(floorKind === 'Carpet' ? carpet : plank)(customHex, S.shade(customHex, -.08)) }
     : savedFloor;
   return {
-    model: parsed || S.createState('tall', '#E2B062'),
+    model: parsed || S.createState('tall', '#E2B062', S.PRESETS.find((p: any) => p.id === 'pairs').make(11)),
     wall: extras[1] ? `#${extras[1]}` : '#F6F4F0',
     floor: selectedFloor || FLOORS[0],
     floorKind,

@@ -22,7 +22,13 @@ for reference; their feature descriptions apply to those prototypes.
   in the host's secret manager. Never commit credentials or `.env` files.
   Uploaded photos and live database records are not stored in this repository.
 
-See [CHANGELOG.md](CHANGELOG.md) for the full-project synchronization scope,
+Fresh designs start with the **Pinwheel** arrangement in the Front view.
+Opening a shared room link preserves its saved arrangement. On loading, shelves
+gently twist into place from bottom to top in a single, roughly 0.9-second
+entrance. The animation respects reduced-motion settings, stops on model
+interaction, and does not change shelf directions or assembly progress.
+
+See [CHANGELOG.md](CHANGELOG.md) for recent changes, the full-project synchronization scope,
 history preservation, and validation results.
 
 ## Original Playroom prototype

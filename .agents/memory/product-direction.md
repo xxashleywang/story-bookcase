@@ -19,7 +19,7 @@ description: User-stated priorities and design preferences for the bookcase conf
 - Prioritize configuring individual shelves before physical assembly and room styling. Do not add permanent gesture instructions, tutorial modals, or repeated hover tooltips.
   **Why:** the user explicitly requested a self-explanatory editing experience without those instructional layers.
   **How to apply:** preserve this scope when revising the configurator; keep assembly tools intact and distinct from design selection.
-- The user wants less bold text so emphasis is clear, dislikes arrow icons on arrangement presets, wants Front as the default design view, and All front as the starting arrangement.
+- The user wants less bold text so emphasis is clear, dislikes arrow icons on arrangement presets, wants Front as the default design view, and Pinwheel as the starting arrangement.
   **Why:** the user explicitly gave these visual and interaction preferences.
   **How to apply:** use medium-weight routine controls, reserve stronger weights for emphasis, and use plain-language camera labels rather than “3/4”.
 - Keyboard editing should support progressing through shelves without returning to the pointer.
