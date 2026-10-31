@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story — Bento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #EEF2EC; --card: #FFFFFF; --deep: #10372B; --muted: #6E8279; --mint: #8FE3A0; --mint-soft: #E3F5E6; --hair: #10372B12; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--deep); font: 15px/1.45 'Bricolage Grotesque', system-ui, sans-serif; padding: 18px; }
+  .grid { height: calc(100vh - 36px); min-height: 760px; display: grid; gap: 14px; grid-template-columns: 1.25fr 1fr 1fr; grid-template-rows: auto 1fr 1fr; grid-template-areas: "top top top" "hero size color" "hero shelf build"; }
+  .tile { background: var(--card); border-radius: 28px; padding: 24px; position: relative; overflow: hidden; }
+  .top { grid-area: top; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 14px 24px; border-radius: 22px; }
+  .logo { font-weight: 700; font-size: 20px; letter-spacing: -0.03em; }
+  .logo i { font-style: normal; background: var(--mint); padding: 0 7px; border-radius: 9px; margin-left: 2px; }
+  .top .r { display: flex; gap: 10px; align-items: center; }
+  .btn { border: 0; border-radius: 999px; padding: 10px 18px; font: 600 14px 'Bricolage Grotesque', sans-serif; cursor: pointer; text-decoration: none; background: var(--mint-soft); color: var(--deep); }
+  .btn.dark { background: var(--deep); color: #fff; }
+  .label { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 14px; display: flex; justify-content: space-between; }
+  .label b { color: var(--deep); }
+
+  .hero { grid-area: hero; padding: 0; background: linear-gradient(180deg, #F7FAF6, #E6EFE6); }
+  #hero { position: absolute; inset: 0; }
+  .hero .meta { position: absolute; left: 26px; top: 24px; }
+  .hero .meta h1 { margin: 0; font-weight: 600; font-size: 36px; letter-spacing: -0.035em; line-height: 1; }
+  .hero .meta span { color: var(--muted); font-size: 14px; }
+  .hero .pats { position: absolute; left: 18px; right: 18px; bottom: 18px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .chip { border: 0; background: #FFFFFFCC; backdrop-filter: blur(8px); border-radius: 999px; padding: 8px 14px; font: 600 13px 'Bricolage Grotesque', sans-serif; color: var(--deep); cursor: pointer; }
+  .chip.on { background: var(--deep); color: #fff; }
+
+  .size { grid-area: size; display: flex; flex-direction: column; }
+  .sizes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: 1; }
+  .sz { border: 0; border-radius: 20px; background: var(--mint-soft); cursor: pointer; padding: 16px; text-align: left; display: flex; flex-direction: column; justify-content: flex-end; font: inherit; color: inherit; position: relative; }
+  .sz .bar { position: absolute; top: 16px; bottom: 64px; right: 18px; width: 8px; border-radius: 4px; background: #10372B14; display: flex; align-items: flex-end; }
+  .sz .bar i { width: 100%; border-radius: 4px; background: var(--deep); opacity: .35; }
+  .sz b { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+  .sz span { font-size: 13px; color: var(--muted); }
+  .sz.on { background: var(--deep); color: #fff; }
+  .sz.on span { color: #B9D6CB; }
+  .sz.on .bar { background: #ffffff22; } .sz.on .bar i { background: var(--mint); opacity: 1; }
+
+  .color { grid-area: color; }
+  .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .sw { aspect-ratio: 1; border-radius: 20px; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px #00000012; position: relative; }
+  .sw.on::after { content: '✓'; position: absolute; inset: 0; display: grid; place-items: center; font-size: 18px; color: #fff; text-shadow: 0 1px 4px #0006; }
+  .pick { aspect-ratio: 1; border-radius: 20px; position: relative; overflow: hidden; background: conic-gradient(#f4b6a6, #f1e09e, #b6e1bf, #afcde9, #d3bfeb, #f4b6a6); }
+  .pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .pick span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 20px; color: #fff; pointer-events: none; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 12px; }
+
+  .shelf { grid-area: shelf; display: grid; grid-template-columns: 1fr 150px; gap: 16px; }
+  .shelf .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .shelf .head b { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; }
+  .nav { display: flex; gap: 6px; }
+  .nav button { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--mint-soft); cursor: pointer; color: var(--deep); font-size: 16px; }
+  .dpad { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 46px); gap: 6px; }
+  .dpad button { border: 0; border-radius: 14px; background: var(--mint-soft); font: 600 13px 'Bricolage Grotesque', sans-serif; color: var(--deep); cursor: pointer; }
+  .dpad button.on { background: var(--mint); }
+  .dpad .c { display: grid; place-items: center; }
+  .dpad .B { grid-area: 1 / 2; } .dpad .L { grid-area: 2 / 1; } .dpad .R { grid-area: 2 / 3; } .dpad .F { grid-area: 3 / 2; } .dpad .c { grid-area: 2 / 2; }
+  .stack { display: flex; flex-direction: column-reverse; gap: 4px; height: 100%; min-height: 0; }
+  .stack button { border: 0; border-radius: 10px; background: var(--mint-soft); flex: 1; min-height: 0; max-height: 30px; font: 600 11px 'Bricolage Grotesque', sans-serif; color: var(--muted); cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+  .stack button.on { background: var(--deep); color: #fff; }
+
+  .build { grid-area: build; display: flex; flex-direction: column; }
+  .bt { display: grid; grid-template-columns: 96px 1fr; gap: 18px; align-items: center; }
+  .ring { width: 96px; height: 96px; }
+  .bt h3 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
+  .bt p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  .ticks { display: flex; gap: 5px; margin: 18px 0; }
+  .ticks button { flex: 1; height: 34px; border: 0; border-radius: 10px; background: var(--mint-soft); cursor: pointer; font: 600 11px 'Bricolage Grotesque', sans-serif; color: var(--muted); }
+  .ticks button.done { background: var(--deep); color: var(--mint); }
+  .ticks button.next { box-shadow: inset 0 0 0 2px var(--mint); color: var(--deep); }
+  .bact { display: flex; gap: 8px; margin-top: auto; }
+  .bact .btn { flex: 1; }
+</style>
+</head>
+<body>
+<div class="grid">
+  <div class="tile top">
+    <div class="logo">Story<i>planner</i></div>
+    <div class="r"><span id="price" style="color:var(--muted);font-weight:600"></span><a class="btn dark" target="_blank" rel="noopener" href="https://store.hermanmiller.com/furniture-shelving-storage-bookcases/story-bookcase/2197172.html?lang=en_US">Buy at Herman Miller</a></div>
+  </div>
+
+  <div class="tile hero">
+    <div id="hero"></div>
+    <div class="meta"><h1 id="title"></h1><span>Drag to turn · tap a shelf</span></div>
+    <div class="pats" id="pats"></div>
+  </div>
+
+  <div class="tile size"><div class="label">Height</div><div class="sizes" id="sizes"></div></div>
+
+  <div class="tile color"><div class="label">Finish <b id="cname"></b></div><div class="swatches" id="sws"></div><div class="note" id="cnote">The six finishes Herman Miller sells today.</div></div>
+
+  <div class="tile shelf">
+    <div>
+      <div class="head"><b id="stitle"></b><div class="nav"><button data-step="-1">↓</button><button data-step="1">↑</button></div></div>
+      <div class="dpad" id="dpad"></div>
+    </div>
+    <div class="stack" id="stack"></div>
+  </div>
+
+  <div class="tile build">
+    <div class="label">Build progress</div>
+    <div class="bt" id="bt"></div>
+    <div class="ticks" id="ticks"></div>
+    <div class="bact"><button class="btn dark" id="next">Mark next placed</button><button class="btn" id="print">Print sheet</button></div>
+  </div>
+</div>
+<script src="../shared/story-core.js"></script>
+<script src="shared/story-v2.js"></script>
+<script>
+  const S = Story;
+  let state = S.readHash()[0] || S.createState('standard', '#E2B062', S.PRESETS[3].make(9));
+  let sel = 0;
+  const $ = (id) => document.getElementById(id);
+  const hero = Story3D.mount($('hero'), { state, fit: 0.72, floor: 0.86, yaw: -30, tilt: -9, shadow: 0.22, accent: '#10372B', selected: sel, onSelect: (i) => { sel = i; update(); } });
+
+  function update() {
+    sel = Math.min(sel, state.dirs.length - 1);
+    S.writeHash(state);
+    hero.update(state, { selected: sel });
+    const sz = S.SIZES[state.size];
+    $('title').textContent = `${sz.label} · ${S.colorName(state.color)}`;
+    $('price').textContent = `$${sz.price}`;
+    const code = state.dirs.join('');
+    $('pats').innerHTML = S.PRESETS.map((p) => `<button class="chip ${p.make(state.dirs.length).join('') === code ? 'on' : ''}" data-p="${p.id}">${p.name}</button>`).join('');
+    $('sizes').innerHTML = Object.values(S.SIZES).map((s) => `<button class="sz ${s.id === state.size ? 'on' : ''}" data-size="${s.id}"><div class="bar"><i style="height:${(s.height / S.SIZES.tall.height) * 100}%"></i></div><b>${s.label}</b><span>${s.height}" · ${s.shelves} shelves · $${s.price}</span></button>`).join('');
+    $('cname').textContent = S.colorName(state.color);
+    $('sws').innerHTML = S.COLORS.map((c) => `<button class="sw ${c.hex.toLowerCase() === state.color.toLowerCase() ? 'on' : ''}" data-hex="${c.hex}" title="${c.name}" style="background:${c.hex}"></button>`).join('') +
+      `<label class="pick" title="Custom color"><input type="color" id="picker" value="${state.color}"><span>+</span></label>`;
+    $('picker').oninput = (e) => { state.color = e.target.value.toUpperCase(); update(); };
+    $('cnote').textContent = S.isCatalogColor(state.color) ? 'The six finishes Herman Miller sells today.' : 'Custom color — preview only, Herman Miller doesn’t make it.';
+    $('stitle').textContent = `Shelf ${sel + 1}`;
+    $('dpad').innerHTML = ['B', 'L', 'R', 'F'].map((d) => `<button class="${d} ${state.dirs[sel] === d ? 'on' : ''}" data-dir="${d}">${S.DIR_LABEL[d]}</button>`).join('') + `<div class="c">${S.planGlyph(state.dirs[sel], '#10372B', 40)}</div>`;
+    $('stack').innerHTML = state.dirs.map((d, i) => `<button class="${i === sel ? 'on' : ''}" data-i="${i}"><span>${i + 1}</span><span>${S.DIR_LABEL[d]}</span></button>`).join('');
+    renderBuild();
+  }
+
+  function renderBuild() {
+    const prog = Story3D.getProgress(state);
+    const done = prog.filter(Boolean).length;
+    const next = prog.indexOf(false);
+    const C = 2 * Math.PI * 40;
+    $('bt').innerHTML = `<svg class="ring" viewBox="0 0 96 96"><circle cx="48" cy="48" r="40" fill="none" stroke="#E3F5E6" stroke-width="10"/><circle cx="48" cy="48" r="40" fill="none" stroke="#10372B" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - done / prog.length)}" transform="rotate(-90 48 48)"/><text x="48" y="54" text-anchor="middle" font-size="20" font-weight="700" fill="#10372B" font-family="Bricolage Grotesque">${done}/${prog.length}</text></svg>
+      <div>${next === -1 ? '<h3>All placed.</h3><p>Anchor it to the wall with the included strap.</p>' : `<h3>Next: shelf ${next + 1}<br>faces ${S.DIR_LABEL[state.dirs[next]].toLowerCase()}</h3><p>Saved on this device — pick up where you left off.</p>`}</div>`;
+    $('ticks').innerHTML = prog.map((d, i) => `<button class="${d ? 'done' : ''} ${i === next ? 'next' : ''}" data-i="${i}">${i + 1}</button>`).join('');
+    $('next').disabled = next === -1;
+  }
+
+  $('pats').onclick = (e) => { const b = e.target.closest('.chip'); if (b) { state.dirs = S.PRESETS.find((p) => p.id === b.dataset.p).make(state.dirs.length); update(); } };
+  $('sizes').onclick = (e) => { const b = e.target.closest('.sz'); if (b) { state = S.resize(state, b.dataset.size); update(); } };
+  $('sws').onclick = (e) => { const b = e.target.closest('.sw'); if (b) { state.color = b.dataset.hex; update(); } };
+  $('dpad').onclick = (e) => { const b = e.target.closest('[data-dir]'); if (b) { state.dirs[sel] = b.dataset.dir; update(); } };
+  $('stack').onclick = (e) => { const b = e.target.closest('[data-i]'); if (b) { sel = +b.dataset.i; update(); } };
+  document.querySelector('.nav').onclick = (e) => { const b = e.target.closest('[data-step]'); if (b) { sel = Math.max(0, Math.min(state.dirs.length - 1, sel + +b.dataset.step)); update(); } };
+  $('ticks').onclick = (e) => {
+    const b = e.target.closest('[data-i]');
+    if (!b) return;
+    const prog = Story3D.getProgress(state);
+    prog[+b.dataset.i] = !prog[+b.dataset.i];
+    Story3D.setProgress(state, prog);
+    renderBuild();
+  };
+  $('next').onclick = () => {
+    const prog = Story3D.getProgress(state);
+    const n = prog.indexOf(false);
+    if (n === -1) return;
+    prog[n] = true;
+    Story3D.setProgress(state, prog);
+    sel = Math.min(n + 1, state.dirs.length - 1);
+    update();
+  };
+  $('print').onclick = () => S.printBuildSheet(state);
+  update();
+</script>
+</body>
+</html>

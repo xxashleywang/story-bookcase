@@ -53,3 +53,8 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Secrets and local logs (preserved from the original GitHub repository)
+*.log
+.env
+.env.*
