@@ -1,5 +1,22 @@
 # Project changes
 
+## 2026-10-31 — Pinwheel default and purposeful loading motion
+
+- Fresh designs now start with **Pinwheel**, using the prototype's `pairs`
+  preset. Saved room links continue to load their encoded arrangements.
+- Assembly-progress initialization uses the same initial scene as the model,
+  so progress stays associated with the correct design.
+- Retained the short, bottom-to-top shelf entrance: a gentle twist and lift
+  illustrates how shelves stack around the pole, then stops after about 0.9 seconds.
+  Model interaction interrupts the entrance; reduced-motion settings skip it.
+- Removed continuous model rotation and decorative logo/stamp loops.
+- Preserved the merged editing improvements: Front camera by default, clearer
+  shelf selection, plain-language pattern controls, and keyboard shelf editing.
+- Updated the README and product direction to reflect Pinwheel as the default.
+- Validation: full workspace typecheck/build passed with
+  `PORT=5000 BASE_PATH=/ pnpm run build`; all 17 existing renderer/keyboard tests
+  passed; a fresh-load preview confirmed Pinwheel is selected.
+
 ## Full application synchronization
 
 This synchronization adds the complete Replit application, not just the

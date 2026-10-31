@@ -10,7 +10,7 @@ import { ClerkProvider, Show, SignIn, SignUp, useClerk, useUser } from '@clerk/r
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import {
-  ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Dices, Link as LinkIcon,
+  ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Dices, Link as LinkIcon,
   LoaderCircle, Search, SlidersHorizontal, Sparkles, X,
 } from 'lucide-react';
 import type { Build, BuildConfiguration, BuildInput, BuildUpdate, Profile } from '@workspace/api-client-react';
@@ -23,6 +23,9 @@ import {
 import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } from 'wouter';
 import NotFound from '@/pages/not-found';
 import { ColorPicker } from '@/components/color-picker';
+import { ShelfSelector } from '@/components/shelf-selector';
+import { ShelfEditor } from '@/components/shelf-editor';
+import { moveShelfSelection, rotateShelfDirection, shelfActionFromKey } from '@/lib/shelf-keyboard';
 
 declare global {
   interface Window {
@@ -74,7 +77,7 @@ const LOOKS = [
   { name: 'Wine bar', color: '#6E4C42', pattern: 'sides', wall: '#F6E7B8', floor: 'ash' },
   { name: 'Quiet lines', color: '#A8967E', pattern: 'front', wall: '#F6F4F0', floor: 'ash' },
 ];
-const VIEWS = [['3/4', -32, -10], ['Front', 0, -4], ['Side', -90, -4], ['Top', -20, -62]] as const;
+const VIEWS = [['Front', 0, -4], ['Angled', -32, -10], ['Side', -90, -4], ['Top', -20, -62]] as const;
 const directions: Record<string, { label: string; icon: typeof ArrowDown }> = {
   F: { label: 'Front', icon: ArrowDown }, L: { label: 'Left', icon: ArrowLeft },
   B: { label: 'Back', icon: ArrowUp }, R: { label: 'Right', icon: ArrowRight },
@@ -92,7 +95,7 @@ function initialScene() {
     ? { id:'custom', name:'Custom', kind:floorKind, bg:(floorKind === 'Carpet' ? carpet : plank)(customHex, S.shade(customHex, -.08)) }
     : savedFloor;
   return {
-    model: parsed || S.createState('tall', '#E2B062', S.PRESETS[1].make(11)),
+    model: parsed || S.createState('tall', '#E2B062', S.PRESETS.find((p: any) => p.id === 'pairs').make(11)),
     wall: extras[1] ? `#${extras[1]}` : '#F6F4F0',
     floor: selectedFloor || FLOORS[0],
     floorKind,
@@ -100,7 +103,11 @@ function initialScene() {
   };
 }
 type Scene = ReturnType<typeof initialScene>;
-type ViewHandle = { update: (s: any, extra?: any) => void; animateTo: (yaw: number, tilt: number) => void };
+type ViewHandle = {
+  update: (s: any, extra?: any) => void;
+  animateTo: (yaw: number, tilt: number) => void;
+  playIntro: () => () => void;
+};
 
 function hashFor(scene: Scene) {
   const S = window.Story;
@@ -214,15 +221,20 @@ function Configurator({
   const [viewIndex, setViewIndex] = useState(0);
   const [completed, setCompleted] = useState<boolean[]>(() => {
     try {
-      const hashUnit = window.location.hash.slice(1).split('~')[0];
-      const config = hashUnit ? window.Story.decodeUnit(hashUnit) : window.Story.createState('tall', '#E2B062', window.Story.PRESETS[1].make(11));
+      const config = initialScene().model;
       return window.Story3D.getProgress(config);
     } catch { return []; }
   });
   const hostRef = useRef<HTMLDivElement>(null);
+  const shelfEditorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<ViewHandle | null>(null);
   const selectRef = useRef<(index: number) => void>(() => undefined);
-  selectRef.current = setSelected;
+  const [editorOpen, setEditorOpen] = useState(false);
+  selectRef.current = (i: number) => {
+    setSelected(i);
+    setEditorOpen(true);
+    hostRef.current?.focus({ preventScroll:true });
+  };
   const S = window.Story;
   const pattern = S.PRESETS.find((p: any) => p.make(scene.model.dirs.length).join('') === scene.model.dirs.join(''));
   const currentPattern = pattern?.name || (rolled ? 'Random roll' : 'Your own');
@@ -240,15 +252,29 @@ function Configurator({
   useEffect(() => {
     if (!hostRef.current || viewRef.current) return;
     viewRef.current = window.Story3D.mount(hostRef.current, {
-      state: scene.model, fit: .66, floor: .86, accent: '#FF6B4A', turntable: true,
+      state: scene.model, fit: .66, floor: .86, accent: '#FF6B4A', turntable: false,
+      yaw: VIEWS[0][1], tilt: VIEWS[0][2],
+      selectable: true,
       onSelect: (i: number) => selectRef.current(i),
     });
+    // Let the initial model update and ResizeObserver settle before revealing shelves.
+    let cancelIntro = () => {};
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        cancelIntro = viewRef.current?.playIntro() || (() => {});
+      });
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelIntro();
+    };
   }, []);
   useEffect(() => onSceneChange(scene), [scene, onSceneChange]);
   useEffect(() => {
     hashFor(scene);
     viewRef.current?.update(scene.model, {
       selected: tab === 'build' ? -1 : selected,
+      selectable: tab === 'style',
       build: tab === 'build' ? { installed: progress, style: 'wire', next: nextShelf } : null,
     });
   }, [scene, selected, tab, progress, nextShelf]);
@@ -262,6 +288,34 @@ function Configurator({
     }
     window.Story3D.setProgress(scene.model, progress);
   }, [scene.model, progress, S]);
+  useEffect(() => {
+    if (!editorOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented) setEditorOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [editorOpen]);
+  useEffect(() => {
+    const onArrow = (event: KeyboardEvent) => {
+      const action = shelfActionFromKey(event, {
+        selected, count:scene.model.dirs.length, designing:tab === 'style', rolling,
+      });
+      if (!action) return;
+      event.preventDefault();
+      if (action.type === 'select') {
+        setSelected((old) => moveShelfSelection(old, scene.model.dirs.length, action.step));
+        setEditorOpen(true);
+        return;
+      }
+      setScene((old) => {
+        const dir = rotateShelfDirection(old.model.dirs[selected], action.step);
+        return { ...old, model:{ ...old.model, dirs:old.model.dirs.map((d: string, i: number) => i === selected ? dir : d) } };
+      });
+    };
+    window.addEventListener('keydown', onArrow);
+    return () => window.removeEventListener('keydown', onArrow);
+  }, [selected, scene.model.dirs.length, tab, rolling]);
   const updateModel = (change: (model: any) => any) => setScene((old) => ({ ...old, model: change(old.model) }));
   const setWall = (wall: string) => setScene((old) => ({ ...old, wall }));
   const setFloor = (floor: { id:string; name:string; kind:string; bg:string }, kind = floor.kind, hex = scene.customFloorColor) => {
@@ -331,62 +385,69 @@ function Configurator({
   return <div className="playroom">
     <section className={`stage ${roomColor(scene.wall) < .45 ? 'is-dark' : ''}`} style={{ backgroundColor: scene.wall, '--wall': scene.wall, '--floor-background': floorIsCustom ? (scene.floorKind === 'Carpet' ? carpet : plank)(scene.customFloorColor, S.shade(scene.customFloorColor, -.08)) : scene.floor.bg } as CSSProperties}>
       <div className="room-floor" />
-      <div id="bookcase-model" ref={hostRef} />
-      <div className="scene-copy"><h1>{scene.model.size === 'tall' ? 'Tall' : 'Standard'} &amp;<br /><span style={{ backgroundImage: `linear-gradient(transparent 64%, ${scene.model.color}66 64%)` }}>{activeColor?.name || 'Custom finish'}</span></h1>
-        <p>{S.SIZES[scene.model.size].height}&quot; · {scene.model.dirs.length} shelves · {currentPattern.toLowerCase()} · {WALLS.find((w) => w[1] === scene.wall)?.[0] || 'custom'} wall</p></div>
-      <div className="scene-stamp" aria-label="Twist it, stack it, style it">
+      <div id="bookcase-model" ref={hostRef} tabIndex={-1} aria-label="Bookcase model" />
+      <div className="scene-copy"><h1>Design your bookcase</h1>
+        <p className="scene-sub">Try different arrangements before you build.</p>
+        </div>
+      {tab === 'build' && <div className="scene-stamp" aria-label="Assembly progress">
         <svg viewBox="0 0 110 110"><defs><path id="stampCircle" d="M55,55 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" /></defs><text fontSize="10" fontWeight="700" letterSpacing="2.5" fill="currentColor"><textPath href="#stampCircle">TWIST IT · STACK IT · STYLE IT · </textPath></text></svg>
         <b>{tab === 'build' ? `${Math.round(done / progress.length * 100)}%` : `${S.SIZES[scene.model.size].height}″`}</b>
-      </div>
-      <div className="views">{VIEWS.map(([label, yaw, tilt], i) => <button key={label} className={viewIndex === i ? 'active' : ''} onClick={() => { setViewIndex(i); viewRef.current?.animateTo(yaw, tilt); }}>{label}</button>)}</div>
+      </div>}
+      <div className="views" role="group" aria-label="Bookcase view"><span className="view-label">View</span>{VIEWS.map(([label, yaw, tilt], i) => <button key={label} aria-pressed={viewIndex === i} className={viewIndex === i ? 'active' : ''} onClick={() => { setViewIndex(i); viewRef.current?.animateTo(yaw, tilt); }}>{label}</button>)}</div>
     </section>
     <section className="control-panel">
       <div className={`tabs ${tab === 'build' ? 'building' : ''}`}><i className="tab-pill" />
         <button className={tab === 'style' ? 'active' : ''} onClick={() => setTab('style')}>Style it</button>
         <button className={tab === 'build' ? 'active' : ''} onClick={() => setTab('build')}>Build it <small>{done}/{scene.model.dirs.length}</small></button>
       </div>
-      <div className="pane" hidden={tab !== 'style'}>
-        <section className="section"><h2>How tall? <small>15¾&quot; square footprint</small></h2>
-          <div className="size-options">{Object.values(S.SIZES).map((size: any) => <button key={size.id} className={`size-option ${scene.model.size === size.id ? 'active' : ''}`} onClick={() => setSize(size.id)}><b>{size.label}</b><span>{size.height}&quot; · {size.shelves} shelves</span></button>)}</div>
-        </section>
-        <section className="section"><h2>Finish <small>{activeColor?.name || `Custom ${scene.model.color}`}</small></h2>
-          <div className="color-dots">{COLORS.map((c) => <button key={c.hex} aria-label={`${c.name} finish`} title={c.name} className={`color-dot ${scene.model.color.toLowerCase() === c.hex.toLowerCase() ? 'active' : ''}`} style={{ background: c.hex }} onClick={() => updateModel((m) => ({ ...m, color: c.hex }))} />)}
-            <ColorPicker title="Custom finish" value={scene.model.color} presets={FINISH_PRESETS} onChange={(hex) => updateModel((m) => ({ ...m, color: hex }))}
-              trigger={<button type="button" aria-label="Custom finish color" title="Custom color" className={`color-input ${!activeColor ? 'active' : ''}`} style={!activeColor ? { background: scene.model.color } : undefined} />} />
-          </div>
-        </section>
-        <section className="section"><h2>Paint your wall <small>{WALLS.find((w) => w[1] === scene.wall)?.[0] || `Custom ${scene.wall.toUpperCase()}`}</small></h2>
-          <div className="swatches">{WALLS.map(([name, hex]) => <button key={hex} className={`swatch ${scene.wall === hex ? 'active' : ''}`} onClick={() => setWall(hex)}><i style={{ background: hex }} />{name}</button>)}
-            <ColorPicker title="Custom wall" value={scene.wall} presets={WALL_PRESETS} onChange={setWall}
-              trigger={<button type="button" className={`swatch ${wallIsCustom ? 'active' : ''}`}><i style={{ background: wallIsCustom ? scene.wall : RAINBOW }} />Make your own</button>} />
-          </div>
-        </section>
-        <section className="section"><h2>Pick your floor <small>{floorIsCustom ? 'Custom' : scene.floor.name} · {kindLabel(scene.floorKind)}</small></h2>
-          <div className="floor-grid">{FLOOR_CHOICES.map((f) => <button key={f.id} className={`floor-swatch ${scene.floor.id === f.id ? 'active' : ''}`} onClick={() => setFloor(f)}><i style={{ background: f.bg }} />{f.name}<small>{kindLabel(f.kind)}</small></button>)}
-            <ColorPicker title="Custom floor" value={scene.customFloorColor} presets={FLOOR_PRESETS}
-              onOpen={() => { if (!floorIsCustom) setFloor(CUSTOM_FLOOR, scene.floorKind === 'Carpet' ? 'Carpet' : 'Laminate', scene.customFloorColor); }}
-              onChange={(hex) => setFloor(CUSTOM_FLOOR, scene.floorKind === 'Carpet' ? 'Carpet' : 'Laminate', hex)}
-              trigger={<button type="button" className={`floor-swatch ${floorIsCustom ? 'active' : ''}`}><i style={{ background: floorIsCustom ? (scene.floorKind === 'Carpet' ? carpet : plank)(scene.customFloorColor, S.shade(scene.customFloorColor, -.08)) : RAINBOW }} />Make your own<small>{floorIsCustom ? kindLabel(scene.floorKind) : 'Any color'}</small></button>}>
-              <div className="tw-picker-texture"><span>Texture</span><div className="segment">{(['Laminate', 'Carpet'] as const).map((kind) => <button type="button" key={kind} className={scene.floorKind === kind ? 'active' : ''} onClick={() => setFloor(CUSTOM_FLOOR, kind, scene.customFloorColor)}>{kindLabel(kind)}</button>)}</div></div>
-            </ColorPicker>
-          </div>
-        </section>
-        <section className="section"><h2>Shelf pattern <small>{currentPattern}</small></h2>
-          <div className="pattern-list">{S.PRESETS.map((p: any) => <button key={p.id} className={`pattern ${p.make(scene.model.dirs.length).join('') === scene.model.dirs.join('') ? 'active' : ''}`} onClick={() => choosePattern(p.id)}>{iconPlan(p.make(4)[1], 20)}{p.name}</button>)}
-            <span className="random-controls"><button className={`pattern random ${rolled ? 'active' : ''}`} disabled={rolling} onClick={roll}><Dices size={15}/> Randomize</button><button aria-label="Randomize rules" className="pattern random" onClick={() => setRulesOpen(!rulesOpen)}><SlidersHorizontal size={16}/>{4 - allowed.size + Number(noRepeat) ? <small>{4 - allowed.size + Number(noRepeat)}</small> : null}</button></span>
-            {rulesOpen && <div className="rules-pop"><h3>Shelves can face</h3><div className="allowed-grid">{Object.entries(directions).map(([dir, detail]) => <button key={dir} className={!allowed.has(dir) ? 'off' : ''} onClick={() => toggleAllowed(dir)}>{iconPlan(dir, 24)}<br />{detail.label}</button>)}</div><button className={`toggle-row ${noRepeat ? 'on' : ''}`} onClick={() => setNoRepeat(!noRepeat)}><i className="toggle" />No two neighbours alike</button><p className="note">{note}</p></div>}
-          </div>
-        </section>
-        <section className="section"><h2>Fine-tune <small>or click a shelf</small></h2>
-          <div className="tune-box">{selected < 0 ? <><div className="selected-shelf">?<small>no shelf</small></div><div style={{ color:'var(--muted-ink)', fontSize:13 }}>Select a shelf on the bookcase to turn it to a new side.</div></> :
-            <><div className="selected-shelf">{selected + 1}<small>of {scene.model.dirs.length}</small></div><div className="segment">{Object.entries(directions).map(([dir, detail]) => <button key={dir} className={scene.model.dirs[selected] === dir ? 'active' : ''} onClick={() => changeShelf(selected, dir)}>{detail.label}</button>)}</div>
-              <div className="step-buttons"><button className="button light small" onClick={() => setSelected(Math.max(0, selected - 1))}>Lower shelf</button><button className="button light small" onClick={() => setSelected(Math.min(scene.model.dirs.length - 1, selected + 1))}>Higher shelf</button></div></>}
-          </div>
-        </section>
-        <section className="section" style={{ display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
-          <button className="button light small" onClick={saveShareLink}><LinkIcon size={14}/>Copy room link</button>
-          <button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share your build</button>
-        </section>
+      <div className="pane style-pane" hidden={tab !== 'style'}>
+        <div className="pane-fixed">
+          <section className="section compact"><h2>Bookcase <small>15¾&quot; square footprint</small></h2>
+            <div className="bookcase-row">
+              <div className="size-options">{Object.values(S.SIZES).map((size: any) => <button key={size.id} aria-pressed={scene.model.size === size.id} className={`size-option ${scene.model.size === size.id ? 'active' : ''}`} onClick={() => setSize(size.id)}><b>{size.label}</b><span>{size.height}&quot; · {size.shelves} shelves</span></button>)}</div>
+              <div className="color-dots">{COLORS.map((c) => <button key={c.hex} aria-label={`${c.name} finish`} aria-pressed={scene.model.color.toLowerCase() === c.hex.toLowerCase()} className={`color-dot ${scene.model.color.toLowerCase() === c.hex.toLowerCase() ? 'active' : ''}`} style={{ background: c.hex }} onClick={() => updateModel((m) => ({ ...m, color: c.hex }))} />)}
+                <ColorPicker title="Custom finish" value={scene.model.color} presets={FINISH_PRESETS} onChange={(hex) => updateModel((m) => ({ ...m, color: hex }))}
+                  trigger={<button type="button" aria-label="Custom finish color" className={`color-input ${!activeColor ? 'active' : ''}`} style={!activeColor ? { background: scene.model.color } : undefined} />} />
+              </div>
+            </div>
+          </section>
+          <section className="section compact"><h2>Shelf direction</h2>
+            <ShelfSelector selected={selected} dirs={scene.model.dirs} onSelect={(i) => { setSelected(i); setEditorOpen(i >= 0); }}
+              onSelectionCommit={() => shelfEditorRef.current?.querySelector<HTMLButtonElement>('.dir-buttons button[aria-pressed="true"]')?.focus({ preventScroll:true })} />
+            {selected >= 0 && !editorOpen && <button className="button light small reopen-shelf" onClick={() => setEditorOpen(true)}>Edit shelf {selected + 1}</button>}
+            <ShelfEditor containerRef={shelfEditorRef} open={editorOpen} selected={selected} dirs={scene.model.dirs}
+              onDirection={(dir) => changeShelf(selected, dir)} onSelect={(i) => { setSelected(i); setEditorOpen(true); }} onClose={() => setEditorOpen(false)} />
+          </section>
+        </div>
+        <div className="pane-scroll">
+          <section className="section"><h2>Try a shelf arrangement <small>{currentPattern}</small></h2>
+            <div className="pattern-list"><div className="preset-grid" role="group" aria-label="Shelf arrangements">{S.PRESETS.map((p: any) => <button key={p.id} aria-pressed={p.make(scene.model.dirs.length).join('') === scene.model.dirs.join('')} className={`pattern preset-option ${p.make(scene.model.dirs.length).join('') === scene.model.dirs.join('') ? 'active' : ''}`} onClick={() => choosePattern(p.id)}>{p.name}</button>)}</div>
+              <span className="random-controls"><button className={`pattern random ${rolled ? 'active' : ''}`} disabled={rolling} onClick={roll}><Dices size={15}/> Randomize</button><button aria-label="Randomize rules" aria-expanded={rulesOpen} className="pattern random" onClick={() => setRulesOpen(!rulesOpen)}><SlidersHorizontal size={16}/>{4 - allowed.size + Number(noRepeat) ? <small>{4 - allowed.size + Number(noRepeat)}</small> : null}</button></span>
+              {rulesOpen && <div className="rules-pop"><h3>Shelves can face</h3><div className="allowed-grid">{Object.entries(directions).map(([dir, detail]) => <button key={dir} aria-pressed={allowed.has(dir)} className={!allowed.has(dir) ? 'off' : ''} onClick={() => toggleAllowed(dir)}>{iconPlan(dir, 24)}<br />{detail.label}</button>)}</div><button className={`toggle-row ${noRepeat ? 'on' : ''}`} aria-pressed={noRepeat} onClick={() => setNoRepeat(!noRepeat)}><i className="toggle" />No two neighbours alike</button><p className="note">{note}</p></div>}
+            </div>
+          </section>
+          <details className="section room-preview">
+            <summary><h2><span>Room design</span><small>{WALLS.find((w) => w[1] === scene.wall)?.[0] || 'Custom'} wall · {floorIsCustom ? 'Custom' : scene.floor.name}</small><ChevronDown size={16} aria-hidden="true" /></h2></summary>
+            <h3>Wall <small>{WALLS.find((w) => w[1] === scene.wall)?.[0] || `Custom ${scene.wall.toUpperCase()}`}</small></h3>
+            <div className="swatches">{WALLS.map(([name, hex]) => <button key={hex} className={`swatch ${scene.wall === hex ? 'active' : ''}`} onClick={() => setWall(hex)}><i style={{ background: hex }} />{name}</button>)}
+              <ColorPicker title="Custom wall" value={scene.wall} presets={WALL_PRESETS} onChange={setWall}
+                trigger={<button type="button" className={`swatch ${wallIsCustom ? 'active' : ''}`}><i style={{ background: wallIsCustom ? scene.wall : RAINBOW }} />Make your own</button>} />
+            </div>
+            <h3>Floor <small>{floorIsCustom ? 'Custom' : scene.floor.name} · {kindLabel(scene.floorKind)}</small></h3>
+            <div className="floor-grid">{FLOOR_CHOICES.map((f) => <button key={f.id} className={`floor-swatch ${scene.floor.id === f.id ? 'active' : ''}`} onClick={() => setFloor(f)}><i style={{ background: f.bg }} />{f.name}<small>{kindLabel(f.kind)}</small></button>)}
+              <ColorPicker title="Custom floor" value={scene.customFloorColor} presets={FLOOR_PRESETS}
+                onOpen={() => { if (!floorIsCustom) setFloor(CUSTOM_FLOOR, scene.floorKind === 'Carpet' ? 'Carpet' : 'Laminate', scene.customFloorColor); }}
+                onChange={(hex) => setFloor(CUSTOM_FLOOR, scene.floorKind === 'Carpet' ? 'Carpet' : 'Laminate', hex)}
+                trigger={<button type="button" className={`floor-swatch ${floorIsCustom ? 'active' : ''}`}><i style={{ background: floorIsCustom ? (scene.floorKind === 'Carpet' ? carpet : plank)(scene.customFloorColor, S.shade(scene.customFloorColor, -.08)) : RAINBOW }} />Make your own<small>{floorIsCustom ? kindLabel(scene.floorKind) : 'Any color'}</small></button>}>
+                <div className="tw-picker-texture"><span>Texture</span><div className="segment">{(['Laminate', 'Carpet'] as const).map((kind) => <button type="button" key={kind} className={scene.floorKind === kind ? 'active' : ''} onClick={() => setFloor(CUSTOM_FLOOR, kind, scene.customFloorColor)}>{kindLabel(kind)}</button>)}</div></div>
+              </ColorPicker>
+            </div>
+          </details>
+          <section className="section" style={{ display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
+            <button className="button light small" onClick={saveShareLink}><LinkIcon size={14}/>Copy room link</button>
+            <button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share your build</button>
+          </section>
+        </div>
       </div>
       <div className="pane" hidden={tab !== 'build'}>
         <section className="section"><div className="build-meter"><div className="build-meter-top"><b>{Math.round(done / progress.length * 100)}%</b><span>{done} of {progress.length} shelves</span></div><div className="progress-track"><i style={{ width:`${Math.max(4, done / progress.length * 100)}%` }} /></div><p>{fullyBuilt ? 'Every shelf is on. Anchor it to the wall with the strap in the box.' : done ? `Nice. Next up: shelf ${nextShelf + 1}, facing ${directions[scene.model.dirs[nextShelf]]?.label.toLowerCase()}.` : 'Start with the base and post, then shelf 1 at the bottom.'}</p></div></section>
