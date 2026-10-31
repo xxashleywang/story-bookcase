@@ -21,8 +21,12 @@
       .s3d-world { position: absolute; left: 50%; transform-style: preserve-3d; }
       .s3d-world div { position: absolute; left: 0; top: 0; transform-style: preserve-3d; backface-visibility: hidden; pointer-events: auto; }
       .s3d-world .s3d-shadow { backface-visibility: visible; pointer-events: none; }
-      .s3d-world .s3d-sel { outline: 1.5px solid var(--s3d-accent, #000); outline-offset: -1px; }
-      .s3d-world .s3d-hover { filter: brightness(1.08); }
+      .s3d-world .s3d-sel { outline: 2px solid var(--s3d-accent, #000); outline-offset: -1px; }
+      .s3d-world .s3d-hover:not(.s3d-sel) { filter: brightness(1.15); outline: 1px solid #ffffffaa; outline-offset: -1px; }
+      .s3d.selectable .s3d-world [data-i] { cursor: pointer; }
+      .s3d.dragging .s3d-world [data-i] { cursor: grabbing; }
+      .s3d-selection-label { position:absolute; z-index:2; pointer-events:none; display:grid; place-items:center; min-width:28px; height:28px; padding:0 6px; border-radius:50%; background:var(--s3d-accent); color:#2b1e16; border:2px solid white; box-shadow:0 2px 8px #0003; font:800 12px/1 sans-serif; }
+      .s3d-selection-label[hidden] { display:none; }
       .s3d-world .s3d-grp { width: 0; height: 0; backface-visibility: visible; pointer-events: none; }
       .s3d-world .s3d-ghost { opacity: .14; }
       .s3d-world .s3d-float { opacity: .55; }
@@ -46,6 +50,8 @@
     let yaw = o.yaw;
     let tilt = o.tilt;
     let selected = o.selected;
+    let selectable = o.selectable !== false && typeof o.onSelect === 'function';
+    let hovered = -1;
     let faces = [];
     let raf = 0;
     let introAnimations = [];
@@ -85,6 +91,30 @@
     world.className = 's3d-world';
     scene.appendChild(world);
     host.appendChild(scene);
+    const selectionLabel = document.createElement('span');
+    selectionLabel.className = 's3d-selection-label';
+    selectionLabel.hidden = true;
+    selectionLabel.setAttribute('aria-hidden', 'true');
+    host.appendChild(selectionLabel);
+
+    function canSelect() { return selectable && !build; }
+    function showHover(index) {
+      hovered = canSelect() ? index : -1;
+      faces.forEach((f) => f.el.classList.toggle('s3d-hover', f.i >= 0 && f.i === hovered));
+    }
+    function positionSelectionLabel() {
+      const shelfFaces = canSelect() ? faces.filter((f) => f.i === selected && selected >= 0) : [];
+      selectionLabel.hidden = shelfFaces.length === 0;
+      if (!shelfFaces.length) return;
+      const rects = shelfFaces.map((f) => f.el.getBoundingClientRect());
+      const hostRect = host.getBoundingClientRect();
+      const right = Math.max(...rects.map((r) => r.right)) - hostRect.left;
+      const top = Math.min(...rects.map((r) => r.top)) - hostRect.top;
+      const bottom = Math.max(...rects.map((r) => r.bottom)) - hostRect.top;
+      selectionLabel.textContent = String(selected + 1);
+      selectionLabel.style.left = `${Math.max(4, Math.min(host.clientWidth - 34, right + 8))}px`;
+      selectionLabel.style.top = `${Math.max(4, Math.min(host.clientHeight - 34, (top + bottom) / 2 - 14))}px`;
+    }
 
     function k() {
       return (host.clientHeight * o.fit) / S.SIZES.tall.height;
@@ -177,12 +207,15 @@
         const before = faces.length;
         box({ x0: f.x0, x1: f.x1, y0: h - 0.18, y1: h, z0: f.z0, z1: f.z1 }, state.color, { i }, 0.9 * s);
         const mine = faces.slice(before);
-        if (i === selected) mine.forEach((x) => x.el.classList.add('s3d-sel'));
+        if (i === selected && canSelect()) mine.forEach((x) => x.el.classList.add('s3d-sel'));
         if (!placed) mine.forEach((x) => x.el.classList.add(i === build.next ? 's3d-next' : { explode: 's3d-float', wire: 's3d-wire' }[build.style] || 's3d-ghost'));
         target = null;
       });
       if (build) { build.drop = -1; build.burst = false; }
       shade();
+      host.classList.toggle('selectable', canSelect());
+      showHover(hovered);
+      positionSelectionLabel();
     }
 
     function group(cls) {
@@ -197,6 +230,7 @@
       tilt = t;
       world.style.transform = `rotateX(${tilt}deg) rotateY(${yaw}deg)`;
       shade();
+      positionSelectionLabel();
     }
 
     function animateTo(y, t, ms = 600) {
@@ -214,24 +248,42 @@
     }
 
     let drag = null;
+    // A shelf must stay under the pointer while someone is aiming to select it.
+    // Keep decorative turntables unchanged; only the interactive model pauses.
+    host.addEventListener('pointerenter', (e) => {
+      if (canSelect() && e.pointerType !== 'touch') spinning = false;
+    });
     host.addEventListener('pointerdown', (e) => {
+      if (e.button !== undefined && e.button !== 0) return;
       stopIntro();
       drag = { x: e.clientX, y: e.clientY, yaw, tilt, moved: false, target: e.target };
+      showHover(-1);
       if (o.drag) { host.classList.add('dragging'); host.setPointerCapture(e.pointerId); }
       cancelAnimationFrame(raf);
     });
     host.addEventListener('pointermove', (e) => {
-      if (!drag || !o.drag) return;
+      if (!drag) {
+        const el = e.target.closest && e.target.closest('[data-i]');
+        showHover(e.pointerType === 'touch' || !el ? -1 : +el.dataset.i);
+      }
+      if (!drag) return;
       const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
+      if (!o.drag) return;
       setView(drag.yaw + dx * 0.4, Math.max(-70, Math.min(-2, drag.tilt - dy * 0.25)));
     });
     host.addEventListener('pointerup', () => {
-      if (drag && !drag.moved && o.onSelect) {
+      if (drag && !drag.moved && canSelect()) {
         const el = drag.target.closest && drag.target.closest('[data-i]');
         if (el) o.onSelect(+el.dataset.i);
       }
       drag = null;
+      host.classList.remove('dragging');
+    });
+    host.addEventListener('pointerleave', () => showHover(-1));
+    host.addEventListener('pointercancel', () => {
+      drag = null;
+      showHover(-1);
       host.classList.remove('dragging');
     });
 
@@ -255,6 +307,8 @@
         state = next;
         if (extra.selected !== undefined) selected = extra.selected;
         if (extra.build !== undefined) build = extra.build;
+        if (extra.selectable !== undefined) selectable = !!extra.selectable && typeof o.onSelect === 'function';
+        if (canSelect() && selected >= 0) spinning = false;
         render();
       },
       select(i) { selected = i; render(); },
