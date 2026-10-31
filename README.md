@@ -1,5 +1,32 @@
 # Twistory
 
+## Current application
+
+The current React application is in `artifacts/bookcase-community`, backed by
+`artifacts/api-server`. It includes the bookcase configurator, custom color
+pickers, community builds, Clerk sign-in, member profiles, and photo uploads
+through Replit App Storage. The original static prototypes below are preserved
+for reference; their feature descriptions apply to those prototypes.
+
+### Development and checks
+
+- Use Node.js 24 and pnpm, then run `pnpm install --frozen-lockfile`.
+- `pnpm run typecheck` checks the workspace.
+- `PORT=5000 BASE_PATH=/ pnpm run build` checks types and builds all applications.
+  The Vite configurations require both variables even during a build; Replit
+  supplies each service's port and base path when running managed workflows.
+- Run the existing Replit workflows for the web app and API. Outside those
+  workflows, configure their ports, base paths, and routing before starting the
+  corresponding package's `dev` script.
+- Authentication, database access, and uploads require environment configuration
+  in the host's secret manager. Never commit credentials or `.env` files.
+  Uploaded photos and live database records are not stored in this repository.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full-project synchronization scope,
+history preservation, and validation results.
+
+## Original Playroom prototype
+
 Plan a [Herman Miller Story bookcase](https://store.hermanmiller.com/furniture-shelving-storage-bookcases/story-bookcase/2197172.html) before you assemble it: pick height and finish, paint the wall, choose a floor, twist each shelf, then tick shelves off as you build.
 
 **Chosen direction:** [Playroom](prototypes/v3/g-playroom.html) · [live](https://xxashleywang.github.io/story-bookcase/prototypes/v3/g-playroom.html)
