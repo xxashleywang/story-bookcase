@@ -48,6 +48,30 @@
     let selected = o.selected;
     let faces = [];
     let raf = 0;
+    let introAnimations = [];
+    function stopIntro() {
+      introAnimations.forEach((animation) => animation.cancel());
+      introAnimations = [];
+    }
+
+    function playIntro() {
+      stopIntro();
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return stopIntro;
+      // A small twist around the pole explains the modular shelves, bottom to top.
+      // Animate presentation only: the saved arrangement and build progress never change.
+      introAnimations = Array.from(world.querySelectorAll('.s3d-grp')).map((shelf, i) =>
+        shelf.animate([
+          { transform: 'translateY(12px) rotateY(-14deg)', opacity: 0.25 },
+          { transform: 'translateY(0) rotateY(0deg)', opacity: 1 },
+        ], {
+          duration: 520,
+          delay: i * 38,
+          easing: 'cubic-bezier(.22,1,.36,1)',
+          fill: 'backwards',
+        })
+      );
+      return stopIntro;
+    }
     // build: { installed: bool[], style: 'ghost' | 'explode' | 'books', next, drop }
     let build = o.build || null;
     let target = null;
@@ -120,6 +144,7 @@
 
     function render() {
       if (!state) return;
+      stopIntro();
       world.innerHTML = '';
       faces = [];
       const s = k();
@@ -175,6 +200,7 @@
     }
 
     function animateTo(y, t, ms = 600) {
+      stopIntro();
       cancelAnimationFrame(raf);
       spinning = false;
       const y0 = yaw, t0 = tilt, start = performance.now();
@@ -189,6 +215,7 @@
 
     let drag = null;
     host.addEventListener('pointerdown', (e) => {
+      stopIntro();
       drag = { x: e.clientX, y: e.clientY, yaw, tilt, moved: false, target: e.target };
       if (o.drag) { host.classList.add('dragging'); host.setPointerCapture(e.pointerId); }
       cancelAnimationFrame(raf);
@@ -232,7 +259,7 @@
       },
       select(i) { selected = i; render(); },
       stopSpin() { spinning = false; },
-      setView, animateTo,
+      setView, animateTo, playIntro,
       get view() { return { yaw, tilt }; },
     };
   }

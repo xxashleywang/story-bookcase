@@ -92,7 +92,7 @@ function initialScene() {
     ? { id:'custom', name:'Custom', kind:floorKind, bg:(floorKind === 'Carpet' ? carpet : plank)(customHex, S.shade(customHex, -.08)) }
     : savedFloor;
   return {
-    model: parsed || S.createState('tall', '#E2B062', S.PRESETS[1].make(11)),
+    model: parsed || S.createState('tall', '#E2B062', S.PRESETS.find((p: any) => p.id === 'spiral').make(11)),
     wall: extras[1] ? `#${extras[1]}` : '#F6F4F0',
     floor: selectedFloor || FLOORS[0],
     floorKind,
@@ -100,7 +100,11 @@ function initialScene() {
   };
 }
 type Scene = ReturnType<typeof initialScene>;
-type ViewHandle = { update: (s: any, extra?: any) => void; animateTo: (yaw: number, tilt: number) => void };
+type ViewHandle = {
+  update: (s: any, extra?: any) => void;
+  animateTo: (yaw: number, tilt: number) => void;
+  playIntro: () => () => void;
+};
 
 function hashFor(scene: Scene) {
   const S = window.Story;
@@ -214,8 +218,7 @@ function Configurator({
   const [viewIndex, setViewIndex] = useState(0);
   const [completed, setCompleted] = useState<boolean[]>(() => {
     try {
-      const hashUnit = window.location.hash.slice(1).split('~')[0];
-      const config = hashUnit ? window.Story.decodeUnit(hashUnit) : window.Story.createState('tall', '#E2B062', window.Story.PRESETS[1].make(11));
+      const config = initialScene().model;
       return window.Story3D.getProgress(config);
     } catch { return []; }
   });
@@ -240,9 +243,20 @@ function Configurator({
   useEffect(() => {
     if (!hostRef.current || viewRef.current) return;
     viewRef.current = window.Story3D.mount(hostRef.current, {
-      state: scene.model, fit: .66, floor: .86, accent: '#FF6B4A', turntable: true,
+      state: scene.model, fit: .66, floor: .86, accent: '#FF6B4A', turntable: false,
       onSelect: (i: number) => selectRef.current(i),
     });
+    // Let the initial model update and ResizeObserver settle before revealing shelves.
+    let cancelIntro = () => {};
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        cancelIntro = viewRef.current?.playIntro() || (() => {});
+      });
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelIntro();
+    };
   }, []);
   useEffect(() => onSceneChange(scene), [scene, onSceneChange]);
   useEffect(() => {
