@@ -30,11 +30,11 @@ export const buildsTable = pgTable("builds", {
   brand: text("brand"),
   modelName: text("model_name"),
   category: text("category").notNull().default("bookcase"),
-  colorName: text("color_name").notNull(),
-  colorHex: text("color_hex").notNull(),
+  colorName: text("color_name"),
+  colorHex: text("color_hex"),
   tags: text("tags").array().notNull().default([]),
   photoPaths: text("photo_paths").array().notNull(),
-  configuration: jsonb("configuration").$type<BuildConfiguration>().notNull(),
+  configuration: jsonb("configuration").$type<BuildConfiguration>(),
   likesCount: integer("likes_count").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

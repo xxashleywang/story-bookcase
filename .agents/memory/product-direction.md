@@ -5,6 +5,12 @@ description: User-stated priorities and design preferences for the bookcase conf
 - The Playroom configurator (ported from github.com/xxashleywang/story-bookcase) is the main product; the community gallery is a secondary add-on.
   **Why:** user said so explicitly.
   **How to apply:** never let community UI crowd or replace the configurator.
+- The navigation account control should show the user's name and open a dropdown containing My profile and Log out. No Settings item for now, because there is nothing to set.
+  **Why:** the user explicitly corrected the separate profile/logout navigation buttons.
+  **How to apply:** preserve this account-menu structure on desktop and mobile.
+- Community sharing is about room photos and decoration; a reusable blueprint is optional. Photo-only inspiration is a manual visual reference, never automatic reconstruction or an implied exact build.
+  **Why:** the user explicitly set this product scope and requires photo-only posts not to inherit unrelated configurator state.
+  **How to apply:** keep gallery sharing independent of Playroom, public browsing unrestricted, and preserve historical photos/tags rather than cleaning them up destructively.
 - The whole bookcase must be visible on the stage without scrolling (stage is capped to viewport height; the 3D model scales to stage height).
   **Why:** user: "hard for the human brain when you cannot see everything at once."
 - Floor picker = one row: Pale oak, Walnut, Grey ash, Oat (carpet), Make your own (color + Wood/Carpet). Say "Wood", never "Laminate" in UI (internal value stays "Laminate" for API/hash compatibility).
@@ -24,4 +30,4 @@ description: User-stated priorities and design preferences for the bookcase conf
   **How to apply:** use medium-weight routine controls, reserve stronger weights for emphasis, and use plain-language camera labels rather than “3/4”.
 - Keyboard editing should support progressing through shelves without returning to the pointer.
   **Why:** the user expects left/right to keep spinning the current shelf and up/down to move between shelves, rather than four cardinal-direction shortcuts.
-  **How to apply:** preserve that distinction when extending keyboard controls; shelf navigation changes selection, not physical height.
+  **How to apply:** preserve that distinction when extending keyboard controls; shelf navigation changes selection, not physical height. The user also explicitly wants shelf-orientation icons rather than arrows in randomize rules, because directional arrows misleadingly suggest the keyboard bindings.

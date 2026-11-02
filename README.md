@@ -10,7 +10,14 @@ for reference; their feature descriptions apply to those prototypes.
 
 ### Development and checks
 
+- Local preview: from the repo root, run `mise run serve`, then open
+  http://localhost:5173. Stop the server with Ctrl+C.
+  The planner UI works without secrets. Sign-in, uploads, and live community
+  data need Clerk and database credentials, which are not in this repository.
+- Original HTML prototypes: `mise run serve:prototypes`, then open
+  http://localhost:4173/v3/g-playroom.html.
 - Use Node.js 24 and pnpm, then run `pnpm install --frozen-lockfile`.
+  `mise run serve` does this for you.
 - `pnpm run typecheck` checks the workspace.
 - `PORT=5000 BASE_PATH=/ pnpm run build` checks types and builds all applications.
   The Vite configurations require both variables even during a build; Replit
@@ -27,6 +34,8 @@ Opening a shared room link preserves its saved arrangement. On loading, shelves
 gently twist into place from bottom to top in a single, roughly 0.9-second
 entrance. The animation respects reduced-motion settings, stops on model
 interaction, and does not change shelf directions or assembly progress.
+Shelves that face away from the camera shade darker so front and back stay
+readable as you turn the model.
 
 See [CHANGELOG.md](CHANGELOG.md) for recent changes, the full-project synchronization scope,
 history preservation, and validation results.

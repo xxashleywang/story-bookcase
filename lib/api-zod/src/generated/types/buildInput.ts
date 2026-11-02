@@ -29,23 +29,27 @@ export interface BuildInput {
      * @nullable
      */
   modelName?: string | null;
-  category: BuildInputCategory;
+  category?: BuildInputCategory;
   /**
      * @minLength 1
      * @maxLength 40
+     * @nullable
      */
-  colorName: string;
-  /** @pattern ^#[0-9A-Fa-f]{6}$ */
-  colorHex: string;
+  colorName?: string | null;
+  /**
+     * @nullable
+     * @pattern ^#[0-9A-Fa-f]{6}$
+     */
+  colorHex?: string | null;
   /**
      * @maxItems 12
      * @items.maxLength 32
      */
-  tags: string[];
+  tags?: string[];
   /**
      * @minItems 1
-     * @maxItems 8
+     * @maxItems 4
      */
   photoPaths: string[];
-  configuration: BuildConfiguration;
+  configuration?: BuildConfiguration | null;
 }

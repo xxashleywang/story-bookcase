@@ -19,6 +19,84 @@ tags:
   - name: Storage
     description: Image upload and object serving.
 paths:
+  /profiles/me/builds:
+    get:
+      operationId: listMyBuilds
+      tags: [profiles]
+      summary: List all uploads owned by the session identity
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Private paginated uploads.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildPage"
+        "401":
+          description: Sign in required.
+  /profiles/me/favourites:
+    get:
+      operationId: listMyFavourites
+      tags: [profiles]
+      summary: List the session identity's private saved room posts
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Private paginated favourites.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildPage"
+        "401":
+          description: Sign in required.
+  /profiles/me/photo-cleanup:
+    post:
+      operationId: retryPhotoCleanup
+      tags: [profiles]
+      summary: Retry pending explicit photo deletions for this identity
+      responses:
+        "200":
+          description: Number of deletions still pending.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pending]
+                properties:
+                  pending:
+                    type: integer
+        "401":
+          description: Sign in required.
+  /builds/{id}/favourite:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    put:
+      operationId: saveFavourite
+      tags: [builds]
+      summary: Idempotently save a room post, not individual photos
+      responses:
+        "204":
+          description: Saved.
+        "401":
+          description: Sign in required.
+        "404":
+          description: Room not found.
+    delete:
+      operationId: removeFavourite
+      tags: [builds]
+      summary: Idempotently remove a private favourite
+      responses:
+        "204":
+          description: Removed.
+        "401":
+          description: Sign in required.
   /healthz:
     get:
       operationId: healthCheck
@@ -338,7 +416,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 components:
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: integer
+        minimum: 1
   schemas:
+    BuildPage:
+      type: object
+      required: [items, nextCursor, cleanupPending]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Build"
+        nextCursor:
+          type: [integer, "null"]
+        cleanupPending:
+          type: integer
     HealthStatus:
       type: object
       properties:
@@ -392,6 +489,10 @@ components:
         - createdAt
         - likesCount
       properties:
+        isFavourite:
+          type: boolean
+        isOwner:
+          type: boolean
         id:
           type: integer
         title:
@@ -406,9 +507,9 @@ components:
           type: string
           default: bookcase
         colorName:
-          type: string
+          type: ["string", "null"]
         colorHex:
-          type: string
+          type: ["string", "null"]
         tags:
           type: array
           items:
@@ -418,7 +519,9 @@ components:
           items:
             type: string
         configuration:
-          $ref: "#/components/schemas/BuildConfiguration"
+          anyOf:
+            - $ref: "#/components/schemas/BuildConfiguration"
+            - type: "null"
         creatorUsername:
           type: string
         createdAt:
@@ -428,7 +531,7 @@ components:
           type: integer
     BuildInput:
       type: object
-      required: [title, category, colorName, colorHex, tags, photoPaths, configuration]
+      required: [title, photoPaths]
       properties:
         title:
           type: string
@@ -447,11 +550,11 @@ components:
           type: string
           enum: [bookcase]
         colorName:
-          type: string
+          type: ["string", "null"]
           minLength: 1
           maxLength: 40
         colorHex:
-          type: string
+          type: ["string", "null"]
           pattern: "^#[0-9A-Fa-f]{6}$"
         tags:
           type: array
@@ -462,14 +565,22 @@ components:
         photoPaths:
           type: array
           minItems: 1
-          maxItems: 8
+          maxItems: 4
           items:
             type: string
         configuration:
-          $ref: "#/components/schemas/BuildConfiguration"
+          anyOf:
+            - $ref: "#/components/schemas/BuildConfiguration"
+            - type: "null"
     BuildUpdate:
       type: object
       properties:
+        removePhotoPaths:
+          description: Explicitly remove existing photos without truncating legacy sets. Cannot combine with photoPaths. Removing the last photo requires deleting the whole post.
+          type: array
+          minItems: 1
+          items:
+            type: string
         title:
           type: string
           minLength: 2
@@ -484,11 +595,11 @@ components:
           type: ["string", "null"]
           maxLength: 120
         colorName:
-          type: string
+          type: ["string", "null"]
           minLength: 1
           maxLength: 40
         colorHex:
-          type: string
+          type: ["string", "null"]
           pattern: "^#[0-9A-Fa-f]{6}$"
         tags:
           type: array
@@ -499,11 +610,13 @@ components:
         photoPaths:
           type: array
           minItems: 1
-          maxItems: 8
+          maxItems: 4
           items:
             type: string
         configuration:
-          $ref: "#/components/schemas/BuildConfiguration"
+          anyOf:
+            - $ref: "#/components/schemas/BuildConfiguration"
+            - type: "null"
     Profile:
       type: object
       required: [username, displayName, isUsernameSet]
@@ -569,4 +682,3 @@ components:
           type: string
         metadata:
           $ref: "#/components/schemas/UploadUrlRequest"
-

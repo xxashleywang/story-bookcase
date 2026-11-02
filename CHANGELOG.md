@@ -1,5 +1,20 @@
 # Project changes
 
+## 2026-11-01 — Front/back shelf depth and Mac local preview
+
+- Shelves that face away from the camera now shade darker in the 3D model, so
+  front and back directions are easier to tell apart when you rotate the view.
+- You can preview the planner on a Mac with `mise run serve` (Node 24 + pnpm),
+  including Darwin platform binaries and a local `/api` proxy. Sign-in stays
+  optional without Clerk credentials; the planner still works.
+
+## 2026-11-01 — Photo-first gallery sync and Avisven logo concepts
+
+- Brought over the finished Replit community work that had not been committed:
+  photo-only room posts, optional blueprints, favourites, account menu,
+  photo edit/delete with a retry queue, and optional analytics events.
+- Added [#10 Avisven logo concept gallery](prototypes/inspiration/10-avisven-logo-gallery.html).
+
 ## 2026-10-31 — Pinwheel default and purposeful loading motion
 
 - Fresh designs now start with **Pinwheel**, using the prototype's `pairs`

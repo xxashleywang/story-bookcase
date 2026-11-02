@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>10 · Avisven logo concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&amp;family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&amp;display=swap" rel="stylesheet" />
+<style>
+  :root { --cream:#fff8ee; --ink:#2b1e16; --muted:#94857a; --hairline:#eadfce; --coral:#ff6b4a; --butter:#ffd66b; --gold:#e2b062; --paper:#fffdf9; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--cream); color:var(--ink); font-family:'Bricolage Grotesque',sans-serif; }
+  button { font:inherit; color:inherit; cursor:pointer; border:0; background:none; }
+  a { color:inherit; }
+  .wrap { max-width:1180px; margin:0 auto; padding:28px 24px 80px; }
+  header { display:flex; justify-content:space-between; gap:24px; align-items:flex-end; padding-bottom:28px; border-bottom:1px solid var(--hairline); }
+  .eyebrow { font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  h1 { margin:6px 0 0; font-size:42px; letter-spacing:-.05em; line-height:.95; }
+  .lede { max-width:42ch; margin:0; color:var(--muted); font-size:15px; }
+  .filters { display:flex; flex-wrap:wrap; gap:8px; margin:22px 0 28px; }
+  .filters button { padding:8px 14px; border-radius:999px; background:#fff; box-shadow:inset 0 0 0 1.5px var(--hairline); font-size:13px; font-weight:600; }
+  .filters button.on { background:var(--ink); color:#fff; box-shadow:none; }
+  .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  article { background:var(--paper); border-radius:24px; overflow:hidden; box-shadow:inset 0 0 0 1px var(--hairline); }
+  .stage { height:280px; display:grid; place-items:center; padding:28px; }
+  .stage.ink { background:var(--ink); }
+  .stage.coral { background:var(--coral); }
+  .stage.gold { background:var(--gold); }
+  .meta { padding:16px 20px 20px; }
+  .meta h2 { margin:0 0 4px; font-size:16px; letter-spacing:-.02em; }
+  .meta p { margin:0; font-size:13px; color:var(--muted); }
+  .word { font-family:Fraunces,serif; font-weight:700; letter-spacing:-.04em; }
+  .mark { margin:0; font-family:Fraunces,serif; font-weight:700; font-size:52px; letter-spacing:-.04em; line-height:1; }
+  .dot-i { position:relative; display:inline-block; letter-spacing:0; }
+  .dot-i::before { content:''; position:absolute; left:50%; top:.1em; width:.18em; height:.18em; transform:translateX(-50%); border-radius:50%; background:var(--coral); }
+  .stage.ink .dot-i::before { background:var(--butter); }
+  article.is-hidden { display:none; }
+  svg { display:block; }
+  @media (max-width:800px) { .grid { grid-template-columns:1fr; } header { flex-direction:column; align-items:flex-start; } h1 { font-size:34px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Bookcase Inspiration Hub · 10</div>
+      <h1>Avisven<br/>logo concepts</h1>
+    </div>
+    <p class="lede">Eight directions for a quiet home-goods mark. Same cream, ink, coral, and gold as the bookcase work. Pick a family, not a final file.</p>
+  </header>
+  <div class="filters" role="tablist" aria-label="Logo directions">
+    <button class="on" data-filter="all">All</button>
+    <button data-filter="wordmark">Wordmark</button>
+    <button data-filter="monogram">Monogram</button>
+    <button data-filter="pictorial">Pictorial</button>
+    <button data-filter="lockup">Lockup</button>
+  </div>
+  <div class="grid">
+    <article data-kind="wordmark">
+      <div class="stage">
+        <p class="mark" aria-label="Avisven serif wordmark">av<span class="dot-i">ı</span>sven</p>
+      </div>
+      <div class="meta"><h2>1 · Tittle</h2><p>Fraunces wordmark. The coral dot sits over the i, same accent as the Twistory brand mark.</p></div>
+    </article>
+    <article data-kind="wordmark">
+      <div class="stage ink">
+        <p class="mark" style="color:#fff8ee" aria-label="Avisven on ink">av<span class="dot-i">ı</span>sven</p>
+      </div>
+      <div class="meta"><h2>2 · Night wordmark</h2><p>Inverted for dark shelves and packaging. Butter tittle instead of coral so it stays warm.</p></div>
+    </article>
+    <article data-kind="monogram">
+      <div class="stage">
+        <svg width="160" height="160" viewBox="0 0 160 160" aria-label="AV monogram">
+          <rect width="160" height="160" rx="36" fill="#fff8ee" stroke="#2b1e16" stroke-width="3"/>
+          <path d="M38 118 L80 42 L122 118" fill="none" stroke="#2b1e16" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M58 92 H102" stroke="#ff6b4a" stroke-width="7" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="meta"><h2>3 · AV shelf</h2><p>The A is a bookcase in profile. Coral crossbar is a shelf. Works at favicon size.</p></div>
+    </article>
+    <article data-kind="monogram">
+      <div class="stage coral">
+        <svg width="160" height="160" viewBox="0 0 160 160" aria-label="Stamp monogram">
+          <circle cx="80" cy="80" r="70" fill="none" stroke="#fff8ee" stroke-width="3"/>
+          <circle cx="80" cy="80" r="62" fill="none" stroke="#fff8ee" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <path d="M48 108 L80 48 L112 108" fill="none" stroke="#fff8ee" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M62 86 H98" stroke="#ffd66b" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="meta"><h2>4 · Wax stamp</h2><p>Circular seal for hangtags and the underside of a shelf. Coral field, cream stroke.</p></div>
+    </article>
+    <article data-kind="pictorial">
+      <div class="stage">
+        <svg width="180" height="180" viewBox="0 0 180 180" aria-label="Stacked shelves mark">
+          <rect x="78" y="22" width="14" height="136" rx="7" fill="#e2b062"/>
+          <rect x="28" y="48" width="86" height="16" rx="5" fill="#ff6b4a" stroke="#2b1e16" stroke-width="3"/>
+          <rect x="66" y="86" width="86" height="16" rx="5" fill="#ff6b4a" stroke="#2b1e16" stroke-width="3"/>
+          <rect x="28" y="124" width="86" height="16" rx="5" fill="#ff6b4a" stroke="#2b1e16" stroke-width="3"/>
+          <circle cx="138" cy="56" r="12" fill="#ffd66b" stroke="#2b1e16" stroke-width="3"/>
+        </svg>
+      </div>
+      <div class="meta"><h2>5 · Story pole</h2><p>Direct cousin of the Twistory app icon: pole, three shelves, one butter bead. Avisven as the furniture, not the planner.</p></div>
+    </article>
+    <article data-kind="pictorial">
+      <div class="stage gold">
+        <svg width="180" height="140" viewBox="0 0 180 140" aria-label="Arch of two shelves">
+          <path d="M24 118 V58 Q24 22 90 22 Q156 22 156 58 V118" fill="none" stroke="#2b1e16" stroke-width="10" stroke-linecap="round"/>
+          <path d="M54 118 V70 Q54 48 90 48 Q126 48 126 70 V118" fill="none" stroke="#fff8ee" stroke-width="8" stroke-linecap="round"/>
+          <circle cx="90" cy="84" r="7" fill="#ff6b4a"/>
+        </svg>
+      </div>
+      <div class="meta"><h2>6 · Niche</h2><p>Two nested arches read as a doorway or a book nook. The coral bead is the object on the shelf.</p></div>
+    </article>
+    <article data-kind="lockup">
+      <div class="stage">
+        <svg width="300" height="72" viewBox="0 0 300 72" aria-label="Avisven lockup">
+          <rect x="2" y="10" width="52" height="52" rx="14" fill="#2b1e16"/>
+          <path d="M14 50 L28 22 L42 50" fill="none" stroke="#fff8ee" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 40 H36" stroke="#ff6b4a" stroke-width="3.5" stroke-linecap="round"/>
+          <text class="word" x="70" y="48" font-size="36" fill="#2b1e16">avisven</text>
+        </svg>
+      </div>
+      <div class="meta"><h2>7 · App lockup</h2><p>Monogram tile plus wordmark. Use this in headers and on the published site.</p></div>
+    </article>
+    <article data-kind="lockup">
+      <div class="stage ink">
+        <svg width="300" height="86" viewBox="0 0 300 86" aria-label="Stacked lockup">
+          <text class="word" x="0" y="40" font-size="34" fill="#fff8ee">AVISVEN</text>
+          <rect x="0" y="54" width="168" height="4" rx="2" fill="#ff6b4a"/>
+          <text x="0" y="78" font-size="11" fill="#eadfce" letter-spacing="3.2" font-family="'Bricolage Grotesque',sans-serif" font-weight="600">SHELVES FOR A ROOM</text>
+        </svg>
+      </div>
+      <div class="meta"><h2>8 · Caps line</h2><p>All-caps with a shelf as the underline. Line of copy can swap: furniture, rooms, pieces.</p></div>
+    </article>
+  </div>
+</div>
+<script>
+  const buttons = [...document.querySelectorAll('.filters button')];
+  const cards = [...document.querySelectorAll('article')];
+  buttons.forEach((button) => button.addEventListener('click', () => {
+    const kind = button.getAttribute('data-filter');
+    buttons.forEach((b) => b.classList.toggle('on', b === button));
+    cards.forEach((card) => {
+      const show = kind === 'all' || card.getAttribute('data-kind') === kind;
+      card.classList.toggle('is-hidden', !show);
+    });
+  }));
+</script>
+</body>
+</html>

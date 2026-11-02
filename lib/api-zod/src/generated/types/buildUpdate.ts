@@ -9,6 +9,11 @@ import type { BuildConfiguration } from './buildConfiguration';
 
 export interface BuildUpdate {
   /**
+     * Explicitly remove existing photos without truncating legacy sets. Cannot combine with photoPaths. Removing the last photo requires deleting the whole post.
+     * @minItems 1
+     */
+  removePhotoPaths?: string[];
+  /**
      * @minLength 2
      * @maxLength 80
      */
@@ -31,10 +36,14 @@ export interface BuildUpdate {
   /**
      * @minLength 1
      * @maxLength 40
+     * @nullable
      */
-  colorName?: string;
-  /** @pattern ^#[0-9A-Fa-f]{6}$ */
-  colorHex?: string;
+  colorName?: string | null;
+  /**
+     * @nullable
+     * @pattern ^#[0-9A-Fa-f]{6}$
+     */
+  colorHex?: string | null;
   /**
      * @maxItems 12
      * @items.maxLength 32
@@ -42,8 +51,8 @@ export interface BuildUpdate {
   tags?: string[];
   /**
      * @minItems 1
-     * @maxItems 8
+     * @maxItems 4
      */
   photoPaths?: string[];
-  configuration?: BuildConfiguration;
+  configuration?: BuildConfiguration | null;
 }

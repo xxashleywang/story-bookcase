@@ -9,6 +9,128 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary List all uploads owned by the session identity
+ */
+
+
+
+export const ListMyBuildsQueryParams = zod.object({
+  "cursor": zod.coerce.number().int().min(1).optional()
+})
+
+export const listMyBuildsResponseItemsItemCategoryDefault = `bookcase`;
+
+export const ListMyBuildsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "isFavourite": zod.boolean().optional(),
+  "isOwner": zod.boolean().optional(),
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "brand": zod.string().nullable(),
+  "modelName": zod.string().nullish(),
+  "category": zod.string().default(listMyBuildsResponseItemsItemCategoryDefault),
+  "colorName": zod.string().nullable(),
+  "colorHex": zod.string().nullable(),
+  "tags": zod.array(zod.string()),
+  "photoPaths": zod.array(zod.string()),
+  "configuration": zod.union([zod.object({
+  "size": zod.enum(['standard', 'tall']),
+  "color": zod.string().describe('Bookcase finish as a six-digit hex color.'),
+  "shelfDirections": zod.array(zod.enum(['F', 'L', 'B', 'R'])),
+  "wallColor": zod.string(),
+  "floorId": zod.string(),
+  "floorKind": zod.enum(['Laminate', 'Carpet', 'Custom']).optional(),
+  "customFloorColor": zod.string().nullish()
+}),zod.null()]),
+  "creatorUsername": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "likesCount": zod.number().int()
+})),
+  "nextCursor": zod.number().int().nullable(),
+  "cleanupPending": zod.number().int()
+})
+
+
+/**
+ * @summary List the session identity's private saved room posts
+ */
+
+
+
+export const ListMyFavouritesQueryParams = zod.object({
+  "cursor": zod.coerce.number().int().min(1).optional()
+})
+
+export const listMyFavouritesResponseItemsItemCategoryDefault = `bookcase`;
+
+export const ListMyFavouritesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "isFavourite": zod.boolean().optional(),
+  "isOwner": zod.boolean().optional(),
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "brand": zod.string().nullable(),
+  "modelName": zod.string().nullish(),
+  "category": zod.string().default(listMyFavouritesResponseItemsItemCategoryDefault),
+  "colorName": zod.string().nullable(),
+  "colorHex": zod.string().nullable(),
+  "tags": zod.array(zod.string()),
+  "photoPaths": zod.array(zod.string()),
+  "configuration": zod.union([zod.object({
+  "size": zod.enum(['standard', 'tall']),
+  "color": zod.string().describe('Bookcase finish as a six-digit hex color.'),
+  "shelfDirections": zod.array(zod.enum(['F', 'L', 'B', 'R'])),
+  "wallColor": zod.string(),
+  "floorId": zod.string(),
+  "floorKind": zod.enum(['Laminate', 'Carpet', 'Custom']).optional(),
+  "customFloorColor": zod.string().nullish()
+}),zod.null()]),
+  "creatorUsername": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "likesCount": zod.number().int()
+})),
+  "nextCursor": zod.number().int().nullable(),
+  "cleanupPending": zod.number().int()
+})
+
+
+/**
+ * @summary Retry pending explicit photo deletions for this identity
+ */
+export const RetryPhotoCleanupResponse = zod.object({
+  "pending": zod.number().int()
+})
+
+
+/**
+ * @summary Idempotently save a room post, not individual photos
+ */
+
+
+
+export const SaveFavouriteParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const SaveFavouriteResponse = zod.void()
+
+
+/**
+ * @summary Idempotently remove a private favourite
+ */
+
+
+
+export const RemoveFavouriteParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const RemoveFavouriteResponse = zod.void()
+
+
+/**
  * Returns server health status
  * @summary Health check
  */
@@ -38,17 +160,19 @@ export const ListBuildsQueryParams = zod.object({
 export const listBuildsResponseCategoryDefault = `bookcase`;
 
 export const ListBuildsResponseItem = zod.object({
+  "isFavourite": zod.boolean().optional(),
+  "isOwner": zod.boolean().optional(),
   "id": zod.number().int(),
   "title": zod.string(),
   "description": zod.string().nullish(),
   "brand": zod.string().nullable(),
   "modelName": zod.string().nullish(),
   "category": zod.string().default(listBuildsResponseCategoryDefault),
-  "colorName": zod.string(),
-  "colorHex": zod.string(),
+  "colorName": zod.string().nullable(),
+  "colorHex": zod.string().nullable(),
   "tags": zod.array(zod.string()),
   "photoPaths": zod.array(zod.string()),
-  "configuration": zod.object({
+  "configuration": zod.union([zod.object({
   "size": zod.enum(['standard', 'tall']),
   "color": zod.string().describe('Bookcase finish as a six-digit hex color.'),
   "shelfDirections": zod.array(zod.enum(['F', 'L', 'B', 'R'])),
@@ -56,7 +180,7 @@ export const ListBuildsResponseItem = zod.object({
   "floorId": zod.string(),
   "floorKind": zod.enum(['Laminate', 'Carpet', 'Custom']).optional(),
   "customFloorColor": zod.string().nullish()
-}),
+}),zod.null()]),
   "creatorUsername": zod.string(),
   "createdAt": zod.coerce.date(),
   "likesCount": zod.number().int()
@@ -83,7 +207,7 @@ export const createBuildBodyTagsItemMax = 32;
 
 export const createBuildBodyTagsMax = 12;
 
-export const createBuildBodyPhotoPathsMax = 8;
+export const createBuildBodyPhotoPathsMax = 4;
 
 
 
@@ -92,12 +216,12 @@ export const CreateBuildBody = zod.object({
   "description": zod.string().max(createBuildBodyDescriptionMax).nullish(),
   "brand": zod.string().max(createBuildBodyBrandMax).nullish(),
   "modelName": zod.string().max(createBuildBodyModelNameMax).nullish(),
-  "category": zod.enum(['bookcase']),
-  "colorName": zod.string().min(1).max(createBuildBodyColorNameMax),
-  "colorHex": zod.string().regex(createBuildBodyColorHexRegExp),
-  "tags": zod.array(zod.string().max(createBuildBodyTagsItemMax)).max(createBuildBodyTagsMax),
+  "category": zod.enum(['bookcase']).optional(),
+  "colorName": zod.string().min(1).max(createBuildBodyColorNameMax).nullish(),
+  "colorHex": zod.string().regex(createBuildBodyColorHexRegExp).nullish(),
+  "tags": zod.array(zod.string().max(createBuildBodyTagsItemMax)).max(createBuildBodyTagsMax).optional(),
   "photoPaths": zod.array(zod.string()).min(1).max(createBuildBodyPhotoPathsMax),
-  "configuration": zod.object({
+  "configuration": zod.union([zod.object({
   "size": zod.enum(['standard', 'tall']),
   "color": zod.string().describe('Bookcase finish as a six-digit hex color.'),
   "shelfDirections": zod.array(zod.enum(['F', 'L', 'B', 'R'])),
@@ -105,23 +229,25 @@ export const CreateBuildBody = zod.object({
   "floorId": zod.string(),
   "floorKind": zod.enum(['Laminate', 'Carpet', 'Custom']).optional(),
   "customFloorColor": zod.string().nullish()
-})
+}),zod.null()]).optional()
 })
 
 export const createBuildResponseCategoryDefault = `bookcase`;
 
 export const CreateBuildResponse = zod.object({
+  "isFavourite": zod.boolean().optional(),
+  "isOwner": zod.boolean().optional(),
   "id": zod.number().int(),
   "title": zod.string(),
   "description": zod.string().nullish(),
   "brand": zod.string().nullable(),
   "modelName": zod.string().nullish(),
   "category": zod.string().default(createBuildResponseCategoryDefault),
-  "colorName": zod.string(),
-  "colorHex": zod.string(),
+  "colorName": zod.string().nullable(),
+  "colorHex": zod.string().nullable(),
   "tags": zod.array(zod.string()),
   "photoPaths": zod.array(zod.string()),
-  "configuration": zod.object({
+  "configuration": zod.union([zod.object({
   "size": zod.enum(['standard', 'tall']),
   "color": zod.string().describe('Bookcase finish as a six-digit hex color.'),
   "shelfDirections": zod.array(zod.enum(['F', 'L', 'B', 'R'])),
@@ -129,7 +255,7 @@ export const CreateBuildResponse = zod.object({
   "floorId": zod.string(),
   "floorKind": zod.enum(['Laminate', 'Carpet', 'Custom']).optional(),
   "customFloorColor": zod.string().nullish()
-}),
+}),zod.null()]),
   "creatorUsername": zod.string(),
   "createdAt": zod.coerce.date(),
   "likesCount": zod.number().int()
@@ -146,17 +272,19 @@ export const GetBuildParams = zod.object({
 export const getBuildResponseCategoryDefault = `bookcase`;
 
 export const GetBuildResponse = zod.object({
+  "isFavourite": zod.boolean().optional(),
+  "isOwner": zod.boolean().optional(),
   "id": zod.number().int(),
   "title": zod.string(),
   "description": zod.string().nullish(),
   "brand": zod.string().nullable(),
   "modelName": zod.string().nullish(),
   "category": zod.string().default(getBuildResponseCategoryDefault),
-  "colorName": zod.string(),
-  "colorHex": zod.string(),
+  "colorName": zod.string().nullable(),
+  "colorHex": zod.string().nullable(),
   "tags": zod.array(zod.string()),
   "photoPaths": zod.array(zod.string()),
-  "configuration": zod.object({
+  "configuration": zod.union([zod.object({
   "size": zod.enum(['standard', 'tall']),
   "color": zod.string().describe('Bookcase finish as a six-digit hex color.'),
   "shelfDirections": zod.array(zod.enum(['F', 'L', 'B', 'R'])),
@@ -164,7 +292,7 @@ export const GetBuildResponse = zod.object({
   "floorId": zod.string(),
   "floorKind": zod.enum(['Laminate', 'Carpet', 'Custom']).optional(),
   "customFloorColor": zod.string().nullish()
-}),
+}),zod.null()]),
   "creatorUsername": zod.string(),
   "createdAt": zod.coerce.date(),
   "likesCount": zod.number().int()
@@ -177,6 +305,7 @@ export const GetBuildResponse = zod.object({
 export const UpdateBuildParams = zod.object({
   "id": zod.coerce.number().int()
 })
+
 
 export const updateBuildBodyTitleMin = 2;
 export const updateBuildBodyTitleMax = 80;
@@ -194,20 +323,21 @@ export const updateBuildBodyTagsItemMax = 32;
 
 export const updateBuildBodyTagsMax = 12;
 
-export const updateBuildBodyPhotoPathsMax = 8;
+export const updateBuildBodyPhotoPathsMax = 4;
 
 
 
 export const UpdateBuildBody = zod.object({
+  "removePhotoPaths": zod.array(zod.string()).min(1).optional().describe('Explicitly remove existing photos without truncating legacy sets. Cannot combine with photoPaths. Removing the last photo requires deleting the whole post.'),
   "title": zod.string().min(updateBuildBodyTitleMin).max(updateBuildBodyTitleMax).optional(),
   "description": zod.string().max(updateBuildBodyDescriptionMax).nullish(),
   "brand": zod.string().max(updateBuildBodyBrandMax).nullish(),
   "modelName": zod.string().max(updateBuildBodyModelNameMax).nullish(),
-  "colorName": zod.string().min(1).max(updateBuildBodyColorNameMax).optional(),
-  "colorHex": zod.string().regex(updateBuildBodyColorHexRegExp).optional(),
+  "colorName": zod.string().min(1).max(updateBuildBodyColorNameMax).nullish(),
+  "colorHex": zod.string().regex(updateBuildBodyColorHexRegExp).nullish(),
   "tags": zod.array(zod.string().max(updateBuildBodyTagsItemMax)).max(updateBuildBodyTagsMax).optional(),
   "photoPaths": zod.array(zod.string()).min(1).max(updateBuildBodyPhotoPathsMax).optional(),
-  "configuration": zod.object({
+  "configuration": zod.union([zod.object({
   "size": zod.enum(['standard', 'tall']),
   "color": zod.string().describe('Bookcase finish as a six-digit hex color.'),
   "shelfDirections": zod.array(zod.enum(['F', 'L', 'B', 'R'])),
@@ -215,23 +345,25 @@ export const UpdateBuildBody = zod.object({
   "floorId": zod.string(),
   "floorKind": zod.enum(['Laminate', 'Carpet', 'Custom']).optional(),
   "customFloorColor": zod.string().nullish()
-}).optional()
+}),zod.null()]).optional()
 })
 
 export const updateBuildResponseCategoryDefault = `bookcase`;
 
 export const UpdateBuildResponse = zod.object({
+  "isFavourite": zod.boolean().optional(),
+  "isOwner": zod.boolean().optional(),
   "id": zod.number().int(),
   "title": zod.string(),
   "description": zod.string().nullish(),
   "brand": zod.string().nullable(),
   "modelName": zod.string().nullish(),
   "category": zod.string().default(updateBuildResponseCategoryDefault),
-  "colorName": zod.string(),
-  "colorHex": zod.string(),
+  "colorName": zod.string().nullable(),
+  "colorHex": zod.string().nullable(),
   "tags": zod.array(zod.string()),
   "photoPaths": zod.array(zod.string()),
-  "configuration": zod.object({
+  "configuration": zod.union([zod.object({
   "size": zod.enum(['standard', 'tall']),
   "color": zod.string().describe('Bookcase finish as a six-digit hex color.'),
   "shelfDirections": zod.array(zod.enum(['F', 'L', 'B', 'R'])),
@@ -239,7 +371,7 @@ export const UpdateBuildResponse = zod.object({
   "floorId": zod.string(),
   "floorKind": zod.enum(['Laminate', 'Carpet', 'Custom']).optional(),
   "customFloorColor": zod.string().nullish()
-}),
+}),zod.null()]),
   "creatorUsername": zod.string(),
   "createdAt": zod.coerce.date(),
   "likesCount": zod.number().int()
@@ -358,5 +490,3 @@ export const GetStorageObjectParams = zod.object({
 })
 
 export const GetStorageObjectResponse = zod.unknown()
-
-

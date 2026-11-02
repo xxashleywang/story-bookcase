@@ -1,0 +1,24 @@
+# Local toolchain + one-command preview.
+# Usage: `mise run serve` then open http://localhost:5173
+
+[tools]
+node = "24"
+pnpm = "10"
+
+[env]
+PORT = "5173"
+BASE_PATH = "/"
+NODE_ENV = "development"
+
+[tasks.install]
+description = "Install JavaScript dependencies"
+run = "pnpm install --frozen-lockfile"
+
+[tasks.serve]
+description = "Start the Twistory app at http://localhost:5173"
+depends = ["install"]
+run = "pnpm --filter @workspace/bookcase-community run dev"
+
+[tasks."serve:prototypes"]
+description = "Start the original HTML prototypes at http://localhost:4173"
+run = "python3 -m http.server 4173 --directory prototypes"
