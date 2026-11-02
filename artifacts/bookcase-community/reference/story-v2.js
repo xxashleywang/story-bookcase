@@ -3,6 +3,7 @@
   const S = global.Story;
   const G = S.GEO;
   const LIGHT = normalize([-0.5, 0.75, 0.6]);
+  const DEPTH_DIM = 0.3;
 
   function normalize(v) {
     const l = Math.hypot(...v);
@@ -167,7 +168,9 @@
         const y2 = ny * Math.cos(t) + z1 * Math.sin(-t);
         const z2 = -ny * Math.sin(-t) + z1 * Math.cos(t);
         const d = Math.max(0, x1 * LIGHT[0] + y2 * LIGHT[1] + z2 * LIGHT[2]);
-        const b = 0.62 + 0.5 * d;
+        // Shelves reaching away from the camera fall into shadow so front and back read apart.
+        const away = f.v ? (1 + f.v[0] * Math.sin(a) - f.v[1] * Math.cos(a)) / 2 : 0;
+        const b = 0.62 + 0.5 * d - DEPTH_DIM * away;
         f.el.style.background = b >= 1 ? S.shade(f.color, Math.min(0.35, (b - 1) * 0.9)) : S.shade(f.color, b - 1);
       });
     }
@@ -207,6 +210,7 @@
         const before = faces.length;
         box({ x0: f.x0, x1: f.x1, y0: h - 0.18, y1: h, z0: f.z0, z1: f.z1 }, state.color, { i }, 0.9 * s);
         const mine = faces.slice(before);
+        mine.forEach((x) => { x.v = [vx, vz]; });
         if (i === selected && canSelect()) mine.forEach((x) => x.el.classList.add('s3d-sel'));
         if (!placed) mine.forEach((x) => x.el.classList.add(i === build.next ? 's3d-next' : { explode: 's3d-float', wire: 's3d-wire' }[build.style] || 's3d-ghost'));
         target = null;

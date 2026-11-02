@@ -10,6 +10,7 @@ import type { Build } from '@workspace/api-client-react';
 import { getGetBuildQueryKey, useRemoveFavourite, useSaveFavourite } from '@workspace/api-client-react';
 import { useDialogFocus } from '@/components/share-dialog';
 import { isAccountAffectedKey, readSaveIntent, saveIntentHref } from '@/lib/account';
+import { clerkEnabled } from '@/lib/local-clerk';
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 
@@ -70,7 +71,12 @@ export function AccountMenu() {
 }
 
 /** Save toggle for a room post. Never rendered inside a link. */
-export function FavouriteButton({ build, variant = 'card' }: { build: Build; variant?: 'card' | 'detail' }) {
+export function FavouriteButton(props: { build: Build; variant?: 'card' | 'detail' }) {
+  if (!clerkEnabled) return null;
+  return <FavouriteButtonAuthed {...props} />;
+}
+
+function FavouriteButtonAuthed({ build, variant = 'card' }: { build: Build; variant?: 'card' | 'detail' }) {
   const { isSignedIn, user } = useUser();
   const identity = isSignedIn ? user?.id ?? null : null;
   const identityRef = useRef(identity);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 // Keep the verified prototype geometry, finishing values, and shelf patterns as the model's source of truth.
@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/reac
 import '../reference/story-core.js';
 // @ts-ignore prototype renderer is a browser-global IIFE intentionally bundled as-is.
 import '../reference/story-v2.js';
-import { ClerkProvider, Show, SignIn, SignUp, useClerk, useUser } from '@clerk/react';
+import { ClerkProvider, SignIn, SignUp, useClerk, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import {
@@ -16,6 +16,7 @@ import {
 import type { Build, BuildConfiguration, BuildPage, BuildUpdate, Profile } from '@workspace/api-client-react';
 import { AccountMenu, ConfirmDialog, FavouriteButton, LogoutButton, refreshAccountViews } from '@/components/account-ui';
 import { cleanupMessage, privateListKey } from '@/lib/account';
+import { clerkEnabled } from '@/lib/local-clerk';
 import { EditBuildDialog, PublishDialog } from '@/components/share-dialog';
 import { blueprintHref, readReferenceId, referenceHref, safePhotos, withoutParam } from '@/lib/community';
 import { completeInspirationHandoff, inspirationHref, trackEvent } from '@/lib/analytics';
@@ -41,9 +42,28 @@ declare global {
 }
 
 const LAST_SCENE_KEY = 'twistory:last-scene';
-const clerkPubKey = publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+const clerkPubKey = clerkEnabled
+  ? publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
+  : '';
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+type AuthState = {
+  isSignedIn: boolean;
+  isLoaded: boolean;
+  user: ReturnType<typeof useUser>['user'];
+};
+const signedOutAuth: AuthState = { isSignedIn: false, isLoaded: true, user: null };
+const AuthContext = createContext<AuthState>(signedOutAuth);
+function useAuth() {
+  return useContext(AuthContext);
+}
+function ClerkAuthBridge({ children }: { children: ReactNode }) {
+  const { isSignedIn, isLoaded, user } = useUser();
+  return <AuthContext.Provider value={{ isSignedIn: !!isSignedIn, isLoaded, user }}>{children}</AuthContext.Provider>;
+}
+function LocalAuthDisabled() {
+  return <main className="auth-frame"><Link className="brand auth-mark" href="/">twistory<i/></Link><p>Sign-in is not configured for this local preview. The planner still works.</p><Link className="button coral" href="/">Back to the planner</Link></main>;
+}
 function stripBase(path: string) {
   return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path;
 }
@@ -147,7 +167,7 @@ function rememberShareIntent(path: string) { try { window.sessionStorage.setItem
 function takeShareIntent() { try { const v = window.sessionStorage.getItem(SHARE_INTENT_KEY); window.sessionStorage.removeItem(SHARE_INTENT_KEY); return v; } catch { return null; } }
 /** Route a share request through sign-in and username setup, preserving where it started. */
 function useShareGate(mode: 'photo' | 'blueprint') {
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useAuth();
   const [, setLocation] = useLocation();
   const { data:profile } = useGetMyProfile({ query:{ enabled:!!isSignedIn, queryKey:getGetMyProfileQueryKey() } });
   const ready = !!isSignedIn && !!profile?.isUsernameSet;
@@ -207,16 +227,14 @@ function BookcaseSketch({ color, dirs, tall = true }: { color: string; dirs: str
   </svg>;
 }
 function Header({ openPublish }: { openPublish?: () => void }) {
+  const { isSignedIn } = useAuth();
   return <header className="topbar">
     <Link className="brand" href="/">twistory<i /></Link>
     <span className="tagline">Every shelf has a story.</span>
     <nav className="top-actions">
       <Link className="button light small" href="/inspiration">Room gallery</Link>
       {openPublish && <button className="button coral small header-share" onClick={openPublish}><Camera size={15} /> Share a room</button>}
-      <Show when="signed-in">
-        <AccountMenu/>
-      </Show>
-      <Show when="signed-out"><Link className="button small" href="/sign-in">Sign in</Link></Show>
+      {isSignedIn ? <AccountMenu/> : <Link className="button small" href="/sign-in">Sign in</Link>}
     </nav>
   </header>;
 }
@@ -682,7 +700,7 @@ function CleanupNotice({ pending }: { pending: number }) {
   </aside>;
 }
 function ProfilePage() {
-  const { isSignedIn, isLoaded, user } = useUser();
+  const { isSignedIn, isLoaded, user } = useAuth();
   const userId = isSignedIn ? user?.id ?? null : null;
   const queryClient = useQueryClient();
   const { data:profile, isLoading:profileLoading, isError:profileError, refetch } = useGetMyProfile({ query:{ enabled:!!userId, queryKey:getGetMyProfileQueryKey() } });
@@ -872,8 +890,23 @@ function AccountRoutes() {
     </Switch>
   </QueryClientProvider>;
 }
+function LocalRoutes() {
+  const client = useMemo(() => new QueryClient(), []);
+  return <QueryClientProvider client={client}>
+    <Switch>
+      <Route path="/" component={Home}/>
+      <Route path="/inspiration" component={Gallery}/>
+      <Route path="/build/:id" component={DetailPage}/>
+      <Route path="/profile" component={ProfilePage}/>
+      <Route path="/sign-in/*?" component={LocalAuthDisabled}/>
+      <Route path="/sign-up/*?" component={LocalAuthDisabled}/>
+      <Route component={NotFound}/>
+    </Switch>
+  </QueryClientProvider>;
+}
 function Router() {
   const [, setLocation] = useLocation();
+  if (!clerkPubKey) return <LocalRoutes/>;
   return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} appearance={{
     theme:shadcn, cssLayerName:'clerk',
     options:{ logoPlacement:'inside', logoLinkUrl:basePath || '/', logoImageUrl:`${window.location.origin}${basePath}/logo.svg` },
@@ -886,11 +919,13 @@ function Router() {
   }} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`}
     localization={{ signIn:{ start:{ title:'Welcome back', subtitle:'Come back to your Twistory workshop.' } }, signUp:{ start:{ title:'Make yourself at home', subtitle:'Create an account and share your first room.' } } }}
     routerPush={(to) => setLocation(stripBase(to))} routerReplace={(to) => setLocation(stripBase(to), { replace:true })}>
-    <AccountRoutes/>
+    <ClerkAuthBridge>
+      <AccountRoutes/>
+    </ClerkAuthBridge>
   </ClerkProvider>;
 }
 function App() {
-  if (!clerkPubKey) throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
+  if (!clerkPubKey && clerkEnabled) throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
   return <WouterRouter base={basePath}><Router/></WouterRouter>;
 }
 export default App;
