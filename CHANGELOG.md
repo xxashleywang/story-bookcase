@@ -1,5 +1,12 @@
 # Project changes
 
+## 2026-11-01 — Photo-first gallery sync and Avisven logo concepts
+
+- Brought over the finished Replit community work that had not been committed:
+  photo-only room posts, optional blueprints, favourites, account menu,
+  photo edit/delete with a retry queue, and optional analytics events.
+- Added [#10 Avisven logo concept gallery](prototypes/inspiration/10-avisven-logo-gallery.html).
+
 ## 2026-10-31 — Pinwheel default and purposeful loading motion
 
 - Fresh designs now start with **Pinwheel**, using the prototype's `pairs`

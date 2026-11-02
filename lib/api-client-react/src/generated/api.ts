@@ -27,14 +27,18 @@ import type {
 import type {
   Build,
   BuildInput,
+  BuildPage,
   BuildUpdate,
   CheckUsernameAvailabilityParams,
   CommunitySummary,
   ErrorEnvelope,
   HealthStatus,
   ListBuildsParams,
+  ListMyBuildsParams,
+  ListMyFavouritesParams,
   Profile,
   ProfileUpdate,
+  RetryPhotoCleanup200,
   UploadUrlRequest,
   UploadUrlResponse,
   UsernameAvailability
@@ -66,6 +70,444 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getListMyBuildsUrl = (params?: ListMyBuildsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/profiles/me/builds?${stringifiedParams}` : `/api/profiles/me/builds`
+}
+
+/**
+ * @summary List all uploads owned by the session identity
+ */
+export const listMyBuilds = async (params?: ListMyBuildsParams, options?: Parameters<typeof customFetch>[1]): Promise<BuildPage> => {
+
+  return customFetch<BuildPage>(getListMyBuildsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyBuildsQueryKey = (params?: ListMyBuildsParams,) => {
+    return [
+    `/api/profiles/me/builds`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListMyBuildsQueryOptions = <TData = Awaited<ReturnType<typeof listMyBuilds>>, TError = ErrorType<void>>(params?: ListMyBuildsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyBuilds>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyBuildsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyBuilds>>> = ({ signal }) => listMyBuilds(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyBuilds>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListMyBuildsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyBuilds>>>
+export type ListMyBuildsQueryError = ErrorType<void>
+
+
+export function useListMyBuilds<TData = Awaited<ReturnType<typeof listMyBuilds>>, TError = ErrorType<void>>(
+ params: undefined |  ListMyBuildsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyBuilds>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMyBuilds>>,
+          TError,
+          Awaited<ReturnType<typeof listMyBuilds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyBuilds<TData = Awaited<ReturnType<typeof listMyBuilds>>, TError = ErrorType<void>>(
+ params?: ListMyBuildsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyBuilds>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMyBuilds>>,
+          TError,
+          Awaited<ReturnType<typeof listMyBuilds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyBuilds<TData = Awaited<ReturnType<typeof listMyBuilds>>, TError = ErrorType<void>>(
+ params?: ListMyBuildsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyBuilds>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List all uploads owned by the session identity
+ */
+
+export function useListMyBuilds<TData = Awaited<ReturnType<typeof listMyBuilds>>, TError = ErrorType<void>>(
+ params?: ListMyBuildsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyBuilds>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListMyBuildsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListMyFavouritesUrl = (params?: ListMyFavouritesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/profiles/me/favourites?${stringifiedParams}` : `/api/profiles/me/favourites`
+}
+
+/**
+ * @summary List the session identity's private saved room posts
+ */
+export const listMyFavourites = async (params?: ListMyFavouritesParams, options?: Parameters<typeof customFetch>[1]): Promise<BuildPage> => {
+
+  return customFetch<BuildPage>(getListMyFavouritesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyFavouritesQueryKey = (params?: ListMyFavouritesParams,) => {
+    return [
+    `/api/profiles/me/favourites`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListMyFavouritesQueryOptions = <TData = Awaited<ReturnType<typeof listMyFavourites>>, TError = ErrorType<void>>(params?: ListMyFavouritesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyFavourites>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyFavouritesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyFavourites>>> = ({ signal }) => listMyFavourites(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyFavourites>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListMyFavouritesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyFavourites>>>
+export type ListMyFavouritesQueryError = ErrorType<void>
+
+
+export function useListMyFavourites<TData = Awaited<ReturnType<typeof listMyFavourites>>, TError = ErrorType<void>>(
+ params: undefined |  ListMyFavouritesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyFavourites>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMyFavourites>>,
+          TError,
+          Awaited<ReturnType<typeof listMyFavourites>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyFavourites<TData = Awaited<ReturnType<typeof listMyFavourites>>, TError = ErrorType<void>>(
+ params?: ListMyFavouritesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyFavourites>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMyFavourites>>,
+          TError,
+          Awaited<ReturnType<typeof listMyFavourites>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyFavourites<TData = Awaited<ReturnType<typeof listMyFavourites>>, TError = ErrorType<void>>(
+ params?: ListMyFavouritesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyFavourites>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List the session identity's private saved room posts
+ */
+
+export function useListMyFavourites<TData = Awaited<ReturnType<typeof listMyFavourites>>, TError = ErrorType<void>>(
+ params?: ListMyFavouritesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyFavourites>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListMyFavouritesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRetryPhotoCleanupUrl = () => {
+
+
+
+
+  return `/api/profiles/me/photo-cleanup`
+}
+
+/**
+ * @summary Retry pending explicit photo deletions for this identity
+ */
+export const retryPhotoCleanup = async ( options?: Parameters<typeof customFetch>[1]): Promise<RetryPhotoCleanup200> => {
+
+  return customFetch<RetryPhotoCleanup200>(getRetryPhotoCleanupUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRetryPhotoCleanupMutationKey = () => ['retryPhotoCleanup'] as const;
+
+export const getRetryPhotoCleanupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retryPhotoCleanup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retryPhotoCleanup>>, TError,void, TContext> => {
+
+const mutationKey = getRetryPhotoCleanupMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retryPhotoCleanup>>, void> = () => {
+
+
+          return  retryPhotoCleanup(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetryPhotoCleanupMutationResult = NonNullable<Awaited<ReturnType<typeof retryPhotoCleanup>>>
+
+    export type RetryPhotoCleanupMutationError = ErrorType<void>
+
+
+    /**
+ * @summary Retry pending explicit photo deletions for this identity
+ */
+export const useRetryPhotoCleanup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retryPhotoCleanup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof retryPhotoCleanup>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRetryPhotoCleanupMutationOptions(options), queryClient);
+    }
+
+export const getSaveFavouriteUrl = (id: number,) => {
+
+
+
+
+  return `/api/builds/${id}/favourite`
+}
+
+/**
+ * @summary Idempotently save a room post, not individual photos
+ */
+export const saveFavourite = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getSaveFavouriteUrl(id),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+
+export const getSaveFavouriteMutationKey = () => ['saveFavourite'] as const;
+
+export const getSaveFavouriteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveFavourite>>, TError,SaveFavouriteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveFavourite>>, TError,SaveFavouriteMutationVariables, TContext> => {
+
+const mutationKey = getSaveFavouriteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveFavourite>>, SaveFavouriteMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  saveFavourite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveFavouriteMutationResult = NonNullable<Awaited<ReturnType<typeof saveFavourite>>>
+
+    export type SaveFavouriteMutationError = ErrorType<void>
+    export type SaveFavouriteMutationVariables = {id: number}
+
+    /**
+ * @summary Idempotently save a room post, not individual photos
+ */
+export const useSaveFavourite = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveFavourite>>, TError,SaveFavouriteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof saveFavourite>>,
+        TError,
+        SaveFavouriteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveFavouriteMutationOptions(options), queryClient);
+    }
+
+export const getRemoveFavouriteUrl = (id: number,) => {
+
+
+
+
+  return `/api/builds/${id}/favourite`
+}
+
+/**
+ * @summary Idempotently remove a private favourite
+ */
+export const removeFavourite = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getRemoveFavouriteUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveFavouriteMutationKey = () => ['removeFavourite'] as const;
+
+export const getRemoveFavouriteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavourite>>, TError,RemoveFavouriteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeFavourite>>, TError,RemoveFavouriteMutationVariables, TContext> => {
+
+const mutationKey = getRemoveFavouriteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeFavourite>>, RemoveFavouriteMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  removeFavourite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveFavouriteMutationResult = NonNullable<Awaited<ReturnType<typeof removeFavourite>>>
+
+    export type RemoveFavouriteMutationError = ErrorType<void>
+    export type RemoveFavouriteMutationVariables = {id: number}
+
+    /**
+ * @summary Idempotently remove a private favourite
+ */
+export const useRemoveFavourite = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavourite>>, TError,RemoveFavouriteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeFavourite>>,
+        TError,
+        RemoveFavouriteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveFavouriteMutationOptions(options), queryClient);
+    }
 
 export const getHealthCheckUrl = () => {
 

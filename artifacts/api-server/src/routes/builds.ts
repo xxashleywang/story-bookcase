@@ -7,11 +7,12 @@ import {
   ilike,
   inArray,
   isNotNull,
+  lt,
   or,
   sql,
   type SQL,
 } from "drizzle-orm";
-import { Router, type IRouter, type Request } from "express";
+import { Router, type IRouter, type Request, type RequestHandler } from "express";
 import {
   CreateBuildBody,
   CreateBuildResponse,
@@ -24,18 +25,92 @@ import {
   UpdateBuildBody,
   UpdateBuildParams,
   UpdateBuildResponse,
+  ListMyBuildsQueryParams,
+  ListMyFavouritesQueryParams,
+  ListMyBuildsResponse,
 } from "@workspace/api-zod";
 import {
   buildsTable,
   db,
   profilesTable,
   uploadReservationsTable,
+  favouritesTable,
+  photoDeletionsTable,
+  withAdvisoryLock,
 } from "@workspace/db";
 import { getCurrentUserId } from "../lib/auth";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { validStoredPhoto } from "../lib/photoValidation";
+import { pendingPhotoDeletions, retryPhotoDeletions } from "../lib/photoCleanup";
 
 const router: IRouter = Router();
 const objectStorage = new ObjectStorageService();
+
+// Serialize publish/removal/cleanup across server instances, not just this process.
+// A dedicated session holds the lock while ordinary pooled DB operations run.
+function photoMutation(handler: RequestHandler): RequestHandler {
+  return async (req, res, next) => {
+  if (!getCurrentUserId(req)) { await handler(req, res, next); return; }
+  await withAdvisoryLock(82140731, async () => { await handler(req, res, next); });
+  };
+}
+
+async function decorate(rows: Array<{ build: typeof buildsTable.$inferSelect; creatorUsername: string | null }>, userId: string | null) {
+  const saved = userId && rows.length ? await db.select({ id: favouritesTable.buildId }).from(favouritesTable)
+    .where(and(eq(favouritesTable.userId, userId), inArray(favouritesTable.buildId, rows.map((r) => r.build.id)))) : [];
+  const ids = new Set(saved.map((r) => r.id));
+  return rows.map(({ build, creatorUsername }) => ({ ...build, creatorUsername: creatorUsername ?? "maker", isOwner: build.userId === userId, isFavourite: ids.has(build.id) }));
+}
+
+for (const collection of ["builds", "favourites"] as const) {
+  router.get(`/profiles/me/${collection}`, async (req, res): Promise<void> => {
+    const userId = getCurrentUserId(req);
+    res.setHeader("Cache-Control", "private, no-store");
+    if (!userId) { res.status(401).json({ error: "Sign in to view your collection." }); return; }
+    const parsed = (collection === "builds" ? ListMyBuildsQueryParams : ListMyFavouritesQueryParams).safeParse(req.query);
+    if (!parsed.success) { res.status(400).json({ error: "Invalid page cursor." }); return; }
+    const conditions = [collection === "builds" ? eq(buildsTable.userId, userId) :
+      sql`exists (select 1 from ${favouritesTable} where ${favouritesTable.buildId} = ${buildsTable.id} and ${favouritesTable.userId} = ${userId})`];
+    if (parsed.data.cursor) conditions.push(lt(buildsTable.id, parsed.data.cursor));
+    const rows = await db.select({ build: buildsTable, creatorUsername: profilesTable.username }).from(buildsTable)
+      .leftJoin(profilesTable, eq(buildsTable.userId, profilesTable.userId)).where(and(...conditions)).orderBy(desc(buildsTable.id)).limit(25);
+    res.json(ListMyBuildsResponse.parse({ items: await decorate(rows.slice(0, 24), userId),
+      nextCursor: rows.length > 24 ? rows[23].build.id : null, cleanupPending: await pendingPhotoDeletions(userId) }));
+  });
+}
+
+router.post("/profiles/me/photo-cleanup", photoMutation(async (req, res): Promise<void> => {
+  const userId = getCurrentUserId(req);
+  if (!userId) { res.status(401).json({ error: "Sign in to retry photo deletion." }); return; }
+  res.setHeader("Cache-Control", "private, no-store");
+  res.json({ pending: await retryPhotoDeletions(userId, req) });
+}));
+
+router.put("/builds/:id/favourite", async (req, res): Promise<void> => {
+  const userId = getCurrentUserId(req);
+  if (!userId) { res.status(401).json({ error: "Sign in to save inspiration." }); return; }
+  const parsed = GetBuildParams.safeParse({ id: routeId(req.params.id) });
+  if (!parsed.success || parsed.data.id < 1) { res.status(400).json({ error: "Invalid post." }); return; }
+  // The unique key handles duplicate saves; the FK handles concurrent removal.
+  try {
+    const result = await db.insert(favouritesTable).values({ userId, buildId: parsed.data.id }).onConflictDoNothing();
+    void result;
+    res.sendStatus(204);
+  } catch (error) {
+    if ((error as { cause?: { code?: string }; code?: string }).cause?.code === "23503" || (error as { code?: string }).code === "23503") {
+      res.status(404).json({ error: "Room not found." }); return;
+    }
+    throw error;
+  }
+});
+router.delete("/builds/:id/favourite", async (req, res): Promise<void> => {
+  const userId = getCurrentUserId(req);
+  if (!userId) { res.status(401).json({ error: "Sign in to change saved inspiration." }); return; }
+  const parsed = GetBuildParams.safeParse({ id: routeId(req.params.id) });
+  if (!parsed.success) { res.status(400).json({ error: "Invalid post." }); return; }
+  await db.delete(favouritesTable).where(and(eq(favouritesTable.userId, userId), eq(favouritesTable.buildId, parsed.data.id)));
+  res.sendStatus(204);
+});
 
 async function makePhotosPublic(
   userId: string,
@@ -43,13 +118,17 @@ async function makePhotosPublic(
   req: Request,
 ): Promise<boolean> {
   const uniquePaths = [...new Set(photoPaths)];
-  if (uniquePaths.length !== photoPaths.length || photoPaths.length === 0) {
+  if (uniquePaths.length !== photoPaths.length || photoPaths.length === 0 || photoPaths.length > 4) {
     return false;
   }
 
   const recentEnough = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const reservations = await db
-    .select({ objectPath: uploadReservationsTable.objectPath })
+    .select({
+      objectPath: uploadReservationsTable.objectPath,
+      size: uploadReservationsTable.size,
+      contentType: uploadReservationsTable.contentType,
+    })
     .from(uploadReservationsTable)
     .where(
       and(
@@ -66,8 +145,9 @@ async function makePhotosPublic(
     }
     try {
       const file = await objectStorage.getObjectEntityFile(objectPath);
-      const response = await objectStorage.downloadObject(file);
-      if (response.status < 200 || response.status >= 300) return false;
+      const [metadata] = await file.getMetadata();
+      const reservation = reservations.find((item) => item.objectPath === objectPath)!;
+      if (!validStoredPhoto(reservation, metadata)) return false;
     } catch {
       return false;
     }
@@ -95,14 +175,7 @@ async function makePhotosPublic(
     return true;
   } catch (error) {
     req.log.error({ err: error, objectPaths: publicPaths }, "Could not publish build photos");
-    await Promise.allSettled(
-      publicPaths.map((objectPath) =>
-        objectStorage.trySetObjectEntityAclPolicy(objectPath, {
-          owner: userId,
-          visibility: "private",
-        }),
-      ),
-    );
+    await makeUnusedPhotosPrivate(userId, publicPaths, req);
     return false;
   }
 }
@@ -149,6 +222,7 @@ function routeId(raw: string | string[] | undefined): string {
 }
 
 router.get("/builds", async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "private, no-store");
   const parsed = ListBuildsQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid gallery filters." });
@@ -199,15 +273,13 @@ router.get("/builds", async (req, res): Promise<void> => {
   const rows = await query;
   res.json(
     ListBuildsResponse.parse(
-      rows.map(({ build, creatorUsername }) => ({
-        ...build,
-        creatorUsername: creatorUsername ?? "maker",
-      })),
+      await decorate(rows, getCurrentUserId(req)),
     ),
   );
 });
 
 router.get("/builds/:id", async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "private, no-store");
   const parsed = GetBuildParams.safeParse({ id: routeId(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid build id." });
@@ -229,14 +301,11 @@ router.get("/builds/:id", async (req, res): Promise<void> => {
   }
 
   res.json(
-    GetBuildResponse.parse({
-      ...row.build,
-      creatorUsername: row.creatorUsername ?? "maker",
-    }),
+    GetBuildResponse.parse((await decorate([row], getCurrentUserId(req)))[0]),
   );
 });
 
-router.post("/builds", async (req, res): Promise<void> => {
+router.post("/builds", photoMutation(async (req, res): Promise<void> => {
   const userId = getCurrentUserId(req);
   if (!userId) {
     res.status(401).json({ error: "Sign in to publish a build." });
@@ -285,9 +354,9 @@ router.post("/builds", async (req, res): Promise<void> => {
       creatorUsername: profile.username,
     }),
   );
-});
+}));
 
-router.patch("/builds/:id", async (req, res): Promise<void> => {
+router.patch("/builds/:id", photoMutation(async (req, res): Promise<void> => {
   const userId = getCurrentUserId(req);
   if (!userId) {
     res.status(401).json({ error: "Sign in to edit a build." });
@@ -316,7 +385,13 @@ router.patch("/builds/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const nextPhotoPaths = body.data.photoPaths ?? current.photoPaths;
+  const { removePhotoPaths, ...changes } = body.data;
+  if (removePhotoPaths && (changes.photoPaths || removePhotoPaths.some((p) => !current.photoPaths.includes(p)))) {
+    res.status(400).json({ error: "Remove only existing photos, without replacing the photo set." }); return;
+  }
+  const nextPhotoPaths = removePhotoPaths ? current.photoPaths.filter((p) => !removePhotoPaths.includes(p)) : changes.photoPaths ?? current.photoPaths;
+  if (!nextPhotoPaths.length) { res.status(409).json({ error: "This is the last photo. Delete the whole post instead." }); return; }
+  if (removePhotoPaths) changes.photoPaths = nextPhotoPaths;
   if (
     body.data.photoPaths &&
     !(await makePhotosPublic(userId, body.data.photoPaths, req))
@@ -329,11 +404,13 @@ router.patch("/builds/:id", async (req, res): Promise<void> => {
 
   let updated: typeof buildsTable.$inferSelect | undefined;
   try {
-    [updated] = await db
-      .update(buildsTable)
-      .set(body.data)
-      .where(eq(buildsTable.id, params.data.id))
-      .returning();
+    updated = await db.transaction(async (tx) => {
+      const [row] = await tx.update(buildsTable).set(changes)
+        .where(and(eq(buildsTable.id, params.data.id), eq(buildsTable.userId, userId))).returning();
+      const removed = current.photoPaths.filter((p) => !nextPhotoPaths.includes(p));
+      if (removed.length) await tx.insert(photoDeletionsTable).values(removed.map((objectPath) => ({ objectPath, userId }))).onConflictDoNothing();
+      return row;
+    });
   } catch (error) {
     req.log.error({ err: error }, "Could not update community build");
     if (body.data.photoPaths) {
@@ -355,17 +432,19 @@ router.patch("/builds/:id", async (req, res): Promise<void> => {
   const removedPhotos = current.photoPaths.filter(
     (path) => !nextPhotoPaths.includes(path),
   );
-  await makeUnusedPhotosPrivate(userId, removedPhotos, req);
+  if (removedPhotos.length) await retryPhotoDeletions(userId, req);
 
   res.json(
     UpdateBuildResponse.parse({
       ...updated,
       creatorUsername: profile?.username ?? "maker",
+      isOwner: true,
+      isFavourite: (await decorate([{ build: updated, creatorUsername: profile?.username ?? null }], userId))[0].isFavourite,
     }),
   );
-});
+}));
 
-router.delete("/builds/:id", async (req, res): Promise<void> => {
+router.delete("/builds/:id", photoMutation(async (req, res): Promise<void> => {
   const userId = getCurrentUserId(req);
   if (!userId) {
     res.status(401).json({ error: "Sign in to delete a build." });
@@ -378,8 +457,8 @@ router.delete("/builds/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [deleted] = await db
-    .delete(buildsTable)
+  const deleted = await db.transaction(async (tx) => {
+    const [row] = await tx.delete(buildsTable)
     .where(
       and(
         eq(buildsTable.id, parsed.data.id),
@@ -387,14 +466,17 @@ router.delete("/builds/:id", async (req, res): Promise<void> => {
       ),
     )
     .returning();
+    if (row?.photoPaths.length) await tx.insert(photoDeletionsTable).values(row.photoPaths.map((objectPath) => ({ objectPath, userId }))).onConflictDoNothing();
+    return row;
+  });
   if (!deleted) {
     res.status(404).json({ error: "Build not found." });
     return;
   }
 
-  await makeUnusedPhotosPrivate(userId, deleted.photoPaths, req);
+  await retryPhotoDeletions(userId, req);
   res.sendStatus(204);
-});
+}));
 
 router.get("/community/summary", async (_req, res): Promise<void> => {
   const [buildCount] = await db

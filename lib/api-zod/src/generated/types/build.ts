@@ -8,6 +8,8 @@
 import type { BuildConfiguration } from './buildConfiguration';
 
 export interface Build {
+  isFavourite?: boolean;
+  isOwner?: boolean;
   id: number;
   title: string;
   /** @nullable */
@@ -17,11 +19,13 @@ export interface Build {
   /** @nullable */
   modelName?: string | null;
   category: string;
-  colorName: string;
-  colorHex: string;
+  /** @nullable */
+  colorName: string | null;
+  /** @nullable */
+  colorHex: string | null;
   tags: string[];
   photoPaths: string[];
-  configuration: BuildConfiguration;
+  configuration: BuildConfiguration | null;
   creatorUsername: string;
   createdAt: Date;
   likesCount: number;

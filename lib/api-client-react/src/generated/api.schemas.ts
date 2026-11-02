@@ -5,14 +5,6 @@
  * API for the Twistory bookcase configurator and build community.
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
-
-export interface ErrorEnvelope {
-  error: string;
-}
-
 export type BuildConfigurationSize = typeof BuildConfigurationSize[keyof typeof BuildConfigurationSize];
 
 
@@ -53,6 +45,8 @@ export interface BuildConfiguration {
 }
 
 export interface Build {
+  isFavourite?: boolean;
+  isOwner?: boolean;
   id: number;
   title: string;
   /** @nullable */
@@ -62,14 +56,31 @@ export interface Build {
   /** @nullable */
   modelName?: string | null;
   category: string;
-  colorName: string;
-  colorHex: string;
+  /** @nullable */
+  colorName: string | null;
+  /** @nullable */
+  colorHex: string | null;
   tags: string[];
   photoPaths: string[];
-  configuration: BuildConfiguration;
+  configuration: BuildConfiguration | null;
   creatorUsername: string;
   createdAt: string;
   likesCount: number;
+}
+
+export interface BuildPage {
+  items: Build[];
+  /** @nullable */
+  nextCursor: number | null;
+  cleanupPending: number;
+}
+
+export interface HealthStatus {
+  status: string;
+}
+
+export interface ErrorEnvelope {
+  error: string;
 }
 
 export type BuildInputCategory = typeof BuildInputCategory[keyof typeof BuildInputCategory];
@@ -100,28 +111,37 @@ export interface BuildInput {
      * @nullable
      */
   modelName?: string | null;
-  category: BuildInputCategory;
+  category?: BuildInputCategory;
   /**
      * @minLength 1
      * @maxLength 40
+     * @nullable
      */
-  colorName: string;
-  /** @pattern ^#[0-9A-Fa-f]{6}$ */
-  colorHex: string;
+  colorName?: string | null;
+  /**
+     * @nullable
+     * @pattern ^#[0-9A-Fa-f]{6}$
+     */
+  colorHex?: string | null;
   /**
      * @maxItems 12
      * @items.maxLength 32
      */
-  tags: string[];
+  tags?: string[];
   /**
      * @minItems 1
-     * @maxItems 8
+     * @maxItems 4
      */
   photoPaths: string[];
-  configuration: BuildConfiguration;
+  configuration?: BuildConfiguration | null;
 }
 
 export interface BuildUpdate {
+  /**
+     * Explicitly remove existing photos without truncating legacy sets. Cannot combine with photoPaths. Removing the last photo requires deleting the whole post.
+     * @minItems 1
+     */
+  removePhotoPaths?: string[];
   /**
      * @minLength 2
      * @maxLength 80
@@ -145,10 +165,14 @@ export interface BuildUpdate {
   /**
      * @minLength 1
      * @maxLength 40
+     * @nullable
      */
-  colorName?: string;
-  /** @pattern ^#[0-9A-Fa-f]{6}$ */
-  colorHex?: string;
+  colorName?: string | null;
+  /**
+     * @nullable
+     * @pattern ^#[0-9A-Fa-f]{6}$
+     */
+  colorHex?: string | null;
   /**
      * @maxItems 12
      * @items.maxLength 32
@@ -156,10 +180,10 @@ export interface BuildUpdate {
   tags?: string[];
   /**
      * @minItems 1
-     * @maxItems 8
+     * @maxItems 4
      */
   photoPaths?: string[];
-  configuration?: BuildConfiguration;
+  configuration?: BuildConfiguration | null;
 }
 
 export interface Profile {
@@ -220,6 +244,26 @@ export interface UploadUrlResponse {
   metadata?: UploadUrlRequest;
 }
 
+export type CursorParameter = number;
+
+export type ListMyBuildsParams = {
+/**
+ * @minimum 1
+ */
+cursor?: CursorParameter;
+};
+
+export type ListMyFavouritesParams = {
+/**
+ * @minimum 1
+ */
+cursor?: CursorParameter;
+};
+
+export type RetryPhotoCleanup200 = {
+  pending: number;
+};
+
 export type ListBuildsParams = {
 q?: string;
 brand?: string;
@@ -249,4 +293,3 @@ export type CheckUsernameAvailabilityParams = {
  */
 username: string;
 };
-

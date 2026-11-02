@@ -4,12 +4,13 @@ import {
   RequestUploadUrlResponse,
 } from '@workspace/api-zod';
 import { getAuth } from '@clerk/express';
-import { eq } from 'drizzle-orm';
+import { count, eq, sql } from 'drizzle-orm';
 import { Router, type IRouter, type Request, type Response } from 'express';
 import {
   db,
   profilesTable,
   uploadReservationsTable,
+  buildsTable,
 } from '@workspace/db';
 
 import { ObjectPermission } from '../lib/objectAcl';
@@ -134,6 +135,11 @@ router.get('/storage/objects/*path', async (req: Request, res: Response) => {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join('/') : raw;
     const objectPath = `/objects/${wildcardPath}`;
+    // The database reference is authoritative even when a storage ACL update
+    // failed. Previously cached URLs cannot be recalled, but new reads stop now.
+    const [reference] = await db.select({ count: count() }).from(buildsTable)
+      .where(sql`${buildsTable.photoPaths} @> ARRAY[${objectPath}]::text[]`);
+    if (!reference?.count) { res.status(404).json({ error: 'Photo is no longer shared' }); return; }
     const objectFile =
       await objectStorageService.getObjectEntityFile(objectPath);
 

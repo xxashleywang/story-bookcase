@@ -1,2 +1,3 @@
 - [Product direction](product-direction.md) — configurator is primary, community secondary; full bookcase visible; floor/color picker preferences.
 - [Publication handoff](publication-handoff.md) — completion rebases can omit merge-only edits; compare the final workspace against the published tree.
+- [Photo deletion semantics](photo-deletion-semantics.md) — committed edits and pending storage cleanup are distinct; retry visibly and never purge shared objects.
