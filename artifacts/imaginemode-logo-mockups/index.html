@@ -3,18 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ImagineMode Logo Mockups</title>
+    <title>ImagineMōde Logo Mockups</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
-        --bg: #f5efe4;
-        --panel: #f9f4ea;
-        --ink: #2d2622;
-        --muted: #6f645a;
-        --line: #ddcfbc;
-        --accent: #ff684f;
-        --accent-2: #ff8a5d;
-        --dot: #ffd26a;
-        --dark-bg: #211c1f;
+        --bg: #f4efe6;
+        --panel: #f8f3ea;
+        --ink: #231f20;
+        --muted: #7a6f66;
+        --line: #e4d8c8;
+        --coral: #f07c5b;
+        --coral-deep: #e86a48;
+        --butter: #fde08d;
+        --dark: #231f20;
+        --cream: #f7f3eb;
       }
 
       * {
@@ -23,140 +30,178 @@
 
       body {
         margin: 0;
-        background: radial-gradient(circle at top, #fff6e8 0%, var(--bg) 70%);
+        background: var(--bg);
         color: var(--ink);
-        font-family:
-          Inter,
-          ui-sans-serif,
-          system-ui,
-          -apple-system,
-          "Segoe UI",
-          sans-serif;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
       }
 
       .wrap {
-        max-width: 1200px;
-        margin: 32px auto 60px;
-        padding: 0 18px;
+        max-width: 1180px;
+        margin: 28px auto 48px;
+        padding: 0 18px 24px;
       }
 
       h1 {
         margin: 0;
-        font-size: 28px;
-        letter-spacing: 0.02em;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 34px;
+        font-weight: 600;
       }
 
       .sub {
-        margin-top: 10px;
+        margin: 8px 0 0;
         color: var(--muted);
+        font-size: 13px;
         line-height: 1.5;
+        max-width: 62ch;
       }
 
       .concepts {
-        margin-top: 24px;
+        margin-top: 22px;
         display: grid;
-        grid-template-columns: repeat(2, minmax(320px, 1fr));
+        grid-template-columns: 1fr 1fr;
         gap: 18px;
       }
 
       .card {
         background: var(--panel);
         border: 1px solid var(--line);
-        border-radius: 20px;
+        border-radius: 22px;
         padding: 18px;
-        box-shadow: 0 4px 14px rgba(42, 28, 16, 0.07);
       }
 
       .label {
-        font-size: 12px;
+        font-size: 11px;
         letter-spacing: 0.16em;
-        color: var(--muted);
         text-transform: uppercase;
+        color: var(--muted);
       }
 
       .title {
         margin: 8px 0 6px;
-        font-size: 20px;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 26px;
+        font-weight: 600;
       }
 
       .desc {
-        margin: 0 0 16px;
+        margin: 0 0 14px;
         color: var(--muted);
-        font-size: 14px;
+        font-size: 12px;
+        line-height: 1.5;
       }
 
       .variants {
         display: grid;
-        grid-template-columns: 1fr;
         gap: 12px;
       }
 
       .variant {
         border: 1px solid var(--line);
-        border-radius: 14px;
-        background: #fffaf1;
-        padding: 14px;
+        border-radius: 16px;
+        background: var(--cream);
+        padding: 18px 16px 14px;
       }
 
       .variant.dark {
-        border-color: #4d4347;
-        background: var(--dark-bg);
-        color: #f7efe8;
+        background: var(--dark);
+        border-color: #3a3435;
+        color: #fff8f2;
       }
 
       .variant-head {
-        font-size: 11px;
-        letter-spacing: 0.14em;
+        font-size: 10px;
+        letter-spacing: 0.18em;
         text-transform: uppercase;
         color: var(--muted);
+        margin-bottom: 14px;
       }
 
       .variant.dark .variant-head {
-        color: #c9bbc1;
+        color: #b9aea8;
       }
 
-      .logo-row {
-        margin-top: 10px;
-        display: flex;
-        align-items: center;
-        gap: 14px;
+      .hero {
+        display: grid;
+        justify-items: center;
+        gap: 12px;
+        text-align: center;
+        padding: 8px 0 4px;
       }
 
       .word {
-        font-family: "Iowan Old Style", "Palatino Linotype", Palatino, serif;
-        font-size: 38px;
-        line-height: 1;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 42px;
+        font-weight: 500;
         letter-spacing: 0.01em;
+        line-height: 1;
       }
 
       .variant.dark .word {
-        color: #fff7f4;
+        color: #fff8f2;
       }
 
       .tagline {
-        margin-top: 6px;
-        font-size: 15px;
+        font-family: "Cormorant Garamond", Georgia, serif;
         font-style: italic;
+        font-size: 16px;
         color: #5f554c;
+        margin-top: -2px;
       }
 
       .variant.dark .tagline {
-        color: #cbbec4;
+        color: #d2c4bc;
       }
 
-      .small-icons {
-        margin-top: 10px;
+      .row {
         display: flex;
-        gap: 10px;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
       }
 
-      .dotline {
-        margin-top: 3px;
-        font-size: 12px;
+      .small-row {
+        margin-top: 8px;
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        align-items: end;
+      }
+
+      .chip {
+        display: grid;
+        gap: 6px;
+        justify-items: center;
+        font-size: 10px;
         color: var(--muted);
+        letter-spacing: 0.08em;
       }
 
-      @media (max-width: 920px) {
+      .chip-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        background: var(--dark);
+        display: grid;
+        place-items: center;
+      }
+
+      .chip-btn.s16 {
+        width: 28px;
+        height: 28px;
+      }
+
+      .chip-btn.s24 {
+        width: 34px;
+        height: 34px;
+      }
+
+      .chip-btn.s32 {
+        width: 42px;
+        height: 42px;
+      }
+
+      @media (max-width: 980px) {
         .concepts {
           grid-template-columns: 1fr;
         }
@@ -165,150 +210,208 @@
   </head>
   <body>
     <div class="wrap">
-      <h1>ImagineMōde — Logo Mockups</h1>
+      <h1>ImagineMōde — logo mockups</h1>
       <p class="sub">
-        Two concepts, both centered on an <strong>I-form</strong> with a single dot
-        node and no A references.
+        Two I-based concepts (no letter A). Same warm coral/cream vibe as your
+        reference. Tagline lockup uses only:
+        <em>Design it first. Build it once.</em>
       </p>
 
       <section class="concepts">
+        <!-- CONCEPT 2 -->
         <article class="card">
           <div class="label">Concept 2</div>
-          <h2 class="title">IM Ribbon (I-focused)</h2>
+          <h2 class="title">I Ribbon</h2>
           <p class="desc">
-            A single flowing stroke forms a playful I-shape with one centered
-            pivot node.
+            One continuous rounded stroke forms a playful capital I. A single
+            center node marks the pivot — idea before build.
           </p>
 
           <div class="variants">
             <div class="variant">
-              <div class="variant-head">Color lockup</div>
-              <div class="logo-row">
-                <svg width="72" height="72" viewBox="0 0 72 72" aria-label="IM Ribbon color mark">
-                  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 58 L34 16 L56 58" stroke="var(--accent)" stroke-width="9" />
-                    <path d="M21 48 L41 36 L52 58" stroke="var(--accent-2)" stroke-width="7" />
+              <div class="variant-head">Primary lockup</div>
+              <div class="hero">
+                <!-- I Ribbon: top bar + stem + bottom bar as one continuous stroke path feel -->
+                <svg width="88" height="88" viewBox="0 0 88 88" aria-label="I Ribbon color">
+                  <g fill="none" stroke="#f07c5b" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M26 22 H62" />
+                    <path d="M44 22 V66" />
+                    <path d="M26 66 H62" />
                   </g>
-                  <circle cx="34" cy="40" r="5.3" fill="var(--dot)" />
+                  <circle cx="44" cy="44" r="6" fill="#fde08d" />
                 </svg>
                 <div>
                   <div class="word">ImagineMōde</div>
                   <div class="tagline">Design it first. Build it once.</div>
                 </div>
               </div>
-              <div class="small-icons">
-                <svg width="16" height="16" viewBox="0 0 72 72">
-                  <path d="M18 58 L34 16 L56 58 M21 48 L41 36 L52 58" fill="none" stroke="#2d2622" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
-                  <circle cx="34" cy="40" r="5" fill="#2d2622" />
-                </svg>
-                <svg width="24" height="24" viewBox="0 0 72 72">
-                  <path d="M18 58 L34 16 L56 58 M21 48 L41 36 L52 58" fill="none" stroke="#2d2622" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
-                  <circle cx="34" cy="40" r="5" fill="#2d2622" />
-                </svg>
-                <svg width="32" height="32" viewBox="0 0 72 72">
-                  <path d="M18 58 L34 16 L56 58 M21 48 L41 36 L52 58" fill="none" stroke="#2d2622" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
-                  <circle cx="34" cy="40" r="5" fill="#2d2622" />
-                </svg>
-              </div>
-              <div class="dotline">16 / 24 / 32 icon visibility check</div>
             </div>
 
             <div class="variant">
               <div class="variant-head">Monochrome</div>
-              <div class="logo-row">
-                <svg width="72" height="72" viewBox="0 0 72 72" aria-label="IM Ribbon mono mark">
-                  <path d="M18 58 L34 16 L56 58 M21 48 L41 36 L52 58" fill="none" stroke="#2d2622" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
-                  <circle cx="34" cy="40" r="5" fill="#2d2622" />
+              <div class="row">
+                <svg width="56" height="56" viewBox="0 0 88 88" aria-label="I Ribbon mono">
+                  <g fill="none" stroke="#231f20" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M26 22 H62" />
+                    <path d="M44 22 V66" />
+                    <path d="M26 66 H62" />
+                  </g>
+                  <circle cx="44" cy="44" r="6" fill="#231f20" />
                 </svg>
-                <div class="word">ImagineMōde</div>
+                <div class="word" style="font-size: 34px">ImagineMōde</div>
               </div>
             </div>
 
             <div class="variant dark">
               <div class="variant-head">On dark</div>
-              <div class="logo-row">
-                <svg width="72" height="72" viewBox="0 0 72 72" aria-label="IM Ribbon dark mark">
-                  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 58 L34 16 L56 58" stroke="#ff705b" stroke-width="9" />
-                    <path d="M21 48 L41 36 L52 58" stroke="#ff9368" stroke-width="7" />
+              <div class="row">
+                <svg width="56" height="56" viewBox="0 0 88 88" aria-label="I Ribbon dark">
+                  <g fill="none" stroke="#f07c5b" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M26 22 H62" />
+                    <path d="M44 22 V66" />
+                    <path d="M26 66 H62" />
                   </g>
-                  <circle cx="34" cy="40" r="5.3" fill="#ffd26a" />
+                  <circle cx="44" cy="44" r="6" fill="#fde08d" />
                 </svg>
-                <div class="word">ImagineMōde</div>
+                <div class="word" style="font-size: 34px">ImagineMōde</div>
+              </div>
+            </div>
+
+            <div class="variant">
+              <div class="variant-head">Small icons</div>
+              <div class="small-row">
+                <div class="chip">
+                  <div class="chip-btn s16">
+                    <svg width="12" height="12" viewBox="0 0 88 88">
+                      <g fill="none" stroke="#f07c5b" stroke-width="12" stroke-linecap="round">
+                        <path d="M26 22 H62" />
+                        <path d="M44 22 V66" />
+                        <path d="M26 66 H62" />
+                      </g>
+                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
+                    </svg>
+                  </div>
+                  16
+                </div>
+                <div class="chip">
+                  <div class="chip-btn s24">
+                    <svg width="16" height="16" viewBox="0 0 88 88">
+                      <g fill="none" stroke="#f07c5b" stroke-width="12" stroke-linecap="round">
+                        <path d="M26 22 H62" />
+                        <path d="M44 22 V66" />
+                        <path d="M26 66 H62" />
+                      </g>
+                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
+                    </svg>
+                  </div>
+                  24
+                </div>
+                <div class="chip">
+                  <div class="chip-btn s32">
+                    <svg width="20" height="20" viewBox="0 0 88 88">
+                      <g fill="none" stroke="#f07c5b" stroke-width="12" stroke-linecap="round">
+                        <path d="M26 22 H62" />
+                        <path d="M44 22 V66" />
+                        <path d="M26 66 H62" />
+                      </g>
+                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
+                    </svg>
+                  </div>
+                  32
+                </div>
               </div>
             </div>
           </div>
         </article>
 
+        <!-- CONCEPT 3 -->
         <article class="card">
           <div class="label">Concept 3</div>
-          <h2 class="title">Build-Once Blocks (I-focused)</h2>
+          <h2 class="title">Build-Once Blocks (I)</h2>
           <p class="desc">
-            Three modular pieces assemble into a geometric I, representing
-            planning before heavy assembly.
+            Three modular pieces assemble into a geometric I — plan the parts
+            first, then build once. One center node only.
           </p>
 
           <div class="variants">
             <div class="variant">
-              <div class="variant-head">Color lockup</div>
-              <div class="logo-row">
-                <svg width="72" height="72" viewBox="0 0 72 72" aria-label="Build Once Blocks color mark">
-                  <rect x="28" y="14" width="16" height="10" rx="4.5" fill="var(--accent-2)" />
-                  <rect x="30" y="26" width="12" height="31" rx="5.5" fill="var(--accent)" />
-                  <rect x="24" y="58" width="24" height="8" rx="4" fill="#fb7c58" />
-                  <circle cx="36" cy="41.5" r="5.2" fill="var(--dot)" />
+              <div class="variant-head">Primary lockup</div>
+              <div class="hero">
+                <svg width="88" height="88" viewBox="0 0 88 88" aria-label="Blocks I color">
+                  <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
+                  <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
+                  <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
+                  <circle cx="44" cy="44" r="6" fill="#fde08d" />
                 </svg>
                 <div>
                   <div class="word">ImagineMōde</div>
                   <div class="tagline">Design it first. Build it once.</div>
                 </div>
               </div>
-              <div class="small-icons">
-                <svg width="16" height="16" viewBox="0 0 72 72">
-                  <rect x="28" y="14" width="16" height="10" rx="4" fill="#2d2622" />
-                  <rect x="30" y="26" width="12" height="31" rx="5" fill="#2d2622" />
-                  <rect x="24" y="58" width="24" height="8" rx="4" fill="#2d2622" />
-                  <circle cx="36" cy="41.5" r="5" fill="#f5efe4" />
-                </svg>
-                <svg width="24" height="24" viewBox="0 0 72 72">
-                  <rect x="28" y="14" width="16" height="10" rx="4" fill="#2d2622" />
-                  <rect x="30" y="26" width="12" height="31" rx="5" fill="#2d2622" />
-                  <rect x="24" y="58" width="24" height="8" rx="4" fill="#2d2622" />
-                  <circle cx="36" cy="41.5" r="5" fill="#f5efe4" />
-                </svg>
-                <svg width="32" height="32" viewBox="0 0 72 72">
-                  <rect x="28" y="14" width="16" height="10" rx="4" fill="#2d2622" />
-                  <rect x="30" y="26" width="12" height="31" rx="5" fill="#2d2622" />
-                  <rect x="24" y="58" width="24" height="8" rx="4" fill="#2d2622" />
-                  <circle cx="36" cy="41.5" r="5" fill="#f5efe4" />
-                </svg>
-              </div>
-              <div class="dotline">16 / 24 / 32 icon visibility check</div>
             </div>
 
             <div class="variant">
               <div class="variant-head">Monochrome</div>
-              <div class="logo-row">
-                <svg width="72" height="72" viewBox="0 0 72 72" aria-label="Build Once Blocks mono mark">
-                  <rect x="28" y="14" width="16" height="10" rx="4" fill="#2d2622" />
-                  <rect x="30" y="26" width="12" height="31" rx="5" fill="#2d2622" />
-                  <rect x="24" y="58" width="24" height="8" rx="4" fill="#2d2622" />
-                  <circle cx="36" cy="41.5" r="5" fill="#f5efe4" />
+              <div class="row">
+                <svg width="56" height="56" viewBox="0 0 88 88" aria-label="Blocks I mono">
+                  <rect x="24" y="16" width="40" height="14" rx="7" fill="#231f20" />
+                  <rect x="35" y="32" width="18" height="24" rx="7" fill="#231f20" />
+                  <rect x="24" y="58" width="40" height="14" rx="7" fill="#231f20" />
+                  <circle cx="44" cy="44" r="6" fill="#f7f3eb" />
                 </svg>
-                <div class="word">ImagineMōde</div>
+                <div class="word" style="font-size: 34px">ImagineMōde</div>
               </div>
             </div>
 
             <div class="variant dark">
               <div class="variant-head">On dark</div>
-              <div class="logo-row">
-                <svg width="72" height="72" viewBox="0 0 72 72" aria-label="Build Once Blocks dark mark">
-                  <rect x="28" y="14" width="16" height="10" rx="4" fill="#ff946b" />
-                  <rect x="30" y="26" width="12" height="31" rx="5" fill="#ff6f56" />
-                  <rect x="24" y="58" width="24" height="8" rx="4" fill="#ff7d5f" />
-                  <circle cx="36" cy="41.5" r="5.2" fill="#ffd26a" />
+              <div class="row">
+                <svg width="56" height="56" viewBox="0 0 88 88" aria-label="Blocks I dark">
+                  <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
+                  <rect x="35" y="32" width="18" height="24" rx="7" fill="#ff8a68" />
+                  <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
+                  <circle cx="44" cy="44" r="6" fill="#fde08d" />
                 </svg>
-                <div class="word">ImagineMōde</div>
+                <div class="word" style="font-size: 34px">ImagineMōde</div>
+              </div>
+            </div>
+
+            <div class="variant">
+              <div class="variant-head">Small icons</div>
+              <div class="small-row">
+                <div class="chip">
+                  <div class="chip-btn s16">
+                    <svg width="12" height="12" viewBox="0 0 88 88">
+                      <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
+                      <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
+                      <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
+                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
+                    </svg>
+                  </div>
+                  16
+                </div>
+                <div class="chip">
+                  <div class="chip-btn s24">
+                    <svg width="16" height="16" viewBox="0 0 88 88">
+                      <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
+                      <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
+                      <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
+                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
+                    </svg>
+                  </div>
+                  24
+                </div>
+                <div class="chip">
+                  <div class="chip-btn s32">
+                    <svg width="20" height="20" viewBox="0 0 88 88">
+                      <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
+                      <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
+                      <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
+                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
+                    </svg>
+                  </div>
+                  32
+                </div>
               </div>
             </div>
           </div>
