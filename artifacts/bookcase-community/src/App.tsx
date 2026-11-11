@@ -815,7 +815,7 @@ function Home() {
       trackEvent('inspiration_reference_dismissed', { source:'playroom', type:'reference' });
     }}/>}
     <Configurator onPublish={(scene) => { sceneRef.current = scene; openPublish(true); }} onSceneChange={syncScene}/>
-    <div style={{ color:'var(--muted-ink)', fontSize:12, padding:'16px 8px 0' }}>{published ? <>“{published.title}” is in the gallery. <Link href={`/build/${published.id}`}>See it</Link></> : 'A little space for your next idea.'}</div>
+    {published && <div style={{ color:'var(--muted-ink)', fontSize:12, padding:'16px 8px 0' }}>“{published.title}” is in the gallery. <Link href={`/build/${published.id}`}>See it</Link></div>}
     {publish && <PublishDialog source="playroom" close={() => setPublish(null)} blueprint={blueprint} attachByDefault={publish.attach} blueprintPreview={preview} onSaved={onBuildSaved}/>}
   </main></div>;
 }
