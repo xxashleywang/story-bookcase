@@ -95,14 +95,6 @@ const RAINBOW = 'conic-gradient(#f3c4b4,#f0e2a8,#bfe0c4,#b8d3ea,#d5c3e8,#f3c4b4)
 const FINISH_PRESETS = ['#F4F1EA', '#D9CBB4', '#C79A5B', '#B5543C', '#E58A6B', '#7E8A6A', '#3F5B4F', '#5C7A99', '#2F3A56', '#7A5C82', '#4A3B33', '#1F1F22'];
 const WALL_PRESETS = ['#FBF8F2', '#F2E6D8', '#EFD4C8', '#F4DDA4', '#DDE7CF', '#BFD8C7', '#CFE0EE', '#A9C1D9', '#DCD3EA', '#C9B8D8', '#556B5D', '#2F3346'];
 const FLOOR_PRESETS = ['#EAD8BC', '#D9BC92', '#B98D5E', '#8C6648', '#5E4130', '#CBC5BC', '#9C968C', '#DDD0BC', '#B7A58C', '#A3AA8C', '#8A9AA8', '#4B4A48'];
-const LOOKS = [
-  { name: 'Sunday spiral', color: '#E2B062', pattern: 'spiral', wall: '#CFE0EE', floor: 'pale' },
-  { name: 'Moody corner', color: '#3C3C42', pattern: 'corner', wall: '#2F3346', floor: 'walnut' },
-  { name: 'Soft pinwheel', color: '#E4E8E7', pattern: 'pairs', wall: '#EBD3CF', floor: 'oat' },
-  { name: 'Garden stack', color: '#8E9284', pattern: 'alternate', wall: '#D3E8DA', floor: 'pale' },
-  { name: 'Wine bar', color: '#6E4C42', pattern: 'sides', wall: '#F6E7B8', floor: 'ash' },
-  { name: 'Quiet lines', color: '#A8967E', pattern: 'front', wall: '#F6F4F0', floor: 'ash' },
-];
 const VIEWS = [['Front', 0, -10], ['Angled', -32, -10], ['Side', -90, -10], ['Top', -20, -62]] as const;
 const directions: Record<string, { label: string; rotation: number }> = {
   F: { label: 'Front', rotation: 0 }, L: { label: 'Left', rotation: 90 },
@@ -226,14 +218,13 @@ function BookcaseSketch({ color, dirs, tall = true }: { color: string; dirs: str
     <rect x="20" y="220" width="100" height="8" rx="2" fill={color} />
   </svg>;
 }
-function Header({ openPublish }: { openPublish?: () => void }) {
+function Header() {
   const { isSignedIn } = useAuth();
   return <header className="topbar">
     <Link className="brand" href="/">twistory<i /></Link>
     <span className="tagline">Every shelf has a story.</span>
     <nav className="top-actions">
-      <Link className="button light small" href="/inspiration">Room gallery</Link>
-      {openPublish && <button className="button coral small header-share" onClick={openPublish}><Camera size={15} /> Share a room</button>}
+      <Link className="button light small" href="/inspiration">Gallery</Link>
       {isSignedIn ? <AccountMenu/> : <Link className="button small" href="/sign-in">Sign in</Link>}
     </nav>
   </header>;
@@ -391,14 +382,6 @@ function Configurator({
     };
     animate();
   };
-  const useLook = (look: typeof LOOKS[number]) => {
-    const preset = S.PRESETS.find((p: any) => p.id === look.pattern);
-    updateModel((m) => ({ ...m, color: look.color, dirs: preset.make(m.dirs.length) }));
-    setWall(look.wall);
-    const floor = FLOORS.find((f) => f.id === look.floor) || FLOORS[0];
-    setFloor(floor);
-    setTab('style');
-  };
   const changeShelf = (index: number, dir: string) => updateModel((m) => ({ ...m, dirs: m.dirs.map((d: string, i: number) => i === index ? dir : d) }));
   const toggleShelf = (index: number) => {
     const next = [...progress];
@@ -459,7 +442,7 @@ function Configurator({
         <div className="pane-scroll">
           <section className="section"><h2>Try a shelf arrangement <small>{currentPattern}</small></h2>
             <div className="pattern-list"><div className="preset-grid" role="group" aria-label="Shelf arrangements">{S.PRESETS.map((p: any) => <button key={p.id} aria-pressed={p.make(scene.model.dirs.length).join('') === scene.model.dirs.join('')} className={`pattern preset-option ${p.make(scene.model.dirs.length).join('') === scene.model.dirs.join('') ? 'active' : ''}`} onClick={() => choosePattern(p.id)}>{p.name}</button>)}</div>
-              <span className="random-controls"><button className={`pattern random ${rolled ? 'active' : ''}`} disabled={rolling} onClick={roll}><Dices size={15}/> Randomize</button><button aria-label="Randomize rules" aria-expanded={rulesOpen} className="pattern random" onClick={() => setRulesOpen(!rulesOpen)}><SlidersHorizontal size={16}/>{4 - allowed.size + Number(noRepeat) ? <small>{4 - allowed.size + Number(noRepeat)}</small> : null}</button></span>
+              <span className="random-controls" role="group" aria-label="Randomize shelves"><button className={`pattern random random-dice ${rolled ? 'active' : ''}`} disabled={rolling} onClick={roll}><Dices size={15}/> Randomize</button><button aria-label="Randomize rules" aria-expanded={rulesOpen} className="pattern random random-rules" onClick={() => setRulesOpen(!rulesOpen)}><SlidersHorizontal size={16}/>{4 - allowed.size + Number(noRepeat) ? <small>{4 - allowed.size + Number(noRepeat)}</small> : null}</button></span>
               {rulesOpen && <div className="rules-pop"><h3>Shelves can face</h3><div className="allowed-grid">{Object.entries(directions).map(([dir, detail]) => <button key={dir} aria-pressed={allowed.has(dir)} className={!allowed.has(dir) ? 'off' : ''} onClick={() => toggleAllowed(dir)}>{iconPlan(dir, 24)}<br />{detail.label}</button>)}</div><button className={`toggle-row ${noRepeat ? 'on' : ''}`} aria-pressed={noRepeat} onClick={() => setNoRepeat(!noRepeat)}><i className="toggle" />No two neighbours alike</button><p className="note">{note}</p></div>}
             </div>
           </section>
@@ -480,16 +463,16 @@ function Configurator({
               </ColorPicker>
             </div>
           </details>
-          <section className="section" style={{ display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
-            <button className="button light small" onClick={saveShareLink}><LinkIcon size={14}/>Copy room link</button>
-            <button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share your build</button>
+          <section className="section cta-row">
+            <button className="link-copy-button" onClick={saveShareLink} aria-label="Copy link to this design" title="Copy link to this design"><LinkIcon size={14}/></button>
+            <button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share your bookcase</button>
           </section>
         </div>
       </div>
       <div className="pane" hidden={tab !== 'build'}>
         <section className="section"><div className="build-meter"><div className="build-meter-top"><b>{Math.round(done / progress.length * 100)}%</b><span>{done} of {progress.length} shelves</span></div><div className="progress-track"><i style={{ width:`${Math.max(4, done / progress.length * 100)}%` }} /></div><p>{fullyBuilt ? 'Every shelf is on. Anchor it to the wall with the strap in the box.' : done ? `Nice. Next up: shelf ${nextShelf + 1}, facing ${directions[scene.model.dirs[nextShelf]]?.label.toLowerCase()}.` : 'Start with the base and post, then shelf 1 at the bottom.'}</p></div></section>
         <section className="section"><h2>Bottom to top <small>tap as you place</small></h2><div className="shelf-list">{S.buildList(scene.model).map((shelf: any, i: number) => <button key={i} className={`shelf-row ${progress[i] ? 'done' : ''}`} onClick={() => toggleShelf(i)}><span className="shelf-number">{i + 1}</span>{iconPlan(shelf.dir, 23)}<span className="shelf-text"><b>Faces {shelf.label.toLowerCase()}</b><small>{i === 0 ? 'Lowest shelf' : i === progress.length - 1 ? 'Top shelf' : `${shelf.height.toFixed(1)}″ up`}</small></span><span className="mini-toggle" /></button>)}</div></section>
-        <section className="section build-tools"><button className="button light small" onClick={() => { setCompleted(Array(progress.length).fill(false)); window.Story3D.setProgress(scene.model, []); }}>Start over</button><button className="button light small" onClick={() => S.printBuildSheet(scene.model)}>Print sheet</button><button className="button coral small" onClick={() => onPublish(scene)}>Share build</button></section>
+        <section className="section build-tools"><button className="button light small" onClick={() => { setCompleted(Array(progress.length).fill(false)); window.Story3D.setProgress(scene.model, []); }}>Start over</button><button className="button light small" onClick={() => S.printBuildSheet(scene.model)}>Print sheet</button><button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share your bookcase</button></section>
       </div>
     </section>
   </div>;
@@ -501,40 +484,6 @@ function BuildVisual({ build, className, alt }: { build: Build; className: strin
   const config = build.configuration;
   if (config) return <div className={`${className} placeholder`} style={{ backgroundColor:config.wallColor }}><BookcaseSketch color={config.color} dirs={config.shelfDirections} tall={config.size === 'tall'} /></div>;
   return <div className={`${className} placeholder empty-photo`} aria-label="No photo available"><ImageOff size={22}/></div>;
-}
-
-function InspirationDrawer({ open, close, onUse, onReference, builds }: { open: boolean; close: () => void; onUse: (config: BuildConfiguration, handoff?: InspirationHandoff) => void; onReference: (id: number) => void; builds: Build[] }) {
-  const hostRefs = useRef<(HTMLDivElement | null)[]>([]);
-  useEffect(() => {
-    if (!open) return;
-    const mounted: any[] = [];
-    hostRefs.current.forEach((el, i) => {
-      if (!el) return;
-      const look = LOOKS[i];
-      const dirs = window.Story.PRESETS.find((p: any) => p.id === look.pattern).make(11);
-      mounted[i] = window.Story3D.mount(el, { state:window.Story.createState('tall', look.color, dirs), fit:.75, floor:.88, yaw:-28, drag:false, shadow:.25 });
-    });
-    return () => mounted.forEach((instance) => instance?.stopSpin?.());
-  }, [open]);
-  const useConfig = (config: BuildConfiguration, handoff?: InspirationHandoff) => { onUse(config, handoff); close(); };
-  return <>
-    <button aria-label="Close inspiration panel" className={`drawer-scrim ${open ? 'open' : ''}`} onClick={close} />
-    <aside className={`inspire-drawer ${open ? 'open' : ''}`} aria-hidden={!open}>
-      <div className="drawer-head"><div><span className="eyebrow">A little spark</span><h2>Get inspired</h2><p>Borrow a starting point, then make it feel like yours.</p></div><button aria-label="Close" className="icon-button" onClick={close}><X size={18}/></button></div>
-      <div className="drawer-content">
-        <div className="looks-grid">{LOOKS.map((look, i) => {
-          const floor = FLOORS.find((f) => f.id === look.floor)!;
-          const preset = window.Story.PRESETS.find((p: any) => p.id === look.pattern);
-          return <article className="look-card" key={look.name}><div className="look-stage" style={{ background:look.wall, '--floor-background':floor.bg } as CSSProperties}><div className="room-floor"/><div className="look-model" ref={(node) => { hostRefs.current[i] = node; }} /></div><div className="look-meta"><div><b>{look.name}</b><span>{window.Story.colorName(look.color)} · {floor.name}</span></div><button className="button small" onClick={() => useConfig({ size:'tall', color:look.color, shelfDirections:preset.make(11), wallColor:look.wall, floorId:floor.id, floorKind:floor.kind as any, customFloorColor:null })}>Use look</button></div></article>;
-        })}</div>
-        {builds.length > 0 && <div style={{ marginTop:24 }}><div className="drawer-head" style={{ padding:'10px 0' }}><div><span className="eyebrow">From the community</span><h2 style={{ fontSize:27 }}>Real rooms</h2></div><Link className="button light small" href="/inspiration" onClick={close}>See all</Link></div>
-          <div className="looks-grid">{builds.slice(0, 4).map((build) => <article className="look-card" key={build.id}><Link href={`/build/${build.id}`} onClick={close} className="look-photo-link"><BuildVisual build={build} className="look-photo"/></Link><div className="look-meta"><div><b>{build.title}</b><span>by @{build.creatorUsername}{build.configuration ? ' · has blueprint' : ''}</span></div>
-            {build.configuration ? <button className="button small" onClick={() => useConfig(build.configuration!, 'blueprint_drawer')}>Use blueprint</button> : <button className="button light small" onClick={() => { onReference(build.id); close(); }}>Use as reference</button>}</div></article>)}</div>
-        </div>}
-        <Link className="button coral" href="/inspiration" onClick={close} style={{ marginTop:18 }}>Browse the room gallery</Link>
-      </div>
-    </aside>
-  </>;
 }
 
 function BuildCard({ build, children }: { build: Build; children?: ReactNode }) {
@@ -553,7 +502,7 @@ function BuildCard({ build, children }: { build: Build; children?: ReactNode }) 
     {children}
   </article>;
 }
-function LoadingCards() { return <div className="loading-grid" aria-label="Loading community rooms">{[0,1,2,3,4,5].map((i) => <div className="skeleton" key={i}/>)}</div>; }
+function LoadingCards() { return <div className="loading-grid" aria-label="Loading community bookcases">{[0,1,2,3,4,5].map((i) => <div className="skeleton" key={i}/>)}</div>; }
 function Gallery() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'recent' | 'popular'>('recent');
@@ -571,12 +520,12 @@ function Gallery() {
     setShareOpen(true);
   }, [gate.ready]);
   const openShare = () => gate.request(() => setShareOpen(true));
-  return <div className="tw-shell"><Header openPublish={openShare}/><main className="gallery-page">
-    <section className="gallery-hero"><div><span className="eyebrow">Twistory room gallery</span><h1>Rooms people<br/>actually live in.</h1></div><div><p>{summary ? `${summary.totalBuilds} rooms from ${summary.totalBuilders} people.` : 'Shelves, corners and reading nooks from the community.'} Some come with a blueprint you can open in your Playroom; all of them are worth borrowing a detail from.</p><button className="button coral small" onClick={openShare} data-testid="button-share-room"><Camera size={14}/>Share your room</button></div></section>
-    <div className="gallery-tools"><label className="search-box"><Search size={17}/><input aria-label="Search rooms" data-testid="input-search" placeholder="Search a room, maker, or detail…" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
-      <select className="sort-select" aria-label="Sort rooms" data-testid="select-sort" value={sort} onChange={(e) => setSort(e.target.value as 'recent' | 'popular')}><option value="recent">Newest</option><option value="popular">Most loved</option></select></div>
-    {isLoading ? <LoadingCards/> : isError ? <div className="empty-state"><h2>We couldn't load the gallery.</h2><p>Your inspiration is still here; try once more.</p><button className="button" onClick={() => refetch()}>Try again</button></div> : builds?.length ? <div className="build-grid">{builds.map((build) => <BuildCard key={build.id} build={build}/>)}</div> :
-      <div className="empty-state"><Camera size={23}/><h2>No rooms in this corner yet.</h2><p>Try another search, or be the first to share one.</p><button className="button coral" onClick={openShare}>Share your room</button></div>}
+  return <div className="tw-shell"><Header/><main className="gallery-page">
+    <section className="gallery-hero"><div><span className="eyebrow">Twistory gallery</span><h1>Shelfies from the community.</h1></div><div><p>{summary ? `${summary.totalBuilds} bookcases from ${summary.totalBuilders} people.` : 'Story bookcases styled by the community.'} Some come with a blueprint you can open and make your own.</p><button className="button coral small" onClick={openShare} data-testid="button-share-room"><Camera size={14}/>Share your bookcase</button></div></section>
+    <div className="gallery-tools"><label className="search-box"><Search size={17}/><input aria-label="Search bookcases" data-testid="input-search" placeholder="Search a bookcase, maker, or detail…" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
+      <select className="sort-select" aria-label="Sort bookcases" data-testid="select-sort" value={sort} onChange={(e) => setSort(e.target.value as 'recent' | 'popular')}><option value="recent">Newest</option><option value="popular">Most loved</option></select></div>
+    {isLoading ? <LoadingCards/> : isError ? <div className="empty-state"><h2>We couldn't load the gallery.</h2><p>Your inspiration is still here; try once more.</p><button className="button" onClick={() => refetch()}>Try again</button></div> : builds?.length ? <div className="build-grid">{builds.map((build: Build) => <BuildCard key={build.id} build={build}/>)}</div> :
+      <div className="empty-state"><Camera size={23}/><h2>No bookcases in this corner yet.</h2><p>Try another search, or be the first to share one.</p><button className="button coral" onClick={openShare}>Share your bookcase</button></div>}
     {shareOpen && <PublishDialog source="gallery" close={() => setShareOpen(false)} blueprint={null} attachByDefault={false} onSaved={(build) => {
       client.invalidateQueries({ queryKey:getListBuildsQueryKey() }); client.invalidateQueries({ queryKey:getGetCommunitySummaryQueryKey() }); setLocation(`/build/${build.id}`);
     }}/>}
@@ -589,7 +538,7 @@ function DetailPage() {
   const [active, setActive] = useState(0);
   const { data:build, isLoading, isError, refetch } = useGetBuild(buildId, { query:{ enabled:Number.isFinite(buildId) && buildId > 0, queryKey:getGetBuildQueryKey(buildId) } });
   if (isLoading) return <div className="tw-shell"><Header/><main className="gallery-page"><div className="skeleton"/></main></div>;
-  if (isError || !build) return <div className="tw-shell"><Header/><main className="gallery-page empty-state"><h1>That room isn't here.</h1><p>It may have been removed by its maker.</p><button className="button" onClick={() => refetch()}>Try again</button> <Link href="/inspiration" className="button light">Back to the gallery</Link></main></div>;
+  if (isError || !build) return <div className="tw-shell"><Header/><main className="gallery-page empty-state"><h1>That bookcase post isn't here.</h1><p>It may have been removed by its maker.</p><button className="button" onClick={() => refetch()}>Try again</button> <Link href="/inspiration" className="button light">Back to the gallery</Link></main></div>;
   const photos = safePhotos(build);
   const current = photos[Math.min(active, photos.length - 1)];
   const config = build.configuration;
@@ -598,13 +547,13 @@ function DetailPage() {
     <div className="detail-layout">
       <div>{current ? <img className="detail-photo" src={photoUrl(current)} alt={`${build.title}, photo ${active + 1} of ${photos.length}`} data-testid="img-detail-photo"/> : <BuildVisual build={build} className="detail-photo"/>}
         {photos.length > 1 && <div className="detail-thumbs" role="group" aria-label="Choose a photo">{photos.map((p, i) => <button key={`${p}-${i}`} className={i === active ? 'active' : ''} aria-pressed={i === active} aria-label={`Show photo ${i + 1} of ${photos.length}`} data-testid={`button-photo-${i}`} onClick={() => setActive(i)}><img src={photoUrl(p)} alt="" loading="lazy"/></button>)}</div>}</div>
-      <section className="detail-copy"><span className="eyebrow">A community room</span><h1>{build.title}</h1><p>By @{build.creatorUsername} · {new Date(build.createdAt).toLocaleDateString(undefined,{ year:'numeric',month:'long',day:'numeric' })} · <Heart size={12} style={{ verticalAlign:'-1px' }}/> {build.likesCount}</p>
+      <section className="detail-copy"><span className="eyebrow">A community bookcase</span><h1>{build.title}</h1><p>By @{build.creatorUsername} · {new Date(build.createdAt).toLocaleDateString(undefined,{ year:'numeric',month:'long',day:'numeric' })} · <Heart size={12} style={{ verticalAlign:'-1px' }}/> {build.likesCount}</p>
         <div className="detail-actions"><FavouriteButton build={build} variant="detail"/>
           {build.isOwner && <Link href="/profile" className="button light small"><PencilLine size={14}/>Manage in your profile</Link>}</div>
         {build.description && <p className="detail-description">{build.description}</p>}
         {config ? <div className="detail-config"><span className="eyebrow">Blueprint attached</span><div className="detail-config-row"><div className="detail-config-sketch" style={{ backgroundColor:config.wallColor }}><BookcaseSketch color={config.color} dirs={config.shelfDirections} tall={config.size === 'tall'}/></div><p>{config.size === 'tall' ? 'Tall' : 'Standard'} · {config.shelfDirections.length} shelves · {window.Story.colorName(config.color)} finish</p></div>
           <button className="button coral" onClick={() => openBlueprint(config, 'blueprint_detail')} data-testid="button-use-blueprint"><Sparkles size={16}/>Use this blueprint</button></div>
-        : <div className="detail-config"><span className="eyebrow">Photo only</span><p>No blueprint was shared with this room. Keep the photo beside your Playroom while you set up your own arrangement.</p>
+        : <div className="detail-config"><span className="eyebrow">Photo only</span><p>No blueprint was shared with this post. Keep the photo beside your Playroom while you set up your own arrangement.</p>
           <a className="button coral" href={inspirationHref(referenceHref(basePath, build.id), 'reference_detail')} data-testid="button-build-from-inspiration"><Sparkles size={16}/>Build from this inspiration</a></div>}
       </section>
     </div>
@@ -625,10 +574,10 @@ function UsernameEditor({ profile, onComplete, onCancel }: { profile: Profile; o
     if (!canSave) return;
     update.mutate({ data:{ username } }, { onSuccess:() => { void refreshAccountViews(queryClient); onComplete(); } });
   };
-  const hint = !validFormat && username ? '3 to 24 characters: letters, numbers, periods, underscores or hyphens.' : unchanged && username ? 'This is your current username.' : check.isLoading ? 'Checking availability...' : check.data?.available ? 'That one is free. It is yours if you want it.' : validFormat ? 'Someone already has that one.' : 'Shown on the rooms you share. You can change it later.';
+  const hint = !validFormat && username ? '3 to 24 characters: letters, numbers, periods, underscores or hyphens.' : unchanged && username ? 'This is your current username.' : check.isLoading ? 'Checking availability...' : check.data?.available ? 'That one is free. It is yours if you want it.' : validFormat ? 'Someone already has that one.' : 'Shown on the bookcases you share. You can change it later.';
   return <form className="username-panel" onSubmit={submit} aria-labelledby="username-panel-title">
     <div><span className="eyebrow">Your maker mark</span><h2 id="username-panel-title">{profile.isUsernameSet ? 'Change your username' : 'Pick a username'}</h2>
-      <p>{profile.isUsernameSet ? 'Your shared rooms update to the new name everywhere.' : 'You need one to share rooms. Saving favourites works without it.'}</p></div>
+      <p>{profile.isUsernameSet ? 'Your shared bookcases update to the new name everywhere.' : 'You need one to share bookcases. Saving favourites works without it.'}</p></div>
     <div className="username-row"><span className="at" aria-hidden="true">@</span>
       <input id="username" aria-label="Public username" aria-describedby="username-hint" data-autofocus value={username} onChange={(e) => setUsername(e.target.value.trim())} maxLength={24} autoComplete="off" placeholder="your.name" data-testid="input-username"/>
       <button className="button coral small" disabled={!canSave} data-testid="button-save-username">{update.isPending ? <><LoaderCircle size={14} className="spin"/>Saving</> : 'Save'}</button>
@@ -658,14 +607,14 @@ function BuildChunk({ kind, userId, cursor, isLast, onMore, renderActions, onPag
   if (isError || !data) return <div className="profile-inline-error" role="alert"><AlertTriangle size={18}/><span>{cursor === undefined ? 'This shelf would not load.' : 'The next few would not load.'}</span><button className="button light small" onClick={() => refetch()}>Try again</button></div>;
   if (cursor === undefined && data.items.length === 0) return <ProfileEmpty kind={kind}/>;
   return <>
-    {data.items.map((build) => <BuildCard key={build.id} build={build}>{renderActions?.(build)}</BuildCard>)}
+    {data.items.map((build: Build) => <BuildCard key={build.id} build={build}>{renderActions?.(build)}</BuildCard>)}
     {isLast && data.nextCursor !== null && <div className="load-more-row"><button className="button light" disabled={isFetching} onClick={() => onMore(data.nextCursor!)} data-testid={`button-load-more-${kind}`}>Show more</button></div>}
   </>;
 }
 function ProfileEmpty({ kind }: { kind: ListKind }) {
   return kind === 'uploads'
-    ? <div className="profile-empty"><span className="profile-empty-icon"><Upload size={22}/></span><h3>Nothing on the wall yet.</h3><p>Share a photo of a corner you love. Attach your blueprint if you want people to borrow it.</p><Link href="/inspiration?share=photo" className="button coral small"><Camera size={14}/>Share a room</Link></div>
-    : <div className="profile-empty"><span className="profile-empty-icon"><Bookmark size={22}/></span><h3>No saved rooms yet.</h3><p>Tap the bookmark on any room in the gallery. It will wait for you here, private to you.</p><Link href="/inspiration" className="button coral small">Browse the gallery</Link></div>;
+    ? <div className="profile-empty"><span className="profile-empty-icon"><Upload size={22}/></span><h3>Nothing on the wall yet.</h3><p>Share a photo of a corner you love. Attach your blueprint if you want people to borrow it.</p><Link href="/inspiration?share=photo" className="button coral small"><Camera size={14}/>Share your bookcase</Link></div>
+    : <div className="profile-empty"><span className="profile-empty-icon"><Bookmark size={22}/></span><h3>No saved bookcases yet.</h3><p>Tap the bookmark on any post in the gallery. It will wait for you here, private to you.</p><Link href="/inspiration" className="button coral small">Browse the gallery</Link></div>;
 }
 function PagedBuilds({ kind, userId, renderActions, onFirstPage }: { kind: ListKind; userId: string; renderActions?: (build: Build) => ReactNode; onFirstPage?: (page: BuildPage) => void }) {
   const [cursors, setCursors] = useState<(number | undefined)[]>([undefined]);
@@ -735,8 +684,8 @@ function ProfilePage() {
   };
   const shell = (body: ReactNode) => <div className="tw-shell"><Header/><main className="gallery-page profile-page">{isSignedIn && (!profile || profileLoading || profileError) && <LogoutButton/>}{body}</main></div>;
   if (!isLoaded || (userId && profileLoading)) return shell(<div className="profile-loading" aria-label="Loading your page"><div className="skeleton profile-head-skeleton"/><div className="profile-grid">{[0, 1, 2].map((i) => <div className="skeleton profile-skeleton" key={i}/>)}</div></div>);
-  if (!userId) return shell(<section className="profile-gate"><span className="profile-gate-mark" aria-hidden="true"><Bookmark size={26}/></span><span className="eyebrow">Your own corner</span><h1>Your rooms and the ones you saved, together.</h1><p>Sign in to see your uploads and keep a private shelf of rooms you want to come back to.</p><Link className="button coral" href="/sign-in">Sign in to Twistory</Link></section>);
-  if (profileError || !profile) return shell(<section className="profile-gate"><h1>Your page would not open.</h1><p>Your rooms are safe. This is a loading problem.</p><button className="button" onClick={() => refetch()}>Try again</button></section>);
+  if (!userId) return shell(<section className="profile-gate"><span className="profile-gate-mark" aria-hidden="true"><Bookmark size={26}/></span><span className="eyebrow">Your own corner</span><h1>Your posts and the ones you saved, together.</h1><p>Sign in to see your uploads and keep a private shelf of bookcases you want to come back to.</p><Link className="button coral" href="/sign-in">Sign in to Twistory</Link></section>);
+  if (profileError || !profile) return shell(<section className="profile-gate"><h1>Your page would not open.</h1><p>Your posts are safe. This is a loading problem.</p><button className="button" onClick={() => refetch()}>Try again</button></section>);
   const member = profile;
   const showEditor = editingName || (!member.isUsernameSet && pendingIntent);
   const initial = (member.username || member.displayName || user?.firstName || 'T')[0]!.toUpperCase();
@@ -757,14 +706,14 @@ function ProfilePage() {
       <div className="profile-id">
         <span className="eyebrow">Your page</span>
         <h1>{member.isUsernameSet && member.username ? `@${member.username}` : (member.displayName || user?.firstName || 'Hello there')}</h1>
-        <p>{member.isUsernameSet ? (member.displayName || 'Your uploads and saved rooms live here.') : 'No username yet. You can still save rooms; pick one when you want to share.'}</p>
+        <p>{member.isUsernameSet ? (member.displayName || 'Your uploads and saved bookcases live here.') : 'No username yet. You can still save bookcases; pick one when you want to share.'}</p>
         {!showEditor && <button className="text-button" onClick={() => setEditingName(true)} data-testid="button-edit-username"><PencilLine size={13}/>{member.isUsernameSet ? 'Change username' : 'Pick a username'}</button>}
       </div>
-      <div className="profile-hero-actions"><Link className="button coral small" href="/inspiration?share=photo"><Camera size={14}/>Share a room</Link><LogoutButton/></div>
+      <div className="profile-hero-actions"><Link className="button coral small" href="/inspiration?share=photo"><Camera size={14}/>Share your bookcase</Link><LogoutButton/></div>
     </section>
     {showEditor && <UsernameEditor profile={member} onCancel={() => setEditingName(false)} onComplete={() => { setEditingName(false); void refetch(); const intent = takeShareIntent(); if (intent) setLocation(intent); }}/>}
     <CleanupNotice pending={pending}/>
-    <div className="profile-tabs" role="tablist" aria-label="Your rooms" onKeyDown={onTabKey}>
+    <div className="profile-tabs" role="tablist" aria-label="Your posts" onKeyDown={onTabKey}>
       {(['uploads', 'favourites'] as const).map((kind) => <button key={kind} ref={(n) => { tabRefs.current[kind] = n; }} role="tab" id={`tab-${kind}`} aria-selected={tab === kind} aria-controls={`panel-${kind}`} tabIndex={tab === kind ? 0 : -1}
         className={tab === kind ? 'active' : ''} onClick={() => setTab(kind)} data-testid={`tab-${kind}`}>
         {kind === 'uploads' ? <><Upload size={15}/>Your uploads</> : <><Bookmark size={15}/>Favourites</>}</button>)}
@@ -795,13 +744,11 @@ function ReferenceCard({ id, onDismiss }: { id: number; onDismiss: () => void })
 }
 
 function Home() {
-  const [inspireOpen, setInspireOpen] = useState(false);
   const [publish, setPublish] = useState<{ attach: boolean } | null>(null);
   const [published, setPublished] = useState<Build | null>(null);
   const [refId, setRefId] = useState<number | null>(() => readReferenceId(window.location.search));
   const sceneRef = useRef<Scene>(initialScene());
   const [blueprint, setBlueprint] = useState<BuildConfiguration | null>(null);
-  const buildsQuery = useListBuilds({ sort:'recent', limit:8 });
   const queryClient = useQueryClient();
   const gate = useShareGate('blueprint');
   const syncScene = useCallback((scene: Scene) => {
@@ -830,20 +777,13 @@ function Home() {
     queryClient.invalidateQueries({ queryKey:getGetCommunitySummaryQueryKey() });
   };
   const preview = blueprint ? <span style={{ backgroundColor:blueprint.wallColor }}><BookcaseSketch color={blueprint.color} dirs={blueprint.shelfDirections} tall={blueprint.size === 'tall'}/></span> : null;
-  return <div className="tw-shell"><Header openPublish={() => openPublish(false)}/><main className={`page-wrap ${refId ? 'has-reference' : ''}`}>
+  return <div className="tw-shell"><Header/><main className={`page-wrap ${refId ? 'has-reference' : ''}`}>
     {refId && <ReferenceCard id={refId} onDismiss={() => {
       setReference(null);
       trackEvent('inspiration_reference_dismissed', { source:'playroom', type:'reference' });
     }}/>}
     <Configurator onPublish={(scene) => { sceneRef.current = scene; openPublish(true); }} onSceneChange={syncScene}/>
-    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, padding:'16px 8px 0', flexWrap:'wrap' }}>
-      <span style={{ color:'var(--muted-ink)', fontSize:12 }}>{published ? <>“{published.title}” is in the gallery. <Link href={`/build/${published.id}`}>See it</Link></> : 'A little room for your next idea.'}</span>
-      <button className="button light small" onClick={() => setInspireOpen(true)}><Sparkles size={14}/>Get inspired</button>
-    </div>
-    <InspirationDrawer open={inspireOpen} close={() => setInspireOpen(false)} onUse={openBlueprint} onReference={(id) => {
-      window.history.replaceState(window.history.state, '', inspirationHref(window.location.href, 'reference_drawer'));
-      setReference(id);
-    }} builds={buildsQuery.data || []}/>
+    <div style={{ color:'var(--muted-ink)', fontSize:12, padding:'16px 8px 0' }}>{published ? <>“{published.title}” is in the gallery. <Link href={`/build/${published.id}`}>See it</Link></> : 'A little space for your next idea.'}</div>
     {publish && <PublishDialog source="playroom" close={() => setPublish(null)} blueprint={blueprint} attachByDefault={publish.attach} blueprintPreview={preview} onSaved={onBuildSaved}/>}
   </main></div>;
 }
@@ -917,7 +857,7 @@ function Router() {
       logoBox:'rounded-xl', logoImage:'rounded-xl', socialButtonsBlockButton:'!border-[#e8d9c8] !bg-white rounded-xl', formButtonPrimary:'!bg-[#ff6b4a] !text-white rounded-xl', formFieldInput:'!bg-white !text-[#2b1e16] !border-[#e5d6c3] rounded-xl', footerAction:'border-0', dividerLine:'!bg-[#e5d6c3]', alert:'!bg-[#fff1e6] rounded-xl', otpCodeFieldInput:'!bg-white !text-[#2b1e16]', formFieldRow:'gap-2', main:'gap-4',
     },
   }} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`}
-    localization={{ signIn:{ start:{ title:'Welcome back', subtitle:'Come back to your Twistory workshop.' } }, signUp:{ start:{ title:'Make yourself at home', subtitle:'Create an account and share your first room.' } } }}
+    localization={{ signIn:{ start:{ title:'Welcome back', subtitle:'Come back to your Twistory workshop.' } }, signUp:{ start:{ title:'Make yourself at home', subtitle:'Create an account and share your first bookcase.' } } }}
     routerPush={(to) => setLocation(stripBase(to))} routerReplace={(to) => setLocation(stripBase(to), { replace:true })}>
     <ClerkAuthBridge>
       <AccountRoutes/>

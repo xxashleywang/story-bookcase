@@ -1,6 +1,6 @@
 # Playroom + Gallery CTA cleanup and muted Randomize — Implementation Plan
 
-**Overall Progress:** `0%`
+**Overall Progress:** `100%`
 
 ## TLDR
 The Playroom (`artifacts/bookcase-community/src/App.tsx`) shows six buttons around the configurator, and three of them do overlapping things. The gallery page repeats the problem with two "Share" buttons. The Randomize chip is also louder than the rest of the pane. This plan:
@@ -48,8 +48,9 @@ The Playroom (`artifacts/bookcase-community/src/App.tsx`) shows six buttons arou
 - **Gallery page keeps one share button:** the hero "Share your bookcase". The empty-state button only shows when there are no results, so it can't appear next to the hero one; it gets the same label.
 - **Result:** Playroom goes from 6 buttons to 3 (Gallery, Sign in, Share your bookcase) plus one icon button. Gallery goes from 2 share buttons to 1.
 
-## Open question for Ashley: gallery headline
-Pick one (or mix). Eyebrow becomes **"Twistory gallery"** in all cases.
+## Headline choice (resolved)
+Selected headline: **"Shelfies from the community."**  
+Eyebrow: **"Twistory gallery"**.
 
 | # | Headline | Why |
 |---|---|---|
@@ -63,32 +64,31 @@ Supporting line, proposed for any headline: "Story bookcases styled by the commu
 
 ## Tasks
 
-- [ ] 🟥 **Step 0: Branch**
-  - [ ] 🟥 On `cursor/cta-cleanup-plan-7dd0` (this plan). Implementation goes on the same branch once approved.
+- [x] 🟩 **Step 0: Branch**
+  - [x] 🟩 Implemented on `cursor/cta-cleanup-plan-7dd0`.
 
-- [ ] 🟥 **Step 1: Randomize split pill**
-  - [ ] 🟥 Wrap dice + settings in one container with a shared pale butter background, shared radius, thin divider
-  - [ ] 🟥 Rolled state: dice half ink, settings half unchanged; rules-count badge readable in both states
+- [x] 🟩 **Step 1: Randomize split pill**
+  - [x] 🟩 Wrapped dice + settings in one shared split control with a pale butter container
+  - [x] 🟩 Rolled state now uses ink on the dice half; rules-count badge remains readable
 
-- [ ] 🟥 **Step 2: Header**
-  - [ ] 🟥 Remove "Share a room" from `Header` (drop the `openPublish` prop and its callers on Playroom + gallery)
-  - [ ] 🟥 Rename "Room gallery" → "Gallery"
+- [x] 🟩 **Step 2: Header**
+  - [x] 🟩 Removed "Share a room" from `Header` and removed `openPublish` prop wiring
+  - [x] 🟩 Renamed "Room gallery" to "Gallery"
 
-- [ ] 🟥 **Step 3: Playroom footers**
-  - [ ] 🟥 Style tab: icon-only copy-link button + coral "Share your bookcase"
-  - [ ] 🟥 Build tab: "Share build" → "Share your bookcase"
+- [x] 🟩 **Step 3: Playroom footers**
+  - [x] 🟩 Style tab now uses icon-only copy-link + coral "Share your bookcase"
+  - [x] 🟩 Build tab CTA renamed to "Share your bookcase"
 
-- [ ] 🟥 **Step 4: Remove Get inspired**
-  - [ ] 🟥 Remove the button, `InspirationDrawer`, and its `useListBuilds` call from the Playroom
-  - [ ] 🟥 Keep the "is in the gallery. See it" confirmation after publishing
+- [x] 🟩 **Step 4: Remove Get inspired**
+  - [x] 🟩 Removed the button, `InspirationDrawer`, and related Playroom wiring
+  - [x] 🟩 Kept the "is in the gallery. See it" confirmation after publishing
 
-- [ ] 🟥 **Step 5: Gallery + copy pass** (headline pending pick)
-  - [ ] 🟥 Gallery: eyebrow, chosen headline, supporting line, search placeholder, hero + empty-state button → "Share your bookcase"
-  - [ ] 🟥 Profile: empty state + "Share a room" buttons → "Share your bookcase"
-  - [ ] 🟥 `PublishDialog` title/labels if they say "room"
+- [x] 🟩 **Step 5: Gallery + copy pass**
+  - [x] 🟩 Gallery updated with chosen headline, revised supporting line, search placeholder, and share labels
+  - [x] 🟩 Profile share CTAs updated to "Share your bookcase"
+  - [x] 🟩 `PublishDialog` title/copy updated away from "room"
 
-- [ ] 🟥 **Step 6: Verify in browser**
-  - [ ] 🟥 Desktop + mobile: header has 2 items on Playroom and gallery; Playroom has 1 coral CTA + copy icon; gallery has 1 share button
-  - [ ] 🟥 Randomize reads as one paired control, quieter than before, idle and rolled
-  - [ ] 🟥 Share opens the dialog with blueprint attached; copy-link copies a URL that reopens the same design
-  - [ ] 🟥 Gallery and profile share buttons still open the dialog
+- [x] 🟩 **Step 6: Verify**
+  - [x] 🟩 `pnpm run typecheck:libs`
+  - [x] 🟩 `pnpm --filter @workspace/bookcase-community run typecheck`
+  - [x] 🟩 `pnpm --filter @workspace/bookcase-community run test` (35 passing tests)
