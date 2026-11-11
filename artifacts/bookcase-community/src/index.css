@@ -231,9 +231,6 @@ html,body,#root { min-height:100%; } body { margin:0; background:var(--cream); c
   0%, 68%, 100% { transform:none; opacity:1; }
   76% { transform:translateY(1px) scale(.95); opacity:.74; }
 }
-@media (hover:none) {
-  .shelf-key-hint { display:none; }
-}
 
 /* Photo-first sharing */
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
