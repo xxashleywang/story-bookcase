@@ -33,6 +33,9 @@ import { ColorPicker } from '@/components/color-picker';
 import { ShelfSelector } from '@/components/shelf-selector';
 import { ShelfEditor } from '@/components/shelf-editor';
 import { moveShelfSelection, rotateShelfDirection, shelfActionFromKey } from '@/lib/shelf-keyboard';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 
 declare global {
   interface Window {
@@ -42,6 +45,7 @@ declare global {
 }
 
 const LAST_SCENE_KEY = 'twistory:last-scene';
+const SHELF_HINT_DISMISSED_KEY = 'twistory:shelf-key-hint-dismissed';
 const clerkPubKey = clerkEnabled
   ? publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
   : '';
@@ -258,6 +262,10 @@ function Configurator({
   const viewRef = useRef<ViewHandle | null>(null);
   const selectRef = useRef<(index: number) => void>(() => undefined);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [showShelfKeyHint, setShowShelfKeyHint] = useState(() => {
+    try { return window.localStorage.getItem(SHELF_HINT_DISMISSED_KEY) !== '1'; } catch { return true; }
+  });
+  const shelfArrowUseCount = useRef(0);
   selectRef.current = (i: number) => {
     setSelected(i);
     setEditorOpen(true);
@@ -331,6 +339,13 @@ function Configurator({
       });
       if (!action) return;
       event.preventDefault();
+      if (showShelfKeyHint) {
+        shelfArrowUseCount.current += 1;
+        if (shelfArrowUseCount.current >= 3) {
+          setShowShelfKeyHint(false);
+          try { window.localStorage.setItem(SHELF_HINT_DISMISSED_KEY, '1'); } catch { /* storage may be unavailable */ }
+        }
+      }
       if (action.type === 'select') {
         setSelected((old) => moveShelfSelection(old, scene.model.dirs.length, action.step));
         setEditorOpen(true);
@@ -343,7 +358,7 @@ function Configurator({
     };
     window.addEventListener('keydown', onArrow);
     return () => window.removeEventListener('keydown', onArrow);
-  }, [selected, scene.model.dirs.length, tab, rolling]);
+  }, [selected, scene.model.dirs.length, tab, rolling, showShelfKeyHint]);
   const updateModel = (change: (model: any) => any) => setScene((old) => ({ ...old, model: change(old.model) }));
   const setWall = (wall: string) => setScene((old) => ({ ...old, wall }));
   const setFloor = (floor: { id:string; name:string; kind:string; bg:string }, kind = floor.kind, hex = scene.customFloorColor) => {
@@ -436,7 +451,11 @@ function Configurator({
               onSelectionCommit={() => shelfEditorRef.current?.querySelector<HTMLButtonElement>('.dir-buttons button[aria-pressed="true"]')?.focus({ preventScroll:true })} />
             {selected >= 0 && !editorOpen && <button className="button light small reopen-shelf" onClick={() => setEditorOpen(true)}>Edit shelf {selected + 1}</button>}
             <ShelfEditor containerRef={shelfEditorRef} open={editorOpen} selected={selected} dirs={scene.model.dirs}
-              onDirection={(dir) => changeShelf(selected, dir)} onSelect={(i) => { setSelected(i); setEditorOpen(true); }} onClose={() => setEditorOpen(false)} />
+              onDirection={(dir) => changeShelf(selected, dir)} onSelect={(i) => { setSelected(i); setEditorOpen(true); }} onClose={() => setEditorOpen(false)}
+              showKeyboardHint={showShelfKeyHint} onDismissKeyboardHint={() => {
+                setShowShelfKeyHint(false);
+                try { window.localStorage.setItem(SHELF_HINT_DISMISSED_KEY, '1'); } catch { /* storage may be unavailable */ }
+              }} />
           </section>
         </div>
         <div className="pane-scroll">
@@ -523,7 +542,16 @@ function Gallery() {
   return <div className="tw-shell"><Header/><main className="gallery-page">
     <section className="gallery-hero"><div><span className="eyebrow">Twistory gallery</span><h1>Shelfies from the community.</h1></div><div><p>{summary ? `${summary.totalBuilds} bookcases from ${summary.totalBuilders} people.` : 'Story bookcases styled by the community.'} Some come with a blueprint you can open and make your own.</p><button className="button coral small" onClick={openShare} data-testid="button-share-room"><Camera size={14}/>Share your bookcase</button></div></section>
     <div className="gallery-tools"><label className="search-box"><Search size={17}/><input aria-label="Search bookcases" data-testid="input-search" placeholder="Search a bookcase, maker, or detail…" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
-      <select className="sort-select" aria-label="Sort bookcases" data-testid="select-sort" value={sort} onChange={(e) => setSort(e.target.value as 'recent' | 'popular')}><option value="recent">Newest</option><option value="popular">Most loved</option></select></div>
+      <Select value={sort} onValueChange={(value) => setSort(value as 'recent' | 'popular')}>
+        <SelectTrigger aria-label="Sort bookcases" data-testid="select-sort" className="sort-select-trigger">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="sort-select-menu" position="popper" sideOffset={6} collisionPadding={12}>
+          <SelectItem className="shelf-select-option" value="recent">Newest</SelectItem>
+          <SelectItem className="shelf-select-option" value="popular">Most loved</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
     {isLoading ? <LoadingCards/> : isError ? <div className="empty-state"><h2>We couldn't load the gallery.</h2><p>Your inspiration is still here; try once more.</p><button className="button" onClick={() => refetch()}>Try again</button></div> : builds?.length ? <div className="build-grid">{builds.map((build: Build) => <BuildCard key={build.id} build={build}/>)}</div> :
       <div className="empty-state"><Camera size={23}/><h2>No bookcases in this corner yet.</h2><p>Try another search, or be the first to share one.</p><button className="button coral" onClick={openShare}>Share your bookcase</button></div>}
     {shareOpen && <PublishDialog source="gallery" close={() => setShareOpen(false)} blueprint={null} attachByDefault={false} onSaved={(build) => {
