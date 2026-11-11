@@ -336,7 +336,7 @@ function Configurator({
 
   const isAtDefault = tab === 'style'
     && viewIndex === DEFAULT_VIEW_INDEX
-    && showNumbers
+    && !showNumbers
     && !editorOpen
     && selected < 0
     && !rolled
@@ -350,7 +350,8 @@ function Configurator({
     && scene.floorKind === defaults.floorKind
     && scene.customFloorColor.toLowerCase() === defaults.customFloorColor.toLowerCase();
 
-  const showRail = viewIndex !== 3 && (tab === 'build' || showNumbers);
+  const numbersVisible = tab === 'build' || showNumbers;
+  const showRail = viewIndex !== 3 && numbersVisible;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -602,7 +603,7 @@ function Configurator({
         <svg viewBox="0 0 110 110"><defs><path id="stampCircle" d="M55,55 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" /></defs><text fontSize="10" fontWeight="700" letterSpacing="2.5" fill="currentColor"><textPath href="#stampCircle">{fullyBuilt ? 'BUILT IT · BUILT IT · BUILT IT · ' : 'TWIST IT · STACK IT · STYLE IT · '}</textPath></text></svg>
         <b>{fullyBuilt ? <span className="scene-stamp-success" aria-label="Bookcase complete"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="M5 12.5l4.2 4.1L19 7.8" /></svg></span> : `${steps.percent}%`}</b>
       </div>}
-      {showRail && railLayout && <div className={`build-rail ${tab === 'build' ? 'is-build' : 'is-style'} ${showNumbers ? 'numbered' : ''}`} style={{ left:`${railLayout.left}px` }}>
+      {showRail && railLayout && <div className={`build-rail ${tab === 'build' ? 'is-build' : 'is-style'} ${numbersVisible ? 'numbered' : ''}`} style={{ left:`${railLayout.left}px` }}>
         <i className="build-rail-track" style={{ top:railLayout.y(railLayout.hs[railLayout.hs.length - 1]), height:railLayout.floorY - railLayout.y(railLayout.hs[railLayout.hs.length - 1]) }} />
         <i className="build-rail-fill" style={{ top:railLayout.top, height:railLayout.floorY - railLayout.top }} />
         {railLayout.hs.map((height: number, i: number) => {
@@ -617,13 +618,13 @@ function Configurator({
               setSelected(i);
               setEditorOpen(true);
               hostRef.current?.focus({ preventScroll:true });
-            }}>{showNumbers ? i + 1 : ''}</button>;
+            }}>{numbersVisible ? i + 1 : ''}</button>;
         })}
         {tab === 'build' && nextShelf >= 0 && <span className="build-rail-label" style={{ top:railLayout.y(railLayout.hs[nextShelf]) }}>Shelf {nextShelf + 1} <span>faces {directions[scene.model.dirs[nextShelf]]?.label.toLowerCase()}</span></span>}
       </div>}
       <div className="sr-only" role="status" aria-live="polite">{completionAnnouncement}</div>
       <div className="views" role="group" aria-label="Bookcase view"><span className="view-label" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>View</span>{VIEWS.map(([label, yaw, tilt], i) => <button key={label} aria-pressed={viewIndex === i} className={viewIndex === i ? 'active' : ''} onClick={() => { setViewIndex(i); viewRef.current?.animateTo(yaw, tilt); }}>{label}</button>)}</div>
-      <button type="button" className="shelf-numbers-toggle" aria-pressed={showNumbers} onClick={() => setShowNumbers((old) => !old)}>{showNumbers ? 'Hide shelf numbers' : 'Show shelf numbers'}</button>
+      {tab === 'style' && <button type="button" role="switch" aria-checked={showNumbers} className={`shelf-numbers-toggle ${showNumbers ? 'on' : ''}`} onClick={() => setShowNumbers((old) => !old)}><i className="shelf-numbers-switch" aria-hidden="true" />Shelf numbers</button>}
       {tab === 'style' && <button type="button" className="button light small stage-reset" disabled={isAtDefault} onClick={resetToDefault}><RotateCcw size={14}/>Reset to default</button>}
     </section>
     <section className="control-panel">
