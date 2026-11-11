@@ -30,9 +30,11 @@ import {
 import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } from 'wouter';
 import NotFound from '@/pages/not-found';
 import { ColorPicker } from '@/components/color-picker';
+import { BuildCelebration } from '@/components/build-celebration';
 import { ShelfSelector } from '@/components/shelf-selector';
 import { ShelfEditor } from '@/components/shelf-editor';
 import { ShelfKeyHint } from '@/components/shelf-key-hint';
+import { shouldCelebrateBuildCompletion } from '@/lib/build-celebration';
 import { moveShelfSelection, rotateShelfDirection, shelfActionFromKey } from '@/lib/shelf-keyboard';
 import { advanceBuildProgress, buildSteps, normalizeBuildProgress, rewindBuildProgress } from '@/lib/build-steps';
 import {
@@ -287,8 +289,12 @@ function Configurator({
     try { return window.localStorage.getItem(SHELF_HINT_DISMISSED_KEY) !== '1'; } catch { return true; }
   });
   const [railFrame, setRailFrame] = useState({ width: 0, height: 0 });
-
+  const [celebrationBurstId, setCelebrationBurstId] = useState(0);
+  const [isCelebrating, setIsCelebrating] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [completionAnnouncement, setCompletionAnnouncement] = useState('');
   const shelfArrowUseCount = useRef(0);
+  const celebrationTimeoutRef = useRef<number | null>(null);
   selectRef.current = (i: number) => {
     setSelected(i);
     setEditorOpen(true);
@@ -310,6 +316,7 @@ function Configurator({
   const steps = useMemo(() => buildSteps(progress), [progress]);
   const nextShelf = steps.nextShelfIndex;
   const fullyBuilt = steps.isComplete;
+  const previousDoneRef = useRef(steps.doneSteps);
 
   const railLayout = useMemo(() => {
     if (!railFrame.width || !railFrame.height) return null;
@@ -345,6 +352,46 @@ function Configurator({
 
   const showRail = viewIndex !== 3 && (tab === 'build' || showNumbers);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReduceMotion(mediaQuery.matches);
+    update();
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', update);
+      return () => mediaQuery.removeEventListener('change', update);
+    }
+    mediaQuery.addListener(update);
+    return () => mediaQuery.removeListener(update);
+  }, []);
+  useEffect(() => () => {
+    if (celebrationTimeoutRef.current != null) window.clearTimeout(celebrationTimeoutRef.current);
+  }, []);
+  useEffect(() => {
+    const previousDone = previousDoneRef.current;
+    const shouldCelebrate = shouldCelebrateBuildCompletion({
+      previousDone,
+      currentDone: steps.doneSteps,
+      totalShelves: steps.totalSteps,
+      tab,
+    });
+    previousDoneRef.current = steps.doneSteps;
+    if (!shouldCelebrate) {
+      if (!fullyBuilt) {
+        setCompletionAnnouncement('');
+        if (isCelebrating) setIsCelebrating(false);
+      }
+      return;
+    }
+    setCompletionAnnouncement('Bookcase complete.');
+    if (reduceMotion) return;
+    setCelebrationBurstId((value) => value + 1);
+    setIsCelebrating(true);
+    if (celebrationTimeoutRef.current != null) window.clearTimeout(celebrationTimeoutRef.current);
+    celebrationTimeoutRef.current = window.setTimeout(() => {
+      setIsCelebrating(false);
+      celebrationTimeoutRef.current = null;
+    }, 1900);
+  }, [fullyBuilt, isCelebrating, reduceMotion, steps.doneSteps, steps.totalSteps, tab]);
   useEffect(() => {
     if (!hostRef.current || viewRef.current) return;
     viewRef.current = window.Story3D.mount(hostRef.current, {
@@ -550,9 +597,10 @@ function Configurator({
         setShowShelfKeyHint(false);
         try { window.localStorage.setItem(SHELF_HINT_DISMISSED_KEY, '1'); } catch { /* storage may be unavailable */ }
       }} />}
-      {tab === 'build' && <div className="scene-stamp" aria-label="Assembly progress">
-        <svg viewBox="0 0 110 110"><defs><path id="stampCircle" d="M55,55 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" /></defs><text fontSize="10" fontWeight="700" letterSpacing="2.5" fill="currentColor"><textPath href="#stampCircle">TWIST IT · STACK IT · STYLE IT · </textPath></text></svg>
-        <b>{`${steps.percent}%`}</b>
+      {tab === 'build' && <div className={`scene-stamp${fullyBuilt ? ' is-complete' : ''}${isCelebrating ? ' is-celebrating' : ''}`} aria-label="Assembly progress">
+        {isCelebrating && !reduceMotion && <BuildCelebration burstId={celebrationBurstId} />}
+        <svg viewBox="0 0 110 110"><defs><path id="stampCircle" d="M55,55 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" /></defs><text fontSize="10" fontWeight="700" letterSpacing="2.5" fill="currentColor"><textPath href="#stampCircle">{fullyBuilt ? 'BUILT IT · BUILT IT · BUILT IT · ' : 'TWIST IT · STACK IT · STYLE IT · '}</textPath></text></svg>
+        <b>{fullyBuilt ? <span className="scene-stamp-success" aria-label="Bookcase complete"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="M5 12.5l4.2 4.1L19 7.8" /></svg></span> : `${steps.percent}%`}</b>
       </div>}
       {showRail && railLayout && <div className={`build-rail ${tab === 'build' ? 'is-build' : 'is-style'} ${showNumbers ? 'numbered' : ''}`} style={{ left:`${railLayout.left}px` }}>
         <i className="build-rail-track" style={{ top:railLayout.y(railLayout.hs[railLayout.hs.length - 1]), height:railLayout.floorY - railLayout.y(railLayout.hs[railLayout.hs.length - 1]) }} />
@@ -573,6 +621,7 @@ function Configurator({
         })}
         {tab === 'build' && nextShelf >= 0 && <span className="build-rail-label" style={{ top:railLayout.y(railLayout.hs[nextShelf]) }}>Shelf {nextShelf + 1} <span>faces {directions[scene.model.dirs[nextShelf]]?.label.toLowerCase()}</span></span>}
       </div>}
+      <div className="sr-only" role="status" aria-live="polite">{completionAnnouncement}</div>
       <div className="views" role="group" aria-label="Bookcase view"><span className="view-label" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>View</span>{VIEWS.map(([label, yaw, tilt], i) => <button key={label} aria-pressed={viewIndex === i} className={viewIndex === i ? 'active' : ''} onClick={() => { setViewIndex(i); viewRef.current?.animateTo(yaw, tilt); }}>{label}</button>)}</div>
       <button type="button" className="shelf-numbers-toggle" aria-pressed={showNumbers} onClick={() => setShowNumbers((old) => !old)}>{showNumbers ? 'Hide shelf numbers' : 'Show shelf numbers'}</button>
       {tab === 'style' && <button type="button" className="button light small stage-reset" disabled={isAtDefault} onClick={resetToDefault}><RotateCcw size={14}/>Reset to default</button>}
@@ -632,7 +681,7 @@ function Configurator({
         </div>
       </div>
       <div className="pane" hidden={tab !== 'build'}>
-        <section className="section"><div className="build-meter"><div className="build-meter-top"><b>{steps.percent}%</b><span>{steps.doneSteps} of {steps.totalSteps} steps</span></div><div className="progress-track"><i style={{ width:`${Math.max(4, steps.percent)}%` }} /></div><p>{fullyBuilt ? 'Every shelf is on. Anchor it to the wall with the strap in the box.' : `Base and post are counted. Next: shelf ${nextShelf + 1}, facing ${directions[scene.model.dirs[nextShelf]]?.label.toLowerCase()}.`}</p></div></section>
+        <section className="section"><div className={`build-meter${fullyBuilt ? ' is-complete' : ''}${isCelebrating ? ' is-celebrating' : ''}`}><div className="build-meter-top"><b>{steps.percent}%</b><span>{steps.doneSteps} of {steps.totalSteps} steps</span></div><div className="progress-track"><i style={{ width:`${Math.max(4, steps.percent)}%` }} /></div><p>{fullyBuilt ? 'Every shelf is on. Anchor it to the wall with the strap in the box.' : `Base and post are counted. Next: shelf ${nextShelf + 1}, facing ${directions[scene.model.dirs[nextShelf]]?.label.toLowerCase()}.`}</p></div></section>
         <section className="section"><h2>Next step <small>follow along as you assemble</small></h2><p className="build-guide-copy">Follow these steps as you assemble your bookcase.</p>{fullyBuilt ? <div className="build-step-card done"><h3>Build complete</h3><p>Everything is in place. Use Print sheet if you want a checklist copy.</p></div> : (() => {
           const shelf = S.buildList(scene.model)[nextShelf];
           const detail = nextShelf === 0 ? 'Lowest shelf' : nextShelf === progress.length - 1 ? 'Top shelf' : `${shelf.height.toFixed(1)}″ up`;

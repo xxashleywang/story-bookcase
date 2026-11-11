@@ -258,6 +258,66 @@ html,body,#root { min-height:100%; } body { margin:0; background:var(--cream); c
 .uploader-remove { position:absolute; top:6px; right:6px; width:26px; height:26px; border:0; border-radius:50%; display:grid; place-items:center; background:var(--ink); color:white; cursor:pointer; }
 .uploader-remove:focus-visible,.uploader .button:focus-visible,.detail-thumbs button:focus-visible,.blueprint-toggle:focus-within { outline:2px solid var(--coral); outline-offset:2px; }
 .uploader-empty { margin-top:12px; width:100%; border:0; border-radius:14px; background:var(--cream); padding:22px; display:flex; gap:10px; align-items:center; justify-content:center; color:var(--muted-ink); font-size:13px; cursor:pointer; }
+
+/* Build completion celebration */
+.scene-stamp { isolation:isolate; }
+.scene-stamp.is-complete b { background:var(--coral); color:white; transform:rotate(0deg); }
+.scene-stamp.is-celebrating b { animation:stampPop .56s cubic-bezier(.2,1.4,.4,1); }
+.scene-stamp-success { display:inline-grid; place-items:center; width:100%; height:100%; }
+.scene-stamp-success svg { display:block; }
+
+.build-celebration {
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:-1;
+}
+.build-celebration-particle {
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:10px;
+  height:26px;
+  border-radius:4px;
+  background:var(--burst-color);
+  box-shadow:inset 0 -5px #0000001f;
+  transform:translate(-50%, -50%) rotate(0deg);
+  opacity:0;
+  animation:burstSpine 1.25s cubic-bezier(.2,.9,.32,1) forwards;
+  animation-delay:var(--burst-delay);
+}
+
+.build-meter.is-complete .progress-track i { background:repeating-linear-gradient(-45deg,var(--coral) 0 10px,#ff8466 10px 20px); }
+.build-meter.is-celebrating .progress-track i { position:relative; overflow:hidden; }
+.build-meter.is-celebrating .progress-track i::after {
+  content:"";
+  position:absolute;
+  inset:-2px;
+  background:linear-gradient(110deg,#ffffff00 20%,#ffffffe6 48%,#ffffff00 75%);
+  transform:translateX(-130%);
+  animation:meterShimmer .95s ease-out .12s 1 forwards;
+}
+
+@keyframes stampPop {
+  0% { transform:rotate(-8deg) scale(1); }
+  35% { transform:rotate(-2deg) scale(1.14); }
+  100% { transform:rotate(0deg) scale(1); }
+}
+@keyframes burstSpine {
+  0% { opacity:0; transform:translate(-50%, -50%) rotate(0deg) scale(.55); }
+  14% { opacity:1; transform:translate(calc(-50% + var(--burst-x) * .32), calc(-50% + var(--burst-y) * .32 - 11px)) rotate(calc(var(--burst-rotate) * .45)) scale(1); }
+  62% { opacity:1; transform:translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y) - 22px)) rotate(var(--burst-rotate)) scale(1); }
+  100% { opacity:0; transform:translate(calc(-50% + var(--burst-x) * .76), calc(-50% + var(--burst-y) + 18px)) rotate(calc(var(--burst-rotate) + 25deg)) scale(.7); }
+}
+@keyframes meterShimmer {
+  to { transform:translateX(135%); }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .scene-stamp.is-celebrating b { animation:none; }
+  .build-celebration { display:none; }
+  .build-meter.is-celebrating .progress-track i::after { animation:none; display:none; }
+}
 .uploader-progress { margin:10px 0 0; font-size:12px; font-weight:700; color:var(--coral); }
 .uploader-errors { margin:10px 0 0; padding:9px 12px 9px 26px; border-radius:12px; background:#fbe6df; color:#b74336; font-size:12px; }
 .blueprint-toggle { display:flex; align-items:center; gap:12px; padding:12px; border-radius:18px; background:white; box-shadow:inset 0 0 0 1.5px var(--hairline); cursor:pointer; }
