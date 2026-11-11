@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
 @layer theme, base, clerk, components, utilities;
 @import 'tailwindcss';
 @import '@clerk/themes/shadcn.css';
@@ -27,7 +28,7 @@
   --popover:0 0% 100%; --popover-foreground:23 30% 13%; --popover-border:34 36% 88%; --primary:12 100% 65%; --primary-foreground:0 0% 100%; --secondary:39 100% 71%; --secondary-foreground:23 30% 13%;
   --muted:35 47% 91%; --muted-foreground:24 13% 48%; --accent:149 30% 77%; --accent-foreground:23 30% 13%; --destructive:4 74% 52%; --destructive-foreground:0 0% 100%; --input:34 31% 82%; --ring:12 100% 65%;
   --chart-1:12 100% 65%; --chart-2:149 30% 56%; --chart-3:39 100% 58%; --chart-4:205 48% 71%; --chart-5:271 35% 75%;
-  --app-font-sans:'Bricolage Grotesque',sans-serif; --app-font-serif:'Bricolage Grotesque',sans-serif; --app-font-mono:'DM Mono',monospace; --radius:1.15rem;
+  --app-font-sans:'Clash Display',sans-serif; --app-font-serif:'Clash Display',sans-serif; --app-font-mono:'DM Mono',monospace; --radius:1.15rem;
   --button-outline:rgba(0,0,0,.1); --badge-outline:rgba(0,0,0,.05); --opaque-button-border-intensity:-8; --elevate-1:rgba(0,0,0,.03); --elevate-2:rgba(0,0,0,.08); --tracking-normal:0em; --spacing:.25rem;
 }
 .dark {

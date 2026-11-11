@@ -67,7 +67,7 @@ function ClerkAuthBridge({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={{ isSignedIn: !!isSignedIn, isLoaded, user }}>{children}</AuthContext.Provider>;
 }
 function LocalAuthDisabled() {
-  return <main className="auth-frame"><Link className="brand auth-mark" href="/">twistory<i/></Link><p>Sign-in is not configured for this local preview. The planner still works.</p><Link className="button coral" href="/">Back to the planner</Link></main>;
+  return <main className="auth-frame"><Link className="brand auth-mark" href="/">ImagineMode<i/></Link><p>Sign-in is not configured for this local preview. The planner still works.</p><Link className="button coral" href="/">Back to the planner</Link></main>;
 }
 function stripBase(path: string) {
   return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path;
@@ -226,8 +226,8 @@ function BookcaseSketch({ color, dirs, tall = true }: { color: string; dirs: str
 function Header() {
   const { isSignedIn } = useAuth();
   return <header className="topbar">
-    <Link className="brand" href="/">twistory<i /></Link>
-    <span className="tagline">Every shelf has a story.</span>
+    <Link className="brand" href="/">ImagineMode<i /></Link>
+    <span className="tagline">Design it first. Build it once.</span>
     <nav className="top-actions">
       <Link className="button light small" href="/inspiration">Gallery</Link>
       {isSignedIn ? <AccountMenu/> : <Link className="button small" href="/sign-in">Sign in</Link>}
@@ -541,7 +541,7 @@ function Gallery() {
   }, [gate.ready]);
   const openShare = () => gate.request(() => setShareOpen(true));
   return <div className="tw-shell"><Header/><main className="gallery-page">
-    <section className="gallery-hero"><div><span className="eyebrow">Twistory gallery</span><h1>Shelfies from the community.</h1></div><div><p>{summary ? `${summary.totalBuilds} bookcases from ${summary.totalBuilders} people.` : 'Story bookcases styled by the community.'} Some come with a blueprint you can open and make your own.</p><button className="button coral small" onClick={openShare} data-testid="button-share-room"><Camera size={14}/>Share your bookcase</button></div></section>
+    <section className="gallery-hero"><div><span className="eyebrow">ImagineMōde gallery</span><h1>Shelfies from the community.</h1></div><div><p>{summary ? `${summary.totalBuilds} bookcases from ${summary.totalBuilders} people.` : 'Story bookcases styled by the community.'} Some come with a blueprint you can open and make your own.</p><button className="button coral small" onClick={openShare} data-testid="button-share-room"><Camera size={14}/>Share your bookcase</button></div></section>
     <div className="gallery-tools"><label className="search-box"><Search size={17}/><input aria-label="Search bookcases" data-testid="input-search" placeholder="Search a bookcase, maker, or detail…" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
       <Select value={sort} onValueChange={(value) => setSort(value as 'recent' | 'popular')}>
         <SelectTrigger aria-label="Sort bookcases" data-testid="select-sort" className="sort-select-trigger">
@@ -713,7 +713,7 @@ function ProfilePage() {
   };
   const shell = (body: ReactNode) => <div className="tw-shell"><Header/><main className="gallery-page profile-page">{isSignedIn && (!profile || profileLoading || profileError) && <LogoutButton/>}{body}</main></div>;
   if (!isLoaded || (userId && profileLoading)) return shell(<div className="profile-loading" aria-label="Loading your page"><div className="skeleton profile-head-skeleton"/><div className="profile-grid">{[0, 1, 2].map((i) => <div className="skeleton profile-skeleton" key={i}/>)}</div></div>);
-  if (!userId) return shell(<section className="profile-gate"><span className="profile-gate-mark" aria-hidden="true"><Bookmark size={26}/></span><span className="eyebrow">Your own corner</span><h1>Your posts and the ones you saved, together.</h1><p>Sign in to see your uploads and keep a private shelf of bookcases you want to come back to.</p><Link className="button coral" href="/sign-in">Sign in to Twistory</Link></section>);
+  if (!userId) return shell(<section className="profile-gate"><span className="profile-gate-mark" aria-hidden="true"><Bookmark size={26}/></span><span className="eyebrow">Your own corner</span><h1>Your posts and the ones you saved, together.</h1><p>Sign in to see your uploads and keep a private shelf of bookcases you want to come back to.</p><Link className="button coral" href="/sign-in">Sign in to ImagineMōde</Link></section>);
   if (profileError || !profile) return shell(<section className="profile-gate"><h1>Your page would not open.</h1><p>Your posts are safe. This is a loading problem.</p><button className="button" onClick={() => refetch()}>Try again</button></section>);
   const member = profile;
   const showEditor = editingName || (!member.isUsernameSet && pendingIntent);
@@ -818,10 +818,10 @@ function Home() {
 }
 
 function BrandedSignIn() {
-  return <main className="auth-frame"><Link className="brand auth-mark" href="/">twistory<i/></Link><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></main>;
+  return <main className="auth-frame"><Link className="brand auth-mark" href="/">ImagineMode<i/></Link><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></main>;
 }
 function BrandedSignUp() {
-  return <main className="auth-frame"><Link className="brand auth-mark" href="/">twistory<i/></Link><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></main>;
+  return <main className="auth-frame"><Link className="brand auth-mark" href="/">ImagineMode<i/></Link><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></main>;
 }
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
@@ -879,14 +879,14 @@ function Router() {
   return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} appearance={{
     theme:shadcn, cssLayerName:'clerk',
     options:{ logoPlacement:'inside', logoLinkUrl:basePath || '/', logoImageUrl:`${window.location.origin}${basePath}/logo.svg` },
-    variables:{ colorPrimary:'#ff6b4a', colorForeground:'#2b1e16', colorMutedForeground:'#94857a', colorDanger:'#b74336', colorBackground:'#fff8ee', colorInput:'#fffdf9', colorInputForeground:'#2b1e16', colorNeutral:'#e5d6c3', fontFamily:'Bricolage Grotesque', borderRadius:'1rem' },
+    variables:{ colorPrimary:'#ff6b4a', colorForeground:'#2b1e16', colorMutedForeground:'#94857a', colorDanger:'#b74336', colorBackground:'#fff8ee', colorInput:'#fffdf9', colorInputForeground:'#2b1e16', colorNeutral:'#e5d6c3', fontFamily:'Clash Display', borderRadius:'1rem' },
     elements:{
       rootBox:'w-full flex justify-center', cardBox:'!bg-[#fff8ee] rounded-2xl w-[440px] max-w-full overflow-hidden', card:'!shadow-none !border-0 !bg-transparent !rounded-none', footer:'!shadow-none !border-0 !bg-transparent !rounded-none',
       headerTitle:{ color:'#2b1e16', fontWeight:'800' }, headerSubtitle:{ color:'#75665c' }, socialButtonsBlockButtonText:{ color:'#2b1e16', fontWeight:'700' }, formFieldLabel:{ color:'#2b1e16', fontWeight:'700' }, footerActionLink:{ color:'#d94f34', fontWeight:'700' }, footerActionText:{ color:'#75665c' }, dividerText:{ color:'#75665c' }, identityPreviewEditButton:{ color:'#d94f34' }, formFieldSuccessText:{ color:'#347656' }, alertText:{ color:'#2b1e16' },
       logoBox:'rounded-xl', logoImage:'rounded-xl', socialButtonsBlockButton:'!border-[#e8d9c8] !bg-white rounded-xl', formButtonPrimary:'!bg-[#ff6b4a] !text-white rounded-xl', formFieldInput:'!bg-white !text-[#2b1e16] !border-[#e5d6c3] rounded-xl', footerAction:'border-0', dividerLine:'!bg-[#e5d6c3]', alert:'!bg-[#fff1e6] rounded-xl', otpCodeFieldInput:'!bg-white !text-[#2b1e16]', formFieldRow:'gap-2', main:'gap-4',
     },
   }} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`}
-    localization={{ signIn:{ start:{ title:'Welcome back', subtitle:'Come back to your Twistory workshop.' } }, signUp:{ start:{ title:'Make yourself at home', subtitle:'Create an account and share your first bookcase.' } } }}
+    localization={{ signIn:{ start:{ title:'Welcome back', subtitle:'Come back to your ImagineMōde workshop.' } }, signUp:{ start:{ title:'Make yourself at home', subtitle:'Create an account and share your first bookcase.' } } }}
     routerPush={(to) => setLocation(stripBase(to))} routerReplace={(to) => setLocation(stripBase(to), { replace:true })}>
     <ClerkAuthBridge>
       <AccountRoutes/>
