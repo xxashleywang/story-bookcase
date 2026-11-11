@@ -167,10 +167,10 @@ html,body,#root { min-height:100%; } body { margin:0; background:var(--cream); c
 .shelf-key-hint-copy span { font-size:11px; color:var(--hint-sub); }
 .shelf-key-hint-pad { display:grid; grid-template-columns:repeat(3,22px); gap:4px; }
 .shelf-key-hint-pad-empty { width:22px; height:22px; }
-.shelf-key-hint-cap { min-width:22px; height:22px; background:var(--hint-cap-bg); color:var(--hint-cap-fg); }
+.shelf-key-hint .shelf-key-hint-cap { min-width:22px; height:22px; background:var(--hint-cap-bg); color:var(--hint-cap-fg); }
 .shelf-key-hint-pad > :nth-child(2),.shelf-key-hint-pad > :nth-child(5) { animation:hintTap 1.6s ease-in-out infinite; }
 .shelf-key-hint-pad > :nth-child(4),.shelf-key-hint-pad > :nth-child(6) { animation:hintTap 1.6s ease-in-out .8s infinite; }
-.shelf-key-hint-close { width:28px; height:28px; background:var(--hint-close-bg); color:var(--hint-fg); }
+.shelf-key-hint .icon-button.shelf-key-hint-close { width:28px; height:28px; background:var(--hint-close-bg); color:var(--hint-fg); }
 .stage-shelf-hint { position:absolute; z-index:4; left:50%; top:52%; transform:translate(62px,-50%); width:min(330px,44vw); }
 .shelf-editor button:focus-visible,.shelf-select-trigger:focus-visible,.room-preview summary:focus-visible { outline:2px solid var(--coral); outline-offset:2px; }
 .room-preview summary { list-style:none; cursor:pointer; }
@@ -231,9 +231,6 @@ html,body,#root { min-height:100%; } body { margin:0; background:var(--cream); c
 @keyframes hintTap {
   0%, 68%, 100% { transform:none; opacity:1; }
   76% { transform:translateY(1px) scale(.95); opacity:.74; }
-}
-@media (hover:none) {
-  .shelf-key-hint { display:none; }
 }
 
 /* Photo-first sharing */
