@@ -70,19 +70,7 @@ function ClerkAuthBridge({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={{ isSignedIn: !!isSignedIn, isLoaded, user }}>{children}</AuthContext.Provider>;
 }
 function BrandWordmark() {
-  return <>
-    <svg className="brand-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-      <g fill="#ff6b4a">
-        <rect x="30" y="6" width="12" height="24" rx="6" />
-        <rect x="34" y="30" width="24" height="12" rx="6" />
-        <rect x="22" y="34" width="12" height="24" rx="6" />
-        <rect x="6" y="22" width="24" height="12" rx="6" />
-      </g>
-      <circle cx="32" cy="32" r="7" fill="#fff8ee" />
-      <circle cx="32" cy="32" r="2.6" fill="#ffd66b" />
-    </svg>
-    Imag<span className="accent-i">ı</span>neM<span className="macron">o</span>de
-  </>;
+  return <>ImagineM<span className="macron">o</span>de</>;
 }
 function LocalAuthDisabled() {
   return <main className="auth-frame"><Link className="brand auth-mark" href="/"><BrandWordmark/></Link><p>Sign-in is not configured for this local preview. The planner still works.</p><Link className="button coral" href="/">Back to the planner</Link></main>;
@@ -257,7 +245,7 @@ function Header() {
   const { isSignedIn } = useAuth();
   return <header className="topbar">
     <Link className="brand" href="/"><BrandWordmark/></Link>
-    <span className="tagline">Design it first. Build it once.</span>
+    <span className="tagline">Design first. Build once.</span>
     <nav className="top-actions">
       <Link className="button light small" href="/inspiration">Gallery</Link>
       {isSignedIn ? <AccountMenu/> : <Link className="button small" href="/sign-in">Sign in</Link>}
