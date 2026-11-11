@@ -1,6 +1,6 @@
 # Port user-test fixes into the real app: Implementation Plan
 
-**Overall Progress:** `0%`
+**Overall Progress:** `90%`
 
 ## TLDR
 Bring the five user-test fixes from the Playroom prototype (`prototypes/v3/g-playroom.html`, PR #8) into the real configurator (`artifacts/bookcase-community/src/App.tsx`). Include the review feedback on the prototype. The prototype is reference only and stays as it is.
@@ -39,38 +39,38 @@ Bring the five user-test fixes from the Playroom prototype (`prototypes/v3/g-pla
 
 ## Tasks
 
-- [ ] 🟥 **Step 0: Branch**
-  - [ ] 🟥 Branch off `main` (e.g. `cursor/port-user-test-fixes-216c`)
+- [x] 🟩 **Step 0: Branch**
+  - [x] 🟩 Work completed on `cursor/user-test-feedback-plan-216c`
 
-- [ ] 🟥 **Step 1: Build-step helper + tests**
-  - [ ] 🟥 `src/lib/build-steps.ts`: `normalizeProgress(prog)` (leading run only), `buildSteps(prog)` returning `{ done, total, pct, next }` with the base counted, `advance(prog)`, `stepBack(prog)`
-  - [ ] 🟥 `tests/build-steps.test.mjs`: Tall starts at 1/12, Standard 1/10, gaps trimmed, can't skip, back un-does the last shelf, 100% when all shelves are done
+- [x] 🟩 **Step 1: Build-step helper + tests**
+  - [x] 🟩 Added `src/lib/build-steps.ts` with normalization, step math, advance and rewind helpers
+  - [x] 🟩 Added `tests/build-steps.test.mjs` covering 1/12 + 1/10 starts, gap trimming, no skipping, back, and 100% completion
 
-- [ ] 🟥 **Step 2: Randomize rules clarity**
-  - [ ] 🟥 Swap `SlidersHorizontal` for lucide `Settings` and add a visible "Rules" label; keep the count badge
-  - [ ] 🟥 Popover: title "Randomize rules", hint "Tap X to stop shelves facing that way."
-  - [ ] 🟥 Direction buttons: corner X (allowed) / + (removed), "On" / "Off" sub-label, keep `aria-pressed` and the existing notes
+- [x] 🟩 **Step 2: Randomize rules clarity**
+  - [x] 🟩 Swapped the rules icon to lucide `Settings` and added a visible "Rules" label with badge
+  - [x] 🟩 Updated popover heading/copy to "Randomize rules" + "Tap X to stop shelves facing that way."
+  - [x] 🟩 Direction buttons now use corner X / + with On/Off labels while preserving `aria-pressed` and existing notes
 
-- [ ] 🟥 **Step 3: Reset to default**
-  - [ ] 🟥 Pull the fresh-visit values out of `initialScene()` into one `DEFAULT_SCENE` used both there and by reset
-  - [ ] 🟥 `resetToDefault()`: scene, randomize rules, `rolled`, selection, editor closed, view to Front (`animateTo`), progress cleared, remove `LAST_SCENE_KEY`
-  - [ ] 🟥 Button top-right on the stage (Style it tab), lucide `RotateCcw`, disabled when already default
+- [x] 🟩 **Step 3: Reset to default**
+  - [x] 🟩 Pulled defaults into shared `createDefaultScene()` logic used by `initialScene()` and reset
+  - [x] 🟩 Implemented `resetToDefault()` for scene, rules, selection/editor, view, progress, and `LAST_SCENE_KEY` cleanup
+  - [x] 🟩 Added top-right stage reset button with `RotateCcw`, disabled when already at defaults
 
-- [ ] 🟥 **Step 4: Right-side rail with numbered circles**
-  - [ ] 🟥 `BuildRail` in `App.tsx`: track, fill, one circle per shelf with its number inside, all the same size; states: plain, selected (Style it), done / next with "Shelf N faces …" label (Build it)
-  - [ ] 🟥 Position from the stage size with a `ResizeObserver`; hidden in Top view
-  - [ ] 🟥 "Numbers" toggle in `.views`; when off, Style it hides the rail and Build it shows plain circles
-  - [ ] 🟥 Clicking a circle on Style it calls the same select path as clicking the 3D shelf
+- [x] 🟩 **Step 4: Right-side rail with numbered circles**
+  - [x] 🟩 Added a right-side build rail in `App.tsx` with equal-size numbered circles and build/style states
+  - [x] 🟩 Rail positioning now uses stage `ResizeObserver` geometry and hides in Top view
+  - [x] 🟩 Added a "Numbers" toggle in `.views` that hides rail numbers while preserving build guidance
+  - [x] 🟩 Style-tab rail circles are clickable and use the same shelf selection behavior as 3D shelf clicks
 
-- [ ] 🟥 **Step 5: Build it stepper + progress**
-  - [ ] 🟥 Replace the "Bottom to top" list and `toggleShelf` with one step card: plan glyph, "Shelf N", "Faces X · H″ up" (with a proper separator), Back / "Done, next"
-  - [ ] 🟥 Purpose line once at the top of the pane; no duplicate subtitle
-  - [ ] 🟥 Meter, tab `<small>`, and stage stamp read from `buildSteps()`; completion card when all shelves are done
-  - [ ] 🟥 Keep Start over, Print sheet and Share your bookcase
+- [x] 🟩 **Step 5: Build it stepper + progress**
+  - [x] 🟩 Replaced list toggling with a single-step card and Back / "Done, next" actions
+  - [x] 🟩 Tightened copy so the assembly-purpose line appears once without duplicated phrasing
+  - [x] 🟩 Meter, tab progress, and stage stamp now all read from `buildSteps()` (base counted from step 1)
+  - [x] 🟩 Kept Start over, Print sheet, and Share actions in the Build tab
 
-- [ ] 🟥 **Step 6: Verify**
-  - [ ] 🟥 `pnpm run typecheck` and `pnpm test` in `artifacts/bookcase-community`
-  - [ ] 🟥 In the browser (`mise run serve`): rules X / + works and rolls respect it; Reset restores everything and survives a reload; Build it can't skip, Back works, starts at 1/12 and 1/10; rail numbers line up in Front / Angled / Side on both sizes, done circles stay the same size, toggle hides numbers
+- [ ] 🟨 **Step 6: Verify**
+  - [ ] 🟨 `pnpm run typecheck` is still blocked by existing workspace declaration/build issues (`TS6305` in `lib/api-client-react`) and unrelated pre-existing `account-ui.tsx` implicit-any errors; `pnpm test` passes including new build-step tests
+  - [ ] 🟨 Browser click-through QA remains to run (rules toggles, reset persistence, 1/12 + 1/10 starts, rail alignment/toggle behavior)
 
 ## Session size
 Seven tasks, all centred on `App.tsx`, so this is at the upper limit for one session. If you want to split it:
