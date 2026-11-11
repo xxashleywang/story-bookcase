@@ -1,6 +1,6 @@
 # User-test feedback (Randomize, Reset, Build it, Shelf numbers): Implementation Plan
 
-**Overall Progress:** `0%`
+**Overall Progress:** `92%`
 
 ## TLDR
 Fixes for five problems found in the Playroom user test (`prototypes/v3/g-playroom.html`):
@@ -32,50 +32,50 @@ Fixes for five problems found in the Playroom user test (`prototypes/v3/g-playro
 - **"Default" means the first-load design:** Tall, Natural (`#E2B062`), the preset at `PRESETS[1]`, White wall, Pale oak floor, all four directions allowed, no-neighbours off, nothing selected, 3/4 camera view. Reset also clears the URL hash. No confirm dialog; the reset is quick to redo, and the button is only enabled when something has changed from the default.
 - **Build it becomes a stepper; order is enforced.** You can only complete the current step. "Back" un-does the previous step. Ticking shelf 3 before shelves 1–2 is no longer possible.
 - **Progress shows the current step, not completed steps.** Step 1 is "Base + post", so the bar opens at 1/12 (8%) on Tall, not 0%. The final step completing triggers the existing confetti and finale.
-- **Base is tracked in Playroom only.** Shelf progress stays in the shared `Story3D` storage. A separate playroom-only `baseDone` flag, keyed on the same design code, records the base step. This keeps the other prototypes working.
+- **Base is counted as pre-built in Playroom.** Shelf progress still uses the shared `Story3D` storage. UI math adds one completed step (base + post), so the build meter starts at 1/12 or 1/10 without changing shared storage shape.
 - **Shelf numbers are a DOM overlay beside the bookcase, not 3D text.** Reuse the rail positioning math from `renderRail()` (it already projects shelf heights to screen y). On by default, toggled by a "Numbers" pill in the bottom-left view controls, and hidden in Top view, where the vertical positions don't line up.
 
-## Open questions for Ashley
-1. **"dialet page":** I read this as the bookcase view on the Style it tab. Should numbers also show on the Build it tab? (The build rail already labels the current shelf there.)
-2. **Reset placement:** in the header next to Get inspired, or at the top of the Style it pane? The plan assumes the Style it pane, since that's where the changes are made.
-3. **Progress at the start:** the plan treats 1/12 as "you're on step 1 of 12". If you meant the base should count as already done, so the user's first action is shelf 1, say so; it's a one-line change.
+## Resolved with Ashley
+1. **Shelf numbers should show on both tabs.** Implemented for Style it and Build it (same stage overlay).
+2. **Reset placement should be up top.** Implemented in the top header as `Reset to default`.
+3. **Base should count as already built.** Implemented as progress starting from 1/12 (Tall) or 1/10 (Standard).
 
 ## Tasks
 
-- [ ] 🟥 **Step 0: Branch**
-  - [ ] 🟥 Branch off `main` per workstream (see Split below)
+- [x] 🟩 **Step 0: Branch**
+  - [x] 🟩 Branched off `main` as `cursor/user-test-feedback-plan-216c`
 
-- [ ] 🟥 **Step 1: Randomize rules clarity** (`renderPats`, `.al` / `.split` CSS, `ICON`)
-  - [ ] 🟥 Add a stroke `gear` icon to `ICON`; replace `sliders` on the rules button; add a "Rules" text label
-  - [ ] 🟥 Rename the popover to "Randomize rules" and add the hint line
-  - [ ] 🟥 Direction tiles: corner X (allowed) / + (removed), dimmed off state, remove the strike-through `::after`
-  - [ ] 🟥 Keep the existing "keep at least one" and "only one left" notes
+- [x] 🟩 **Step 1: Randomize rules clarity** (`renderPats`, `.al` / `.split` CSS, `ICON`)
+  - [x] 🟩 Added a stroke `gear` icon to `ICON`, replaced the old rules icon, and added a visible "Rules" label
+  - [x] 🟩 Renamed the popover to "Randomize rules" and added the "Tap X..." hint line
+  - [x] 🟩 Direction tiles now use corner X (allowed) / + (removed), with dimmed off state and no strike-through
+  - [x] 🟩 Kept the existing "keep at least one" and "only one left" notes
 
-- [ ] 🟥 **Step 2: Reset to default**
-  - [ ] 🟥 Pull the boot defaults (lines 316–321) into one `DEFAULTS` object, used both on load and on reset
-  - [ ] 🟥 `resetDesign()`: restore state, wall (via `paintWall`), floor (via `setFloor`), randomize rules, `sel = -1`, camera to 3/4, clear the hash
-  - [ ] 🟥 Soft button with a stroke "rotate back" icon; disabled while the design already matches the default
+- [x] 🟩 **Step 2: Reset to default**
+  - [x] 🟩 Pulled boot defaults into one `DEFAULTS` object used for both init and reset
+  - [x] 🟩 Added `resetToDefault()` restoring state, wall, floor, randomize rules, selection, view, and clearing hash
+  - [x] 🟩 Added top soft button with stroke reset icon; button disables when already at default
 
-- [ ] 🟥 **Step 3: Build it, step by step** (build pane, `renderBuild`, `$('list').onclick`)
-  - [ ] 🟥 Intro card at the top: what this tab is for ("Follow along as you assemble your real bookcase, one step at a time, in the order of your design") and a "Start building" button
-  - [ ] 🟥 Replace the 11-row list with one step card: big step number, plan glyph, "Shelf 3 faces left · 12.4″ up", with Back / "Done, next" buttons
-  - [ ] 🟥 Step 1 card is "Base + post"; add the playroom-only `baseDone` flag
-  - [ ] 🟥 Stage highlight, the rail, and toast follow the current step (already driven by `next`)
-  - [ ] 🟥 Keep Start over and Print sheet
+- [x] 🟩 **Step 3: Build it, step by step** (build pane, `renderBuild`, guide actions)
+  - [x] 🟩 Added explanatory guide text clarifying what Build it is for
+  - [x] 🟩 Replaced the full list with one current-step card and Back / "Done, next" controls
+  - [x] 🟩 Enforced strict order via normalized sequential progress (no skipping ahead)
+  - [x] 🟩 Stage highlight, rail, and toast now follow the guided current step
+  - [x] 🟩 Kept Start over and Print sheet
 
-- [ ] 🟥 **Step 4: Progress counts the base**
-  - [ ] 🟥 Total = shelves + 1; meter, tab label (`#tabprog`) and stage badge show current step / total (1/12 at the start)
+- [x] 🟩 **Step 4: Progress counts the base**
+  - [x] 🟩 Total now uses shelves + 1; meter, tab label (`#tabprog`), and badge start at 1/12 (Tall) or 1/10 (Standard)
 
-- [ ] 🟥 **Step 5: Shelf numbers on the stage**
-  - [ ] 🟥 `renderNumbers()`: number chips at each shelf height, using the `renderRail` y-projection, refreshed on resize and on size change
-  - [ ] 🟥 "Numbers" toggle pill in the `.hud` view controls; on by default; hidden in Top view
-  - [ ] 🟥 Clicking a number selects that shelf (same as clicking it in 3D)
+- [x] 🟩 **Step 5: Shelf numbers on the stage**
+  - [x] 🟩 Added `renderNumbers()` chips using the same y-projection math as the rail
+  - [x] 🟩 Added a "Numbers" toggle pill in `.hud`, on by default, hidden in Top view
+  - [x] 🟩 Number chips select shelves on the Style tab
 
-- [ ] 🟥 **Step 6: Verify in browser**
-  - [ ] 🟥 Randomize: remove Back with the X, roll 10 times, no Back shelves; gear + label visible without opening anything
-  - [ ] 🟥 Reset: change all six settings, reset, everything back to default and the URL hash cleared
-  - [ ] 🟥 Build: can't advance past the current step; Back works; starts at 1/12 (Tall) and 1/10 (Standard); confetti at 12/12
-  - [ ] 🟥 Numbers line up with shelves in the 3/4, Front and Side views, on both sizes; toggle hides them
+- [ ] 🟨 **Step 6: Verify in browser**
+  - [ ] 🟨 Randomize: remove Back with the X, roll 10 times, no Back shelves; gear + label visible without opening anything
+  - [ ] 🟨 Reset: change all six settings, reset, everything back to default and the URL hash cleared
+  - [ ] 🟨 Build: can't advance past the current step; Back works; starts at 1/12 (Tall) and 1/10 (Standard); confetti at 12/12
+  - [ ] 🟨 Numbers line up with shelves in the 3/4, Front and Side views, on both sizes; toggle hides them
 
 ## Split (this plan is too big for one session)
 Six tasks, and all of them edit the same file, so running every task as its own agent at once would cause merge conflicts. Suggested split:
