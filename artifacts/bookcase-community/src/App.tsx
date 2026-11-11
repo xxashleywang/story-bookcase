@@ -436,7 +436,7 @@ function Configurator({
         <svg viewBox="0 0 110 110"><defs><path id="stampCircle" d="M55,55 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" /></defs><text fontSize="10" fontWeight="700" letterSpacing="2.5" fill="currentColor"><textPath href="#stampCircle">TWIST IT · STACK IT · STYLE IT · </textPath></text></svg>
         <b>{tab === 'build' ? `${Math.round(done / progress.length * 100)}%` : `${S.SIZES[scene.model.size].height}″`}</b>
       </div>}
-      <div className="views" role="group" aria-label="Bookcase view"><span className="view-label">View</span>{VIEWS.map(([label, yaw, tilt], i) => <button key={label} aria-pressed={viewIndex === i} className={viewIndex === i ? 'active' : ''} onClick={() => { setViewIndex(i); viewRef.current?.animateTo(yaw, tilt); }}>{label}</button>)}</div>
+      <div className="views" role="group" aria-label="Bookcase view"><span className="view-label" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>View</span>{VIEWS.map(([label, yaw, tilt], i) => <button key={label} aria-pressed={viewIndex === i} className={viewIndex === i ? 'active' : ''} onClick={() => { setViewIndex(i); viewRef.current?.animateTo(yaw, tilt); }}>{label}</button>)}</div>
     </section>
     <section className="control-panel">
       <div className={`tabs ${tab === 'build' ? 'building' : ''}`}><i className="tab-pill" />
