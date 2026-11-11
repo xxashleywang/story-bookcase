@@ -66,8 +66,11 @@ function ClerkAuthBridge({ children }: { children: ReactNode }) {
   const { isSignedIn, isLoaded, user } = useUser();
   return <AuthContext.Provider value={{ isSignedIn: !!isSignedIn, isLoaded, user }}>{children}</AuthContext.Provider>;
 }
+function BrandWordmark() {
+  return <>ImagineM<span className="macron">o</span>de<i /></>;
+}
 function LocalAuthDisabled() {
-  return <main className="auth-frame"><Link className="brand auth-mark" href="/">ImagineMode<i/></Link><p>Sign-in is not configured for this local preview. The planner still works.</p><Link className="button coral" href="/">Back to the planner</Link></main>;
+  return <main className="auth-frame"><Link className="brand auth-mark" href="/"><BrandWordmark/></Link><p>Sign-in is not configured for this local preview. The planner still works.</p><Link className="button coral" href="/">Back to the planner</Link></main>;
 }
 function stripBase(path: string) {
   return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path;
@@ -226,7 +229,7 @@ function BookcaseSketch({ color, dirs, tall = true }: { color: string; dirs: str
 function Header() {
   const { isSignedIn } = useAuth();
   return <header className="topbar">
-    <Link className="brand" href="/">ImagineMode<i /></Link>
+    <Link className="brand" href="/"><BrandWordmark/></Link>
     <span className="tagline">Design it first. Build it once.</span>
     <nav className="top-actions">
       <Link className="button light small" href="/inspiration">Gallery</Link>
@@ -818,10 +821,10 @@ function Home() {
 }
 
 function BrandedSignIn() {
-  return <main className="auth-frame"><Link className="brand auth-mark" href="/">ImagineMode<i/></Link><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></main>;
+  return <main className="auth-frame"><Link className="brand auth-mark" href="/"><BrandWordmark/></Link><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></main>;
 }
 function BrandedSignUp() {
-  return <main className="auth-frame"><Link className="brand auth-mark" href="/">ImagineMode<i/></Link><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></main>;
+  return <main className="auth-frame"><Link className="brand auth-mark" href="/"><BrandWordmark/></Link><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></main>;
 }
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
@@ -882,7 +885,7 @@ function Router() {
     variables:{ colorPrimary:'#ff6b4a', colorForeground:'#2b1e16', colorMutedForeground:'#94857a', colorDanger:'#b74336', colorBackground:'#fff8ee', colorInput:'#fffdf9', colorInputForeground:'#2b1e16', colorNeutral:'#e5d6c3', fontFamily:'Clash Display', borderRadius:'1rem' },
     elements:{
       rootBox:'w-full flex justify-center', cardBox:'!bg-[#fff8ee] rounded-2xl w-[440px] max-w-full overflow-hidden', card:'!shadow-none !border-0 !bg-transparent !rounded-none', footer:'!shadow-none !border-0 !bg-transparent !rounded-none',
-      headerTitle:{ color:'#2b1e16', fontWeight:'800' }, headerSubtitle:{ color:'#75665c' }, socialButtonsBlockButtonText:{ color:'#2b1e16', fontWeight:'700' }, formFieldLabel:{ color:'#2b1e16', fontWeight:'700' }, footerActionLink:{ color:'#d94f34', fontWeight:'700' }, footerActionText:{ color:'#75665c' }, dividerText:{ color:'#75665c' }, identityPreviewEditButton:{ color:'#d94f34' }, formFieldSuccessText:{ color:'#347656' }, alertText:{ color:'#2b1e16' },
+      headerTitle:{ color:'#2b1e16', fontWeight:'600' }, headerSubtitle:{ color:'#75665c' }, socialButtonsBlockButtonText:{ color:'#2b1e16', fontWeight:'700' }, formFieldLabel:{ color:'#2b1e16', fontWeight:'700' }, footerActionLink:{ color:'#d94f34', fontWeight:'700' }, footerActionText:{ color:'#75665c' }, dividerText:{ color:'#75665c' }, identityPreviewEditButton:{ color:'#d94f34' }, formFieldSuccessText:{ color:'#347656' }, alertText:{ color:'#2b1e16' },
       logoBox:'rounded-xl', logoImage:'rounded-xl', socialButtonsBlockButton:'!border-[#e8d9c8] !bg-white rounded-xl', formButtonPrimary:'!bg-[#ff6b4a] !text-white rounded-xl', formFieldInput:'!bg-white !text-[#2b1e16] !border-[#e5d6c3] rounded-xl', footerAction:'border-0', dividerLine:'!bg-[#e5d6c3]', alert:'!bg-[#fff1e6] rounded-xl', otpCodeFieldInput:'!bg-white !text-[#2b1e16]', formFieldRow:'gap-2', main:'gap-4',
     },
   }} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`}

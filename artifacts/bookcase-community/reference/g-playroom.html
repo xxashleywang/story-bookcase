@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ImagineMode — Playroom</title>
+<title>ImagineMōde — Playroom</title>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&display=swap" rel="stylesheet">
 <style>
@@ -12,10 +12,12 @@
   html, body { margin: 0; height: 100%; }
   body { background: var(--cream); color: var(--ink); font: 15px/1.5 'Clash Display', system-ui, sans-serif; display: grid; grid-template-rows: 72px 1fr; }
   header { display: flex; align-items: center; padding: 0 32px; gap: 20px; }
-  .word { font-weight: 800; font-size: 26px; letter-spacing: -0.04em; }
+  .word { font-weight: 600; font-size: 26px; letter-spacing: -0.04em; }
+  .word .macron { position: relative; display: inline-block; }
+  .word .macron::after { content: ""; position: absolute; left: 12%; right: 12%; top: .04em; height: .085em; border-radius: 1px; background: currentColor; }
   .word i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin-left: 2px; animation: bob 2.4s ease-in-out infinite; }
   @keyframes bob { 50% { transform: translateY(-5px); } }
-  .tagline { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+  .tagline { font-weight: 500; font-size: 15px; letter-spacing: -0.01em; }
   .cta { margin-left: auto; display: flex; gap: 10px; }
   .btn { border: 0; background: var(--ink); color: #fff; border-radius: 999px; padding: 11px 20px; font: 600 14px 'Clash Display', sans-serif; cursor: pointer; text-decoration: none; transition: transform .25s var(--spring); }
   .btn:hover { transform: scale(1.05) rotate(-1deg); }
@@ -47,7 +49,7 @@
   .sticker b { width: 74px; height: 74px; border-radius: 50%; background: var(--butter); display: grid; place-items: center; font-weight: 800; font-size: 22px; letter-spacing: -0.03em; transform: rotate(-8deg); box-shadow: 0 6px 16px #0000001f; color: var(--ink); transition: background .3s; }
   .stage.building .sticker b { background: var(--accent); color: #fff; }
   .caption { position: absolute; left: 30px; top: 26px; }
-  .caption h1 { margin: 0; font-weight: 800; font-size: 54px; line-height: .92; letter-spacing: -0.05em; }
+  .caption h1 { margin: 0; font-weight: 600; font-size: 54px; line-height: .92; letter-spacing: -0.05em; }
   .caption h1 u { text-decoration: none; background: linear-gradient(transparent 62%, var(--sw, #fff) 62%); padding: 0 4px; transition: background .4s; }
   .caption p { margin: 10px 0 0; color: #2B1E16AA; font-size: 14px; }
   .stage.dark .caption, .stage.dark .caption p, .stage.dark .sticker, .stage.dark .rail { color: #FFF8EE; }
@@ -226,7 +228,7 @@
 </head>
 <body>
 <header>
-  <div class="word">ImagineMode<i></i></div>
+  <div class="word">ImagineM<span class="macron">o</span>de<i></i></div>
   <div class="tagline" id="tagline"></div>
   <div class="cta"><button class="btn inspire" id="openInspire"><span id="inspireIcon"></span><span id="inspireLabel"></span></button></div>
 </header>
