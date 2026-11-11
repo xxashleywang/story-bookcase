@@ -573,9 +573,8 @@ function Configurator({
         })}
         {tab === 'build' && nextShelf >= 0 && <span className="build-rail-label" style={{ top:railLayout.y(railLayout.hs[nextShelf]) }}>Shelf {nextShelf + 1} <span>faces {directions[scene.model.dirs[nextShelf]]?.label.toLowerCase()}</span></span>}
       </div>}
-      <div className="views" role="group" aria-label="Bookcase view"><span className="view-label" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>View</span>{VIEWS.map(([label, yaw, tilt], i) => <button key={label} aria-pressed={viewIndex === i} className={viewIndex === i ? 'active' : ''} onClick={() => { setViewIndex(i); viewRef.current?.animateTo(yaw, tilt); }}>{label}</button>)}
-        <button type="button" className={`view-toggle ${showNumbers ? 'active' : ''}`} aria-pressed={showNumbers} onClick={() => setShowNumbers((old) => !old)}>Numbers</button>
-      </div>
+      <div className="views" role="group" aria-label="Bookcase view"><span className="view-label" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>View</span>{VIEWS.map(([label, yaw, tilt], i) => <button key={label} aria-pressed={viewIndex === i} className={viewIndex === i ? 'active' : ''} onClick={() => { setViewIndex(i); viewRef.current?.animateTo(yaw, tilt); }}>{label}</button>)}</div>
+      <button type="button" className="shelf-numbers-toggle" aria-pressed={showNumbers} onClick={() => setShowNumbers((old) => !old)}>{showNumbers ? 'Hide shelf numbers' : 'Show shelf numbers'}</button>
       {tab === 'style' && <button type="button" className="button light small stage-reset" disabled={isAtDefault} onClick={resetToDefault}><RotateCcw size={14}/>Reset to default</button>}
     </section>
     <section className="control-panel">
