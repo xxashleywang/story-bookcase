@@ -49,7 +49,6 @@ declare global {
 }
 
 const LAST_SCENE_KEY = 'twistory:last-scene';
-const SHELF_HINT_DISMISSED_KEY = 'twistory:shelf-key-hint-dismissed';
 const clerkPubKey = clerkEnabled
   ? publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
   : '';
@@ -285,9 +284,7 @@ function Configurator({
   const viewRef = useRef<ViewHandle | null>(null);
   const selectRef = useRef<(index: number) => void>(() => undefined);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [showShelfKeyHint, setShowShelfKeyHint] = useState(() => {
-    try { return window.localStorage.getItem(SHELF_HINT_DISMISSED_KEY) !== '1'; } catch { return true; }
-  });
+  const [showShelfKeyHint, setShowShelfKeyHint] = useState(true);
   const [railFrame, setRailFrame] = useState({ width: 0, height: 0 });
   const [celebrationBurstId, setCelebrationBurstId] = useState(0);
   const [isCelebrating, setIsCelebrating] = useState(false);
@@ -467,10 +464,7 @@ function Configurator({
       event.preventDefault();
       if (showShelfKeyHint) {
         shelfArrowUseCount.current += 1;
-        if (shelfArrowUseCount.current >= 3) {
-          setShowShelfKeyHint(false);
-          try { window.localStorage.setItem(SHELF_HINT_DISMISSED_KEY, '1'); } catch { /* storage may be unavailable */ }
-        }
+        if (shelfArrowUseCount.current >= 3) setShowShelfKeyHint(false);
       }
       if (action.type === 'select') {
         setSelected((old) => moveShelfSelection(old, scene.model.dirs.length, action.step));
@@ -594,10 +588,7 @@ function Configurator({
       <div className="scene-copy"><h1>Design your bookcase</h1>
         <p className="scene-sub">Try different arrangements before you build.</p>
       </div>
-      {tab === 'style' && selected >= 0 && showShelfKeyHint && <ShelfKeyHint className="stage-shelf-hint" onDismiss={() => {
-        setShowShelfKeyHint(false);
-        try { window.localStorage.setItem(SHELF_HINT_DISMISSED_KEY, '1'); } catch { /* storage may be unavailable */ }
-      }} />}
+      {tab === 'style' && selected >= 0 && showShelfKeyHint && <ShelfKeyHint className="stage-shelf-hint" onDismiss={() => setShowShelfKeyHint(false)} />}
       {tab === 'build' && <div className={`scene-stamp${fullyBuilt ? ' is-complete' : ''}${isCelebrating ? ' is-celebrating' : ''}`} aria-label="Assembly progress">
         {isCelebrating && !reduceMotion && <BuildCelebration burstId={celebrationBurstId} />}
         <svg viewBox="0 0 110 110"><defs><path id="stampCircle" d="M55,55 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" /></defs><text fontSize="10" fontWeight="700" letterSpacing="2.5" fill="currentColor"><textPath href="#stampCircle">{fullyBuilt ? 'BUILT IT · BUILT IT · BUILT IT · ' : 'TWIST IT · STACK IT · STYLE IT · '}</textPath></text></svg>
