@@ -103,7 +103,7 @@ export function PublishDialog({ close, blueprint, attachByDefault, blueprintPrev
   };
   return <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) close(); }}>
     <form ref={ref} className="modal share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title" aria-busy={busy} onSubmit={submit} noValidate tabIndex={-1}>
-      <div className="modal-head"><div><span className="eyebrow">Show us the room</span><h2 id="share-title">Share your room</h2></div>
+      <div className="modal-head"><div><span className="eyebrow">Show us your setup</span><h2 id="share-title">Share your bookcase</h2></div>
         <button type="button" aria-label="Close" className="icon-button" onClick={close} disabled={busy} data-testid="button-close-share"><X size={18} /></button></div>
       <PhotoUploader items={photos.items} errors={photos.errors} onAdd={photos.add} onRemove={photos.remove} disabled={busy} progress={busy ? progress : ''} />
       <div className="form-grid">
@@ -190,7 +190,7 @@ export function EditBuildDialog({ build, close, onSave, onDelete }: { build: Bui
         {asking && askPlan && <div className="inline-confirm" role="alertdialog" aria-labelledby="photo-confirm-title" aria-describedby="photo-confirm-body">
           {askPlan.removesLast ? <>
             <b id="photo-confirm-title">This is the last photo.</b>
-            <p id="photo-confirm-body">A room post needs at least one photo. To take this one down, delete the whole post instead. Its blueprint goes with it.</p>
+            <p id="photo-confirm-body">A bookcase post needs at least one photo. To take this one down, delete the whole post instead. Its blueprint goes with it.</p>
             <div className="inline-confirm-actions"><button ref={askRef} type="button" className="button light small" onClick={() => setAsking(null)}>Keep the photo</button>
               {onDelete && <button type="button" className="button danger small" onClick={() => { const del = onDelete; close(); del(); }} data-testid="button-delete-whole-post">Delete whole post</button>}</div>
           </> : <>
