@@ -269,7 +269,7 @@ function Configurator({
   const [rolled, setRolled] = useState(false);
   const [rolling, setRolling] = useState(false);
   const [viewIndex, setViewIndex] = useState(DEFAULT_VIEW_INDEX);
-  const [showNumbers, setShowNumbers] = useState(true);
+  const [showNumbers, setShowNumbers] = useState(false);
   const [completed, setCompleted] = useState<boolean[]>(() => {
     try {
       const config = initialScene().model;
@@ -524,7 +524,7 @@ function Configurator({
     setRolled(false);
     setRolling(false);
     setEditorOpen(false);
-    setShowNumbers(true);
+    setShowNumbers(false);
     setViewIndex(DEFAULT_VIEW_INDEX);
     const resetProgress = Array(next.model.dirs.length).fill(false);
     setCompleted(resetProgress);
