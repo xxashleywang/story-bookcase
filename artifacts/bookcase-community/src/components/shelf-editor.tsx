@@ -1,6 +1,5 @@
 import { X } from 'lucide-react';
 import type { Ref } from 'react';
-import { ShelfKeyHint } from '@/components/shelf-key-hint';
 
 const DIRS = [['F', 'Front'], ['L', 'Left'], ['B', 'Back'], ['R', 'Right']] as const;
 
@@ -11,19 +10,18 @@ type Props = {
   onDirection: (dir: string) => void;
   onSelect: (index: number) => void;
   onClose: () => void;
-  showKeyboardHint: boolean;
-  onDismissKeyboardHint: () => void;
   containerRef?: Ref<HTMLDivElement>;
 };
 
 export function ShelfEditor({
-  open, selected, dirs, onDirection, onSelect, onClose, showKeyboardHint, onDismissKeyboardHint, containerRef,
+  open, selected, dirs, onDirection, onSelect, onClose, containerRef,
 }: Props) {
   const count = dirs.length;
   const has = selected >= 0 && selected < count;
+  if (!has) return null;
   return (
     <div ref={containerRef} className={`shelf-editor ${open && has ? 'open' : ''}`} role="group" aria-label="Shelf direction editor" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown">
-      {has && <>
+      <>
         <div className="shelf-editor-head">
           <div className="selected-shelf">{selected + 1}<small>of {count}, from bottom</small></div>
           <button type="button" className="icon-button shelf-close" aria-label="Close shelf editor" onClick={onClose}><X size={16} /></button>
@@ -37,8 +35,7 @@ export function ShelfEditor({
           <button type="button" className="button light small" aria-keyshortcuts="ArrowDown" disabled={selected <= 0} onClick={() => onSelect(selected - 1)}>Previous shelf</button>
           <button type="button" className="button light small" aria-keyshortcuts="ArrowUp" disabled={selected >= count - 1} onClick={() => onSelect(selected + 1)}>Next shelf</button>
         </div>
-        {showKeyboardHint && <ShelfKeyHint onDismiss={onDismissKeyboardHint} />}
-      </>}
+      </>
     </div>
   );
 }

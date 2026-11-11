@@ -32,6 +32,7 @@ import NotFound from '@/pages/not-found';
 import { ColorPicker } from '@/components/color-picker';
 import { ShelfSelector } from '@/components/shelf-selector';
 import { ShelfEditor } from '@/components/shelf-editor';
+import { ShelfKeyHint } from '@/components/shelf-key-hint';
 import { moveShelfSelection, rotateShelfDirection, shelfActionFromKey } from '@/lib/shelf-keyboard';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -424,6 +425,10 @@ function Configurator({
       <div className="scene-copy"><h1>Design your bookcase</h1>
         <p className="scene-sub">Try different arrangements before you build.</p>
         </div>
+      {tab === 'style' && selected >= 0 && showShelfKeyHint && <ShelfKeyHint className="stage-shelf-hint" onDismiss={() => {
+        setShowShelfKeyHint(false);
+        try { window.localStorage.setItem(SHELF_HINT_DISMISSED_KEY, '1'); } catch { /* storage may be unavailable */ }
+      }} />}
       {tab === 'build' && <div className="scene-stamp" aria-label="Assembly progress">
         <svg viewBox="0 0 110 110"><defs><path id="stampCircle" d="M55,55 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" /></defs><text fontSize="10" fontWeight="700" letterSpacing="2.5" fill="currentColor"><textPath href="#stampCircle">TWIST IT · STACK IT · STYLE IT · </textPath></text></svg>
         <b>{tab === 'build' ? `${Math.round(done / progress.length * 100)}%` : `${S.SIZES[scene.model.size].height}″`}</b>
@@ -451,11 +456,7 @@ function Configurator({
               onSelectionCommit={() => shelfEditorRef.current?.querySelector<HTMLButtonElement>('.dir-buttons button[aria-pressed="true"]')?.focus({ preventScroll:true })} />
             {selected >= 0 && !editorOpen && <button className="button light small reopen-shelf" onClick={() => setEditorOpen(true)}>Edit shelf {selected + 1}</button>}
             <ShelfEditor containerRef={shelfEditorRef} open={editorOpen} selected={selected} dirs={scene.model.dirs}
-              onDirection={(dir) => changeShelf(selected, dir)} onSelect={(i) => { setSelected(i); setEditorOpen(true); }} onClose={() => setEditorOpen(false)}
-              showKeyboardHint={showShelfKeyHint} onDismissKeyboardHint={() => {
-                setShowShelfKeyHint(false);
-                try { window.localStorage.setItem(SHELF_HINT_DISMISSED_KEY, '1'); } catch { /* storage may be unavailable */ }
-              }} />
+              onDirection={(dir) => changeShelf(selected, dir)} onSelect={(i) => { setSelected(i); setEditorOpen(true); }} onClose={() => setEditorOpen(false)} />
           </section>
         </div>
         <div className="pane-scroll">
