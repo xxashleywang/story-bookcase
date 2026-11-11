@@ -3,11 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ImagineMōde Logo Mockups</title>
+    <title>ImagineMōde — Concept 3 + free Blubird-like fonts</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=cabinet-grotesk@500,700,800&f[]=satoshi@500,700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -36,71 +41,95 @@
       }
 
       .wrap {
-        max-width: 1180px;
+        max-width: 1080px;
         margin: 28px auto 48px;
         padding: 0 18px 24px;
       }
 
       h1 {
         margin: 0;
-        font-family: "Cormorant Garamond", Georgia, serif;
-        font-size: 34px;
+        font-family: "Clash Display", "Bricolage Grotesque", sans-serif;
         font-weight: 600;
+        font-size: 28px;
+        letter-spacing: -0.03em;
       }
 
       .sub {
-        margin: 8px 0 0;
+        margin: 10px 0 0;
         color: var(--muted);
-        font-size: 13px;
-        line-height: 1.5;
-        max-width: 62ch;
+        font-size: 12px;
+        line-height: 1.55;
+        max-width: 72ch;
       }
 
-      .concepts {
-        margin-top: 22px;
+      .picks {
+        margin-top: 14px;
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 18px;
+        gap: 8px;
+        font-size: 12px;
+        color: #5f554c;
+        line-height: 1.45;
+      }
+
+      .picks strong {
+        color: var(--ink);
+      }
+
+      .mark {
+        width: 72px;
+        height: 72px;
+        flex: 0 0 auto;
+      }
+
+      .grid {
+        margin-top: 18px;
+        display: grid;
+        gap: 12px;
       }
 
       .card {
         background: var(--panel);
         border: 1px solid var(--line);
-        border-radius: 22px;
-        padding: 18px;
+        border-radius: 18px;
+        padding: 14px;
+      }
+
+      .card.recommend {
+        border-color: #f0b79f;
+        box-shadow: 0 0 0 1px rgba(240, 124, 91, 0.18);
       }
 
       .label {
-        font-size: 11px;
+        font-size: 10px;
         letter-spacing: 0.16em;
         text-transform: uppercase;
         color: var(--muted);
       }
 
-      .title {
-        margin: 8px 0 6px;
-        font-family: "Cormorant Garamond", Georgia, serif;
-        font-size: 26px;
-        font-weight: 600;
+      .badge {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #ffe4d8;
+        color: #9a3f28;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
       }
 
-      .desc {
-        margin: 0 0 14px;
+      .why {
+        margin: 6px 0 12px;
         color: var(--muted);
         font-size: 12px;
-        line-height: 1.5;
-      }
-
-      .variants {
-        display: grid;
-        gap: 12px;
+        line-height: 1.45;
       }
 
       .variant {
         border: 1px solid var(--line);
-        border-radius: 16px;
+        border-radius: 14px;
         background: var(--cream);
-        padding: 18px 16px 14px;
+        padding: 18px 16px;
       }
 
       .variant.dark {
@@ -109,100 +138,73 @@
         color: #fff8f2;
       }
 
-      .variant-head {
-        font-size: 10px;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 14px;
-      }
-
-      .variant.dark .variant-head {
-        color: #b9aea8;
-      }
-
-      .hero {
-        display: grid;
-        justify-items: center;
-        gap: 12px;
-        text-align: center;
-        padding: 8px 0 4px;
+      .lockup {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
       }
 
       .word {
-        font-family: "Cormorant Garamond", Georgia, serif;
-        font-size: 42px;
-        font-weight: 500;
-        letter-spacing: 0.01em;
-        line-height: 1;
-      }
-
-      .variant.dark .word {
-        color: #fff8f2;
+        font-size: clamp(32px, 5.5vw, 48px);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+        font-weight: 700;
       }
 
       .tagline {
-        font-family: "Cormorant Garamond", Georgia, serif;
+        margin-top: 6px;
+        font-size: 15px;
+        font-weight: 500;
         font-style: italic;
-        font-size: 16px;
+        letter-spacing: -0.01em;
         color: #5f554c;
-        margin-top: -2px;
       }
 
       .variant.dark .tagline {
         color: #d2c4bc;
       }
 
-      .row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 14px;
+      .f-bricolage {
+        font-family: "Bricolage Grotesque", sans-serif;
+        font-optical-sizing: auto;
       }
 
-      .small-row {
-        margin-top: 8px;
-        display: flex;
-        justify-content: center;
-        gap: 14px;
-        align-items: end;
+      .f-clash {
+        font-family: "Clash Display", sans-serif;
       }
 
-      .chip {
-        display: grid;
-        gap: 6px;
-        justify-items: center;
-        font-size: 10px;
+      .f-cabinet {
+        font-family: "Cabinet Grotesk", sans-serif;
+      }
+
+      .f-satoshi {
+        font-family: "Satoshi", sans-serif;
+      }
+
+      .f-space {
+        font-family: "Space Grotesk", sans-serif;
+      }
+
+      .meta {
+        margin-top: 10px;
+        font-size: 11px;
         color: var(--muted);
-        letter-spacing: 0.08em;
       }
 
-      .chip-btn {
-        width: 42px;
-        height: 42px;
-        border-radius: 999px;
-        background: var(--dark);
+      .variant.dark .meta {
+        color: #b9aea8;
+      }
+
+      .pair {
+        margin-top: 10px;
         display: grid;
-        place-items: center;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
       }
 
-      .chip-btn.s16 {
-        width: 28px;
-        height: 28px;
-      }
-
-      .chip-btn.s24 {
-        width: 34px;
-        height: 34px;
-      }
-
-      .chip-btn.s32 {
-        width: 42px;
-        height: 42px;
-      }
-
-      @media (max-width: 980px) {
-        .concepts {
+      @media (max-width: 720px) {
+        .pair {
           grid-template-columns: 1fr;
         }
       }
@@ -210,210 +212,170 @@
   </head>
   <body>
     <div class="wrap">
-      <h1>ImagineMōde — logo mockups</h1>
+      <h1>Concept 3 + free Blubird-like fonts</h1>
       <p class="sub">
-        Two I-based concepts (no letter A). Same warm coral/cream vibe as your
-        reference. Tagline lockup uses only:
-        <em>Design it first. Build it once.</em>
+        Same Build-Once Blocks mark. Below are free commercial-friendly fonts
+        that get close to Blubird’s contemporary grotesque energy without buying
+        it.
       </p>
+      <div class="picks">
+        <div>
+          <strong>Closest overall:</strong> Bricolage Grotesque (ink traps +
+          expressive grotesque)
+        </div>
+        <div>
+          <strong>Most display / fashion:</strong> Clash Display (tight, bold,
+          high-impact)
+        </div>
+        <div>
+          <strong>Cleaner product brand:</strong> Cabinet Grotesk or Satoshi
+        </div>
+      </div>
 
-      <section class="concepts">
-        <!-- CONCEPT 2 -->
-        <article class="card">
-          <div class="label">Concept 2</div>
-          <h2 class="title">I Ribbon</h2>
-          <p class="desc">
-            One continuous rounded stroke forms a playful capital I. A single
-            center node marks the pivot — idea before build.
-          </p>
-
-          <div class="variants">
-            <div class="variant">
-              <div class="variant-head">Primary lockup</div>
-              <div class="hero">
-                <!-- I Ribbon: top bar + stem + bottom bar as one continuous stroke path feel -->
-                <svg width="88" height="88" viewBox="0 0 88 88" aria-label="I Ribbon color">
-                  <g fill="none" stroke="#f07c5b" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M26 22 H62" />
-                    <path d="M44 22 V66" />
-                    <path d="M26 66 H62" />
-                  </g>
-                  <circle cx="44" cy="44" r="6" fill="#fde08d" />
-                </svg>
-                <div>
-                  <div class="word">ImagineMōde</div>
-                  <div class="tagline">Design it first. Build it once.</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="variant">
-              <div class="variant-head">Monochrome</div>
-              <div class="row">
-                <svg width="56" height="56" viewBox="0 0 88 88" aria-label="I Ribbon mono">
-                  <g fill="none" stroke="#231f20" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M26 22 H62" />
-                    <path d="M44 22 V66" />
-                    <path d="M26 66 H62" />
-                  </g>
-                  <circle cx="44" cy="44" r="6" fill="#231f20" />
-                </svg>
-                <div class="word" style="font-size: 34px">ImagineMōde</div>
-              </div>
-            </div>
-
-            <div class="variant dark">
-              <div class="variant-head">On dark</div>
-              <div class="row">
-                <svg width="56" height="56" viewBox="0 0 88 88" aria-label="I Ribbon dark">
-                  <g fill="none" stroke="#f07c5b" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M26 22 H62" />
-                    <path d="M44 22 V66" />
-                    <path d="M26 66 H62" />
-                  </g>
-                  <circle cx="44" cy="44" r="6" fill="#fde08d" />
-                </svg>
-                <div class="word" style="font-size: 34px">ImagineMōde</div>
-              </div>
-            </div>
-
-            <div class="variant">
-              <div class="variant-head">Small icons</div>
-              <div class="small-row">
-                <div class="chip">
-                  <div class="chip-btn s16">
-                    <svg width="12" height="12" viewBox="0 0 88 88">
-                      <g fill="none" stroke="#f07c5b" stroke-width="12" stroke-linecap="round">
-                        <path d="M26 22 H62" />
-                        <path d="M44 22 V66" />
-                        <path d="M26 66 H62" />
-                      </g>
-                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
-                    </svg>
-                  </div>
-                  16
-                </div>
-                <div class="chip">
-                  <div class="chip-btn s24">
-                    <svg width="16" height="16" viewBox="0 0 88 88">
-                      <g fill="none" stroke="#f07c5b" stroke-width="12" stroke-linecap="round">
-                        <path d="M26 22 H62" />
-                        <path d="M44 22 V66" />
-                        <path d="M26 66 H62" />
-                      </g>
-                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
-                    </svg>
-                  </div>
-                  24
-                </div>
-                <div class="chip">
-                  <div class="chip-btn s32">
-                    <svg width="20" height="20" viewBox="0 0 88 88">
-                      <g fill="none" stroke="#f07c5b" stroke-width="12" stroke-linecap="round">
-                        <path d="M26 22 H62" />
-                        <path d="M44 22 V66" />
-                        <path d="M26 66 H62" />
-                      </g>
-                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
-                    </svg>
-                  </div>
-                  32
-                </div>
-              </div>
-            </div>
+      <section class="grid">
+        <article class="card recommend">
+          <div class="label">
+            1. Bricolage Grotesque <span class="badge">Closest</span>
           </div>
-        </article>
-
-        <!-- CONCEPT 3 -->
-        <article class="card">
-          <div class="label">Concept 3</div>
-          <h2 class="title">Build-Once Blocks (I)</h2>
-          <p class="desc">
-            Three modular pieces assemble into a geometric I — plan the parts
-            first, then build once. One center node only.
+          <p class="why">
+            Free on Google Fonts. Closest “Blubird DNA”: contemporary grotesque
+            with ink-trap personality. Best first pick for ImagineMōde.
           </p>
-
-          <div class="variants">
-            <div class="variant">
-              <div class="variant-head">Primary lockup</div>
-              <div class="hero">
-                <svg width="88" height="88" viewBox="0 0 88 88" aria-label="Blocks I color">
-                  <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
-                  <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
-                  <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
-                  <circle cx="44" cy="44" r="6" fill="#fde08d" />
-                </svg>
-                <div>
-                  <div class="word">ImagineMōde</div>
-                  <div class="tagline">Design it first. Build it once.</div>
+          <div class="variant">
+            <div class="lockup">
+              <svg class="mark" viewBox="0 0 88 88" aria-hidden="true">
+                <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
+                <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
+                <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
+                <circle cx="44" cy="44" r="6" fill="#fde08d" />
+              </svg>
+              <div>
+                <div class="word f-bricolage">ImagineMōde</div>
+                <div class="tagline f-bricolage">
+                  Design it first. Build it once.
                 </div>
               </div>
             </div>
-
-            <div class="variant">
-              <div class="variant-head">Monochrome</div>
-              <div class="row">
-                <svg width="56" height="56" viewBox="0 0 88 88" aria-label="Blocks I mono">
-                  <rect x="24" y="16" width="40" height="14" rx="7" fill="#231f20" />
-                  <rect x="35" y="32" width="18" height="24" rx="7" fill="#231f20" />
-                  <rect x="24" y="58" width="40" height="14" rx="7" fill="#231f20" />
-                  <circle cx="44" cy="44" r="6" fill="#f7f3eb" />
-                </svg>
-                <div class="word" style="font-size: 34px">ImagineMōde</div>
-              </div>
-            </div>
-
+            <div class="meta">Google Fonts · free commercial use</div>
+          </div>
+          <div class="pair">
             <div class="variant dark">
-              <div class="variant-head">On dark</div>
-              <div class="row">
-                <svg width="56" height="56" viewBox="0 0 88 88" aria-label="Blocks I dark">
+              <div class="lockup">
+                <svg class="mark" viewBox="0 0 88 88" aria-hidden="true">
                   <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
                   <rect x="35" y="32" width="18" height="24" rx="7" fill="#ff8a68" />
                   <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
                   <circle cx="44" cy="44" r="6" fill="#fde08d" />
                 </svg>
-                <div class="word" style="font-size: 34px">ImagineMōde</div>
+                <div class="word f-bricolage">ImagineMōde</div>
               </div>
             </div>
-
             <div class="variant">
-              <div class="variant-head">Small icons</div>
-              <div class="small-row">
-                <div class="chip">
-                  <div class="chip-btn s16">
-                    <svg width="12" height="12" viewBox="0 0 88 88">
-                      <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
-                      <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
-                      <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
-                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
-                    </svg>
-                  </div>
-                  16
-                </div>
-                <div class="chip">
-                  <div class="chip-btn s24">
-                    <svg width="16" height="16" viewBox="0 0 88 88">
-                      <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
-                      <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
-                      <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
-                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
-                    </svg>
-                  </div>
-                  24
-                </div>
-                <div class="chip">
-                  <div class="chip-btn s32">
-                    <svg width="20" height="20" viewBox="0 0 88 88">
-                      <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
-                      <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
-                      <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
-                      <circle cx="44" cy="44" r="7" fill="#fde08d" />
-                    </svg>
-                  </div>
-                  32
+              <div class="word f-bricolage" style="font-weight: 800; font-size: 40px">
+                ImagineMōde
+              </div>
+              <div class="meta">ExtraBold weight</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="label">
+            2. Clash Display <span class="badge">Display energy</span>
+          </div>
+          <p class="why">
+            Free on Fontshare. Bigger fashion/editorial punch — tight, bold,
+            closer to Blubird’s specimen vibe. Great for hero/logo, maybe less
+            for long UI text.
+          </p>
+          <div class="variant">
+            <div class="lockup">
+              <svg class="mark" viewBox="0 0 88 88" aria-hidden="true">
+                <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
+                <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
+                <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
+                <circle cx="44" cy="44" r="6" fill="#fde08d" />
+              </svg>
+              <div>
+                <div class="word f-clash">ImagineMōde</div>
+                <div class="tagline f-clash">Design it first. Build it once.</div>
+              </div>
+            </div>
+            <div class="meta">Fontshare · free for commercial use</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="label">3. Cabinet Grotesk</div>
+          <p class="why">
+            Free on Fontshare. Softer, more product-ready grotesque. Less ink-trap
+            drama than Blubird, but very brandable for an app.
+          </p>
+          <div class="variant">
+            <div class="lockup">
+              <svg class="mark" viewBox="0 0 88 88" aria-hidden="true">
+                <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
+                <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
+                <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
+                <circle cx="44" cy="44" r="6" fill="#fde08d" />
+              </svg>
+              <div>
+                <div class="word f-cabinet">ImagineMōde</div>
+                <div class="tagline f-cabinet">
+                  Design it first. Build it once.
                 </div>
               </div>
             </div>
+            <div class="meta">Fontshare · free for commercial use</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="label">4. Satoshi</div>
+          <p class="why">
+            Free on Fontshare. Clean modern sans — less “Blubird twin,” more
+            polished startup. Good if you want the mark to carry personality and
+            type to stay quiet.
+          </p>
+          <div class="variant">
+            <div class="lockup">
+              <svg class="mark" viewBox="0 0 88 88" aria-hidden="true">
+                <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
+                <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
+                <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
+                <circle cx="44" cy="44" r="6" fill="#fde08d" />
+              </svg>
+              <div>
+                <div class="word f-satoshi">ImagineMōde</div>
+                <div class="tagline f-satoshi">
+                  Design it first. Build it once.
+                </div>
+              </div>
+            </div>
+            <div class="meta">Fontshare · free for commercial use</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="label">5. Space Grotesk</div>
+          <p class="why">
+            Free on Google Fonts. Geometric + slightly quirky. Not as ink-trap
+            heavy as Blubird, but playful and memorable.
+          </p>
+          <div class="variant">
+            <div class="lockup">
+              <svg class="mark" viewBox="0 0 88 88" aria-hidden="true">
+                <rect x="24" y="16" width="40" height="14" rx="7" fill="#f07c5b" />
+                <rect x="35" y="32" width="18" height="24" rx="7" fill="#e86a48" />
+                <rect x="24" y="58" width="40" height="14" rx="7" fill="#f07c5b" />
+                <circle cx="44" cy="44" r="6" fill="#fde08d" />
+              </svg>
+              <div>
+                <div class="word f-space">ImagineMōde</div>
+                <div class="tagline f-space">Design it first. Build it once.</div>
+              </div>
+            </div>
+            <div class="meta">Google Fonts · free commercial use</div>
           </div>
         </article>
       </section>
