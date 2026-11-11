@@ -11,7 +11,7 @@ import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import {
   AlertTriangle, ArrowLeft, Bookmark, Camera, ChevronDown, Dices, Heart, ImageOff, Images, Link as LinkIcon,
-  LoaderCircle, PencilLine, RefreshCw, Ruler, Search, SlidersHorizontal, Sparkles, Trash2, Upload, X,
+  LoaderCircle, PencilLine, Plus, RefreshCw, RotateCcw, Ruler, Search, Settings, Sparkles, Trash2, Upload, X,
 } from 'lucide-react';
 import type { Build, BuildConfiguration, BuildPage, BuildUpdate, Profile } from '@workspace/api-client-react';
 import { AccountMenu, ConfirmDialog, FavouriteButton, LogoutButton, refreshAccountViews } from '@/components/account-ui';
@@ -34,6 +34,7 @@ import { ShelfSelector } from '@/components/shelf-selector';
 import { ShelfEditor } from '@/components/shelf-editor';
 import { ShelfKeyHint } from '@/components/shelf-key-hint';
 import { moveShelfSelection, rotateShelfDirection, shelfActionFromKey } from '@/lib/shelf-keyboard';
+import { advanceBuildProgress, buildSteps, normalizeBuildProgress, rewindBuildProgress } from '@/lib/build-steps';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -104,10 +105,21 @@ const FINISH_PRESETS = ['#F4F1EA', '#D9CBB4', '#C79A5B', '#B5543C', '#E58A6B', '
 const WALL_PRESETS = ['#FBF8F2', '#F2E6D8', '#EFD4C8', '#F4DDA4', '#DDE7CF', '#BFD8C7', '#CFE0EE', '#A9C1D9', '#DCD3EA', '#C9B8D8', '#556B5D', '#2F3346'];
 const FLOOR_PRESETS = ['#EAD8BC', '#D9BC92', '#B98D5E', '#8C6648', '#5E4130', '#CBC5BC', '#9C968C', '#DDD0BC', '#B7A58C', '#A3AA8C', '#8A9AA8', '#4B4A48'];
 const VIEWS = [['Front', 0, -10], ['Angled', -32, -10], ['Side', -90, -10], ['Top', -20, -62]] as const;
+const DEFAULT_VIEW_INDEX = 0;
 const directions: Record<string, { label: string; rotation: number }> = {
   F: { label: 'Front', rotation: 0 }, L: { label: 'Left', rotation: 90 },
   B: { label: 'Back', rotation: 180 }, R: { label: 'Right', rotation: -90 },
 };
+
+function createDefaultScene(S: any) {
+  return {
+    model: S.createState('tall', '#E2B062', S.PRESETS.find((p: any) => p.id === 'pairs').make(11)),
+    wall: '#F6F4F0',
+    floor: FLOORS[0],
+    floorKind: FLOORS[0].kind,
+    customFloorColor: '#B9A48A',
+  };
+}
 
 function initialScene() {
   const S = window.Story;
@@ -122,10 +134,11 @@ function initialScene() {
   const selectedFloor = extras[2] === 'custom'
     ? { id:'custom', name:'Custom', kind:floorKind, bg:(floorKind === 'Carpet' ? carpet : plank)(customHex, S.shade(customHex, -.08)) }
     : savedFloor;
+  const defaults = createDefaultScene(S);
   return {
-    model: parsed || S.createState('tall', '#E2B062', S.PRESETS.find((p: any) => p.id === 'pairs').make(11)),
-    wall: extras[1] ? `#${extras[1]}` : '#F6F4F0',
-    floor: selectedFloor || FLOORS[0],
+    model: parsed || defaults.model,
+    wall: extras[1] ? `#${extras[1]}` : defaults.wall,
+    floor: selectedFloor || defaults.floor,
     floorKind,
     customFloorColor:customHex,
   };
@@ -238,6 +251,7 @@ function Header() {
   </header>;
 }
 
+
 function Configurator({
   onPublish,
   onSceneChange,
@@ -254,13 +268,16 @@ function Configurator({
   const [note, setNote] = useState('');
   const [rolled, setRolled] = useState(false);
   const [rolling, setRolling] = useState(false);
-  const [viewIndex, setViewIndex] = useState(0);
+  const [viewIndex, setViewIndex] = useState(DEFAULT_VIEW_INDEX);
+  const [showNumbers, setShowNumbers] = useState(false);
   const [completed, setCompleted] = useState<boolean[]>(() => {
     try {
       const config = initialScene().model;
-      return window.Story3D.getProgress(config);
+      return normalizeBuildProgress(window.Story3D.getProgress(config));
     } catch { return []; }
   });
+
+  const stageRef = useRef<HTMLElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const shelfEditorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<ViewHandle | null>(null);
@@ -269,35 +286,73 @@ function Configurator({
   const [showShelfKeyHint, setShowShelfKeyHint] = useState(() => {
     try { return window.localStorage.getItem(SHELF_HINT_DISMISSED_KEY) !== '1'; } catch { return true; }
   });
+  const [railFrame, setRailFrame] = useState({ width: 0, height: 0 });
+
   const shelfArrowUseCount = useRef(0);
   selectRef.current = (i: number) => {
     setSelected(i);
     setEditorOpen(true);
     hostRef.current?.focus({ preventScroll:true });
   };
+
   const S = window.Story;
-  const pattern = S.PRESETS.find((p: any) => p.make(scene.model.dirs.length).join('') === scene.model.dirs.join(''));
+  const defaults = useMemo(() => createDefaultScene(S), [S]);
+  const defaultModelCode = useMemo(() => S.encodeUnit(defaults.model), [S, defaults.model]);
+  const pattern = S.PRESETS.find((preset: any) => preset.make(scene.model.dirs.length).join('') === scene.model.dirs.join(''));
   const currentPattern = pattern?.name || (rolled ? 'Random roll' : 'Your own');
   const activeColor = COLORS.find((c) => c.hex.toLowerCase() === scene.model.color.toLowerCase());
   const floorIsCustom = scene.floor.id === 'custom';
   const wallIsCustom = !WALLS.some(([, hex]) => hex.toLowerCase() === scene.wall.toLowerCase());
   const progress = useMemo(
-    () => completed.length === scene.model.dirs.length ? completed : Array.from({ length: scene.model.dirs.length }, (_, i) => !!completed[i]),
+    () => normalizeBuildProgress(completed.length === scene.model.dirs.length ? completed : Array.from({ length: scene.model.dirs.length }, (_, i) => !!completed[i])),
     [completed, scene.model.dirs.length],
   );
-  const done = progress.filter(Boolean).length;
-  const nextShelf = progress.indexOf(false);
-  const fullyBuilt = nextShelf === -1;
+  const steps = useMemo(() => buildSteps(progress), [progress]);
+  const nextShelf = steps.nextShelfIndex;
+  const fullyBuilt = steps.isComplete;
+
+  const railLayout = useMemo(() => {
+    if (!railFrame.width || !railFrame.height) return null;
+    const k = (railFrame.height * 0.66) / S.SIZES.tall.height;
+    const floorY = railFrame.height * 0.86;
+    const y = (h: number) => floorY - h * k * 0.985;
+    const hs = S.shelfHeights(scene.model.size);
+    const top = steps.doneShelves ? y(hs[steps.doneShelves - 1]) : floorY;
+    return {
+      hs,
+      top,
+      left: railFrame.width / 2 + 22 * k,
+      y,
+      floorY,
+    };
+  }, [S, railFrame.height, railFrame.width, scene.model.size, steps.doneShelves]);
+
+  const isAtDefault = tab === 'style'
+    && viewIndex === DEFAULT_VIEW_INDEX
+    && showNumbers
+    && !editorOpen
+    && selected < 0
+    && !rolled
+    && !rulesOpen
+    && !noRepeat
+    && allowed.size === 4
+    && !progress.some(Boolean)
+    && S.encodeUnit(scene.model) === defaultModelCode
+    && scene.wall === defaults.wall
+    && scene.floor.id === defaults.floor.id
+    && scene.floorKind === defaults.floorKind
+    && scene.customFloorColor.toLowerCase() === defaults.customFloorColor.toLowerCase();
+
+  const showRail = viewIndex !== 3 && (tab === 'build' || showNumbers);
 
   useEffect(() => {
     if (!hostRef.current || viewRef.current) return;
     viewRef.current = window.Story3D.mount(hostRef.current, {
       state: scene.model, fit: .66, floor: .86, accent: '#FF6B4A', turntable: false,
-      yaw: VIEWS[0][1], tilt: VIEWS[0][2],
+      yaw: VIEWS[DEFAULT_VIEW_INDEX][1], tilt: VIEWS[DEFAULT_VIEW_INDEX][2],
       selectable: true,
       onSelect: (i: number) => selectRef.current(i),
     });
-    // Let the initial model update and ResizeObserver settle before revealing shelves.
     let cancelIntro = () => {};
     let frame = requestAnimationFrame(() => {
       frame = requestAnimationFrame(() => {
@@ -309,6 +364,7 @@ function Configurator({
       cancelIntro();
     };
   }, []);
+
   useEffect(() => {
     hashFor(scene);
     viewRef.current?.update(scene.model, {
@@ -317,17 +373,34 @@ function Configurator({
       build: tab === 'build' ? { installed: progress, style: 'wire', next: nextShelf } : null,
     });
   }, [scene, selected, tab, progress, nextShelf]);
+
   useEffect(() => onSceneChange(scene), [scene, onSceneChange]);
+
   const progressConfigKey = useRef(S.encodeUnit(scene.model));
   useEffect(() => {
     const key = S.encodeUnit(scene.model);
     if (key !== progressConfigKey.current) {
       progressConfigKey.current = key;
-      setCompleted(window.Story3D.getProgress(scene.model));
+      setCompleted(normalizeBuildProgress(window.Story3D.getProgress(scene.model)));
+      return;
+    }
+    if (completed.length !== progress.length || completed.some((value, i) => value !== progress[i])) {
+      setCompleted(progress);
       return;
     }
     window.Story3D.setProgress(scene.model, progress);
-  }, [scene.model, progress, S]);
+  }, [S, completed, progress, scene.model]);
+
+  useEffect(() => {
+    if (!stageRef.current) return;
+    const el = stageRef.current;
+    const observe = () => setRailFrame({ width: el.clientWidth, height: el.clientHeight });
+    observe();
+    const ro = new ResizeObserver(observe);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   useEffect(() => {
     if (!editorOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -336,6 +409,7 @@ function Configurator({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [editorOpen]);
+
   useEffect(() => {
     const onArrow = (event: KeyboardEvent) => {
       const action = shelfActionFromKey(event, {
@@ -363,36 +437,48 @@ function Configurator({
     window.addEventListener('keydown', onArrow);
     return () => window.removeEventListener('keydown', onArrow);
   }, [selected, scene.model.dirs.length, tab, rolling, showShelfKeyHint]);
+
   const updateModel = (change: (model: any) => any) => setScene((old) => ({ ...old, model: change(old.model) }));
   const setWall = (wall: string) => setScene((old) => ({ ...old, wall }));
   const setFloor = (floor: { id:string; name:string; kind:string; bg:string }, kind = floor.kind, hex = scene.customFloorColor) => {
     const chosen = floor.id === 'custom' ? { ...floor, kind, bg: (kind === 'Carpet' ? carpet : plank)(hex, S.shade(hex, -.08)) } : floor;
     setScene((old) => ({ ...old, floor: chosen, floorKind: kind, customFloorColor: hex }));
   };
+
   const choosePattern = (presetId: string) => {
     const preset = S.PRESETS.find((p: any) => p.id === presetId);
     if (preset) {
       updateModel((model) => ({ ...model, dirs: preset.make(model.dirs.length) }));
-      setRolled(false); setRulesOpen(false); setNote('');
+      setRolled(false);
+      setRulesOpen(false);
+      setNote('');
     }
   };
+
   const toggleAllowed = (dir: string) => {
     setAllowed((old) => {
       const nextAllowed = new Set(old);
-      if (nextAllowed.has(dir) && nextAllowed.size === 1) { setNote('Keep at least one direction. Shelves have to face somewhere.'); return old; }
+      if (nextAllowed.has(dir) && nextAllowed.size === 1) {
+        setNote('Keep at least one direction. Shelves have to face somewhere.');
+        return old;
+      }
       if (nextAllowed.has(dir)) nextAllowed.delete(dir); else nextAllowed.add(dir);
       setNote(nextAllowed.size === 1 ? `Only ${directions[[...nextAllowed][0]]?.label} left, so every roll is the same.` : '');
       return nextAllowed;
     });
   };
+
   const roll = () => {
     if (rolling) return;
-    const finalDirs = S.randomDirs(scene.model.dirs.length, { allowed: [...allowed], noRepeat, current: scene.model.dirs });
-    setRolling(true); setRolled(true); setRulesOpen(false);
+    const pool = [...allowed];
+    const finalDirs = S.randomDirs(scene.model.dirs.length, { allowed: pool, noRepeat, current: scene.model.dirs });
+    setRolling(true);
+    setRolled(true);
+    setRulesOpen(false);
     let tick = 0;
     const animate = () => {
       if (tick++ < 6) {
-        updateModel((model) => ({ ...model, dirs: model.dirs.map(() => [...allowed][Math.floor(Math.random() * allowed.size)]) }));
+        updateModel((model) => ({ ...model, dirs: model.dirs.map(() => pool[Math.floor(Math.random() * pool.length)]) }));
         window.setTimeout(animate, 65);
       } else {
         updateModel((model) => ({ ...model, dirs: finalDirs }));
@@ -401,20 +487,52 @@ function Configurator({
     };
     animate();
   };
+
   const changeShelf = (index: number, dir: string) => updateModel((m) => ({ ...m, dirs: m.dirs.map((d: string, i: number) => i === index ? dir : d) }));
-  const toggleShelf = (index: number) => {
-    const next = [...progress];
-    next[index] = !next[index];
+
+  const completeNextShelf = () => {
+    const next = advanceBuildProgress(progress);
+    if (next.every((value, i) => value === progress[i])) return;
     setCompleted(next);
     window.Story3D.setProgress(scene.model, next);
   };
+
+  const undoLastShelf = () => {
+    const next = rewindBuildProgress(progress);
+    if (next.every((value, i) => value === progress[i])) return;
+    setCompleted(next);
+    window.Story3D.setProgress(scene.model, next);
+  };
+
   const setSize = (size: string) => {
     const model = S.resize(scene.model, size);
-    const stored = window.Story3D.getProgress(model);
+    const stored = normalizeBuildProgress(window.Story3D.getProgress(model));
     setCompleted(stored);
     setSelected((old) => Math.min(old, model.dirs.length - 1));
     setScene((old) => ({ ...old, model }));
   };
+
+  const resetToDefault = () => {
+    const next = createDefaultScene(S);
+    setScene({ ...next, model: { ...next.model, dirs: [...next.model.dirs] }, floor: { ...next.floor } });
+    setSelected(-1);
+    setTab('style');
+    setAllowed(new Set(['F', 'L', 'B', 'R']));
+    setNoRepeat(false);
+    setRulesOpen(false);
+    setNote('');
+    setRolled(false);
+    setRolling(false);
+    setEditorOpen(false);
+    setShowNumbers(false);
+    setViewIndex(DEFAULT_VIEW_INDEX);
+    const resetProgress = Array(next.model.dirs.length).fill(false);
+    setCompleted(resetProgress);
+    viewRef.current?.animateTo(VIEWS[DEFAULT_VIEW_INDEX][1], VIEWS[DEFAULT_VIEW_INDEX][2]);
+    window.Story3D.setProgress(next.model, resetProgress);
+    try { window.localStorage.removeItem(LAST_SCENE_KEY); } catch { /* storage may be unavailable */ }
+  };
+
   const saveShareLink = async () => {
     const url = window.location.href;
     try { await navigator.clipboard.writeText(url); window.alert('Build link copied.'); }
@@ -422,26 +540,47 @@ function Configurator({
   };
 
   return <div className="playroom">
-    <section className={`stage ${roomColor(scene.wall) < .45 ? 'is-dark' : ''}`} style={{ backgroundColor: scene.wall, '--wall': scene.wall, '--floor-background': floorIsCustom ? (scene.floorKind === 'Carpet' ? carpet : plank)(scene.customFloorColor, S.shade(scene.customFloorColor, -.08)) : scene.floor.bg } as CSSProperties}>
+    <section ref={stageRef} className={`stage ${roomColor(scene.wall) < .45 ? 'is-dark' : ''}`} style={{ backgroundColor: scene.wall, '--wall': scene.wall, '--floor-background': floorIsCustom ? (scene.floorKind === 'Carpet' ? carpet : plank)(scene.customFloorColor, S.shade(scene.customFloorColor, -.08)) : scene.floor.bg } as CSSProperties}>
       <div className="room-floor" />
       <div id="bookcase-model" ref={hostRef} tabIndex={-1} aria-label="Bookcase model" />
       <div className="scene-copy"><h1>Design your bookcase</h1>
         <p className="scene-sub">Try different arrangements before you build.</p>
-        </div>
+      </div>
       {tab === 'style' && selected >= 0 && showShelfKeyHint && <ShelfKeyHint className="stage-shelf-hint" onDismiss={() => {
         setShowShelfKeyHint(false);
         try { window.localStorage.setItem(SHELF_HINT_DISMISSED_KEY, '1'); } catch { /* storage may be unavailable */ }
       }} />}
       {tab === 'build' && <div className="scene-stamp" aria-label="Assembly progress">
         <svg viewBox="0 0 110 110"><defs><path id="stampCircle" d="M55,55 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" /></defs><text fontSize="10" fontWeight="700" letterSpacing="2.5" fill="currentColor"><textPath href="#stampCircle">TWIST IT · STACK IT · STYLE IT · </textPath></text></svg>
-        <b>{tab === 'build' ? `${Math.round(done / progress.length * 100)}%` : `${S.SIZES[scene.model.size].height}″`}</b>
+        <b>{`${steps.percent}%`}</b>
+      </div>}
+      {showRail && railLayout && <div className={`build-rail ${tab === 'build' ? 'is-build' : 'is-style'} ${showNumbers ? 'numbered' : ''}`} style={{ left:`${railLayout.left}px` }}>
+        <i className="build-rail-track" style={{ top:railLayout.y(railLayout.hs[railLayout.hs.length - 1]), height:railLayout.floorY - railLayout.y(railLayout.hs[railLayout.hs.length - 1]) }} />
+        <i className="build-rail-fill" style={{ top:railLayout.top, height:railLayout.floorY - railLayout.top }} />
+        {railLayout.hs.map((height: number, i: number) => {
+          const isDone = progress[i];
+          const isNext = tab === 'build' && i === nextShelf;
+          const isSelected = tab === 'style' && i === selected;
+          return <button type="button" key={i} disabled={tab !== 'style'}
+            className={`build-rail-tick ${isDone ? 'is-done' : ''} ${isNext ? 'is-next' : ''} ${isSelected ? 'is-selected' : ''}`}
+            style={{ top:railLayout.y(height) }}
+            onClick={() => {
+              if (tab !== 'style') return;
+              setSelected(i);
+              setEditorOpen(true);
+              hostRef.current?.focus({ preventScroll:true });
+            }}>{showNumbers ? i + 1 : ''}</button>;
+        })}
+        {tab === 'build' && nextShelf >= 0 && <span className="build-rail-label" style={{ top:railLayout.y(railLayout.hs[nextShelf]) }}>Shelf {nextShelf + 1} <span>faces {directions[scene.model.dirs[nextShelf]]?.label.toLowerCase()}</span></span>}
       </div>}
       <div className="views" role="group" aria-label="Bookcase view"><span className="view-label" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>View</span>{VIEWS.map(([label, yaw, tilt], i) => <button key={label} aria-pressed={viewIndex === i} className={viewIndex === i ? 'active' : ''} onClick={() => { setViewIndex(i); viewRef.current?.animateTo(yaw, tilt); }}>{label}</button>)}</div>
+      <button type="button" className="shelf-numbers-toggle" aria-pressed={showNumbers} onClick={() => setShowNumbers((old) => !old)}>{showNumbers ? 'Hide shelf numbers' : 'Show shelf numbers'}</button>
+      {tab === 'style' && <button type="button" className="button light small stage-reset" disabled={isAtDefault} onClick={resetToDefault}><RotateCcw size={14}/>Reset to default</button>}
     </section>
     <section className="control-panel">
       <div className={`tabs ${tab === 'build' ? 'building' : ''}`}><i className="tab-pill" />
         <button className={tab === 'style' ? 'active' : ''} onClick={() => setTab('style')}>Style it</button>
-        <button className={tab === 'build' ? 'active' : ''} onClick={() => setTab('build')}>Build it <small>{done}/{scene.model.dirs.length}</small></button>
+        <button className={tab === 'build' ? 'active' : ''} onClick={() => setTab('build')}>Build it <small>{steps.doneSteps}/{steps.totalSteps}</small></button>
       </div>
       <div className="pane style-pane" hidden={tab !== 'style'}>
         <div className="pane-fixed">
@@ -464,9 +603,9 @@ function Configurator({
         </div>
         <div className="pane-scroll">
           <section className="section"><h2>Try a shelf arrangement <small>{currentPattern}</small></h2>
-            <div className="pattern-list"><div className="preset-grid" role="group" aria-label="Shelf arrangements">{S.PRESETS.map((p: any) => <button key={p.id} aria-pressed={p.make(scene.model.dirs.length).join('') === scene.model.dirs.join('')} className={`pattern preset-option ${p.make(scene.model.dirs.length).join('') === scene.model.dirs.join('') ? 'active' : ''}`} onClick={() => choosePattern(p.id)}>{p.name}</button>)}</div>
-              <span className="random-controls" role="group" aria-label="Randomize shelves"><button className={`pattern random random-dice ${rolled ? 'active' : ''}`} disabled={rolling} onClick={roll}><Dices size={15}/> Randomize</button><button aria-label="Randomize rules" aria-expanded={rulesOpen} className="pattern random random-rules" onClick={() => setRulesOpen(!rulesOpen)}><SlidersHorizontal size={16}/>{4 - allowed.size + Number(noRepeat) ? <small>{4 - allowed.size + Number(noRepeat)}</small> : null}</button></span>
-              {rulesOpen && <div className="rules-pop"><h3>Shelves can face</h3><div className="allowed-grid">{Object.entries(directions).map(([dir, detail]) => <button key={dir} aria-pressed={allowed.has(dir)} className={!allowed.has(dir) ? 'off' : ''} onClick={() => toggleAllowed(dir)}>{iconPlan(dir, 24)}<br />{detail.label}</button>)}</div><button className={`toggle-row ${noRepeat ? 'on' : ''}`} aria-pressed={noRepeat} onClick={() => setNoRepeat(!noRepeat)}><i className="toggle" />No two neighbours alike</button><p className="note">{note}</p></div>}
+            <div className="pattern-list"><div className="preset-grid" role="group" aria-label="Shelf arrangements">{S.PRESETS.map((preset: any) => <button key={preset.id} aria-pressed={preset.make(scene.model.dirs.length).join('') === scene.model.dirs.join('')} className={`pattern preset-option ${preset.make(scene.model.dirs.length).join('') === scene.model.dirs.join('') ? 'active' : ''}`} onClick={() => choosePattern(preset.id)}>{preset.name}</button>)}</div>
+              <span className="random-controls" role="group" aria-label="Randomize shelves"><button className={`pattern random random-dice ${rolled ? 'active' : ''}`} disabled={rolling} onClick={roll}><Dices size={15}/> Randomize</button><button aria-label="Randomize rules" aria-expanded={rulesOpen} className="pattern random random-rules" onClick={() => setRulesOpen(!rulesOpen)}><Settings size={16}/>Rules{4 - allowed.size + Number(noRepeat) ? <small>{4 - allowed.size + Number(noRepeat)}</small> : null}</button></span>
+              {rulesOpen && <div className="rules-pop"><h3>Randomize rules</h3><p className="rules-hint">Tap X to stop shelves facing that way.</p><div className="allowed-grid">{Object.entries(directions).map(([dir, detail]) => <button key={dir} aria-pressed={allowed.has(dir)} className={!allowed.has(dir) ? 'off' : ''} onClick={() => toggleAllowed(dir)}><span className="rule-toggle">{allowed.has(dir) ? <X size={11}/> : <Plus size={11}/>}</span>{iconPlan(dir, 24)}<span className="rule-label">{detail.label}</span><small>{allowed.has(dir) ? 'On' : 'Off'}</small></button>)}</div><button className={`toggle-row ${noRepeat ? 'on' : ''}`} aria-pressed={noRepeat} onClick={() => setNoRepeat(!noRepeat)}><i className="toggle" />No two neighbours alike</button><p className="note">{note}</p></div>}
             </div>
           </section>
           <details className="section room-preview">
@@ -493,9 +632,13 @@ function Configurator({
         </div>
       </div>
       <div className="pane" hidden={tab !== 'build'}>
-        <section className="section"><div className="build-meter"><div className="build-meter-top"><b>{Math.round(done / progress.length * 100)}%</b><span>{done} of {progress.length} shelves</span></div><div className="progress-track"><i style={{ width:`${Math.max(4, done / progress.length * 100)}%` }} /></div><p>{fullyBuilt ? 'Every shelf is on. Anchor it to the wall with the strap in the box.' : done ? `Nice. Next up: shelf ${nextShelf + 1}, facing ${directions[scene.model.dirs[nextShelf]]?.label.toLowerCase()}.` : 'Start with the base and post, then shelf 1 at the bottom.'}</p></div></section>
-        <section className="section"><h2>Bottom to top <small>tap as you place</small></h2><div className="shelf-list">{S.buildList(scene.model).map((shelf: any, i: number) => <button key={i} className={`shelf-row ${progress[i] ? 'done' : ''}`} onClick={() => toggleShelf(i)}><span className="shelf-number">{i + 1}</span>{iconPlan(shelf.dir, 23)}<span className="shelf-text"><b>Faces {shelf.label.toLowerCase()}</b><small>{i === 0 ? 'Lowest shelf' : i === progress.length - 1 ? 'Top shelf' : `${shelf.height.toFixed(1)}″ up`}</small></span><span className="mini-toggle" /></button>)}</div></section>
-        <section className="section build-tools"><button className="button light small" onClick={() => { setCompleted(Array(progress.length).fill(false)); window.Story3D.setProgress(scene.model, []); }}>Start over</button><button className="button light small" onClick={() => S.printBuildSheet(scene.model)}>Print sheet</button><button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share your bookcase</button></section>
+        <section className="section"><div className="build-meter"><div className="build-meter-top"><b>{steps.percent}%</b><span>{steps.doneSteps} of {steps.totalSteps} steps</span></div><div className="progress-track"><i style={{ width:`${Math.max(4, steps.percent)}%` }} /></div><p>{fullyBuilt ? 'Every shelf is on. Anchor it to the wall with the strap in the box.' : `Base and post are counted. Next: shelf ${nextShelf + 1}, facing ${directions[scene.model.dirs[nextShelf]]?.label.toLowerCase()}.`}</p></div></section>
+        <section className="section"><h2>Next step <small>follow along as you assemble</small></h2><p className="build-guide-copy">Follow these steps as you assemble your bookcase.</p>{fullyBuilt ? <div className="build-step-card done"><h3>Build complete</h3><p>Everything is in place. Use Print sheet if you want a checklist copy.</p></div> : (() => {
+          const shelf = S.buildList(scene.model)[nextShelf];
+          const detail = nextShelf === 0 ? 'Lowest shelf' : nextShelf === progress.length - 1 ? 'Top shelf' : `${shelf.height.toFixed(1)}″ up`;
+          return <div className="build-step-card"><div className="build-step-head">{iconPlan(shelf.dir, 24)}<div><h3>Shelf {nextShelf + 1}</h3><p><b>Faces {shelf.label.toLowerCase()}</b> · {detail}</p></div></div><div className="build-step-actions"><button className="button light small" onClick={undoLastShelf} disabled={steps.doneShelves <= 0}>Back</button><button className="button small" onClick={completeNextShelf}>Done, next</button></div></div>;
+        })()}</section>
+        <section className="section build-tools"><button className="button light small" onClick={() => { const reset = Array(progress.length).fill(false); setCompleted(reset); window.Story3D.setProgress(scene.model, []); }}>Start over</button><button className="button light small" onClick={() => S.printBuildSheet(scene.model)}>Print sheet</button><button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share your bookcase</button></section>
       </div>
     </section>
   </div>;
