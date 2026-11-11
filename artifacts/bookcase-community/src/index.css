@@ -267,23 +267,72 @@ html,body,#root { min-height:100%; } body { margin:0; background:var(--cream); c
 .build-celebration {
   position:absolute;
   inset:0;
+  z-index:5;
+  overflow:hidden;
   pointer-events:none;
-  z-index:-1;
+  container-type:size;
 }
-.build-celebration-particle {
+.build-celebration-wave {
   position:absolute;
   left:50%;
-  top:50%;
-  width:10px;
-  height:26px;
-  border-radius:4px;
-  background:var(--burst-color);
-  box-shadow:inset 0 -5px #0000001f;
-  transform:translate(-50%, -50%) rotate(0deg);
+  top:46%;
+  width:30cqmin;
+  aspect-ratio:1;
+  border-radius:50%;
+  border:6px solid var(--coral);
+  transform:translate(-50%, -50%) scale(0);
   opacity:0;
-  animation:burstSpine 1.25s cubic-bezier(.2,.9,.32,1) forwards;
-  animation-delay:var(--burst-delay);
+  animation:celebrateWave 1.1s cubic-bezier(.2,.8,.3,1) .05s forwards;
 }
+.build-celebration-wave.is-late { border-color:var(--butter); border-width:10px; animation-delay:.22s; }
+.build-celebration-badge {
+  position:absolute;
+  left:50%;
+  top:46%;
+  width:min(54cqmin, 320px);
+  aspect-ratio:1;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:var(--cream);
+  color:var(--ink);
+  box-shadow:0 22px 60px #2b1e1640, 0 0 0 10px #fff8ee80;
+  transform:translate(-50%, -50%) scale(0);
+  opacity:0;
+  animation:celebrateBadge 3s cubic-bezier(.2,1.3,.4,1) forwards;
+}
+.build-celebration-badge svg { position:absolute; inset:0; width:100%; height:100%; animation:spin 9s linear infinite; }
+.build-celebration-badge b {
+  width:64%;
+  aspect-ratio:1;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:var(--coral);
+  color:white;
+  box-shadow:inset 0 -10px #0000001f;
+}
+.build-celebration-badge b svg { position:static; width:48%; height:48%; animation:none; }
+
+.confetti {
+  position:absolute;
+  left:var(--ox);
+  top:var(--oy);
+  opacity:0;
+  animation:confettiFly var(--dur) var(--delay) forwards;
+}
+.confetti.is-rain { animation-name:confettiRain; animation-timing-function:linear; }
+.confetti > i {
+  display:block;
+  background:var(--color);
+  animation:confettiSpin var(--dur) var(--delay) linear forwards;
+}
+.confetti-strip { width:9px; height:18px; border-radius:2px; }
+.confetti-dot { width:11px; height:11px; border-radius:50%; }
+.confetti-tri { width:14px; height:13px; clip-path:polygon(50% 0, 100% 100%, 0 100%); }
+.confetti-ribbon { width:5px; height:26px; border-radius:3px; }
+.confetti-star { width:16px; height:16px; clip-path:polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.confetti-plank { width:24px; height:7px; border-radius:2px; box-shadow:inset 0 -2px #0000002e; }
 
 .build-meter.is-complete .progress-track i { background:repeating-linear-gradient(-45deg,var(--coral) 0 10px,#ff8466 10px 20px); }
 .build-meter.is-celebrating .progress-track i { position:relative; overflow:hidden; }
@@ -301,11 +350,31 @@ html,body,#root { min-height:100%; } body { margin:0; background:var(--cream); c
   35% { transform:rotate(-2deg) scale(1.14); }
   100% { transform:rotate(0deg) scale(1); }
 }
-@keyframes burstSpine {
-  0% { opacity:0; transform:translate(-50%, -50%) rotate(0deg) scale(.55); }
-  14% { opacity:1; transform:translate(calc(-50% + var(--burst-x) * .32), calc(-50% + var(--burst-y) * .32 - 11px)) rotate(calc(var(--burst-rotate) * .45)) scale(1); }
-  62% { opacity:1; transform:translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y) - 22px)) rotate(var(--burst-rotate)) scale(1); }
-  100% { opacity:0; transform:translate(calc(-50% + var(--burst-x) * .76), calc(-50% + var(--burst-y) + 18px)) rotate(calc(var(--burst-rotate) + 25deg)) scale(.7); }
+@keyframes celebrateWave {
+  0% { opacity:.9; transform:translate(-50%, -50%) scale(0); }
+  100% { opacity:0; transform:translate(-50%, -50%) scale(5.5); }
+}
+@keyframes celebrateBadge {
+  0% { opacity:0; transform:translate(-50%, -50%) scale(.2) rotate(-28deg); }
+  16% { opacity:1; transform:translate(-50%, -50%) scale(1.08) rotate(4deg); }
+  26% { opacity:1; transform:translate(-50%, -50%) scale(1) rotate(0deg); }
+  80% { opacity:1; transform:translate(-50%, -50%) scale(1) rotate(0deg); }
+  100% { opacity:0; transform:translate(-50%, -62%) scale(.7) rotate(6deg); }
+}
+@keyframes confettiFly {
+  0% { opacity:1; transform:translate(0, 0); animation-timing-function:cubic-bezier(.12,.75,.35,1); }
+  42% { transform:translate(var(--mx), var(--my)); animation-timing-function:cubic-bezier(.45,0,.9,.55); }
+  88% { opacity:1; }
+  100% { opacity:0; transform:translate(var(--ex), var(--ey)); }
+}
+@keyframes confettiRain {
+  0% { opacity:1; transform:translate(0, 0); }
+  50% { transform:translate(var(--mx), var(--my)); }
+  90% { opacity:1; }
+  100% { opacity:0; transform:translate(var(--ex), var(--ey)); }
+}
+@keyframes confettiSpin {
+  to { transform:rotate(var(--spin)) rotateX(var(--flip)); }
 }
 @keyframes meterShimmer {
   to { transform:translateX(135%); }
