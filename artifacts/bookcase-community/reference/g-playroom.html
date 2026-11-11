@@ -3,21 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Twistory — Playroom</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&display=swap" rel="stylesheet">
+<title>ImagineMōde — Playroom</title>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&display=swap" rel="stylesheet">
 <style>
   :root { --cream: #FFF8EE; --ink: #2B1E16; --muted: #94857A; --hair: #F0E4D4; --accent: #FF6B4A; --butter: #FFD66B; --card: #FFFFFF; --wall: #EBD3CF; --spring: cubic-bezier(.3,1.6,.5,1); }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
-  body { background: var(--cream); color: var(--ink); font: 15px/1.5 'Bricolage Grotesque', system-ui, sans-serif; display: grid; grid-template-rows: 72px 1fr; }
+  body { background: var(--cream); color: var(--ink); font: 15px/1.5 'Clash Display', system-ui, sans-serif; display: grid; grid-template-rows: 72px 1fr; }
   header { display: flex; align-items: center; padding: 0 32px; gap: 20px; }
-  .word { font-weight: 800; font-size: 26px; letter-spacing: -0.04em; }
+  .word { font-weight: 600; font-size: 26px; letter-spacing: -0.04em; }
+  .word .macron { position: relative; display: inline-block; }
+  .word .macron::after { content: ""; position: absolute; left: 12%; right: 12%; top: .09em; height: .085em; border-radius: 1px; background: currentColor; }
   .word i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin-left: 2px; animation: bob 2.4s ease-in-out infinite; }
   @keyframes bob { 50% { transform: translateY(-5px); } }
-  .tagline { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+  .tagline { font-weight: 500; font-size: 15px; letter-spacing: -0.01em; }
   .cta { margin-left: auto; display: flex; gap: 10px; }
-  .btn { border: 0; background: var(--ink); color: #fff; border-radius: 999px; padding: 11px 20px; font: 600 14px 'Bricolage Grotesque', sans-serif; cursor: pointer; text-decoration: none; transition: transform .25s var(--spring); }
+  .btn { border: 0; background: var(--ink); color: #fff; border-radius: 999px; padding: 11px 20px; font: 600 14px 'Clash Display', sans-serif; cursor: pointer; text-decoration: none; transition: transform .25s var(--spring); }
   .btn:hover { transform: scale(1.05) rotate(-1deg); }
   .btn.soft { background: var(--card); color: var(--ink); box-shadow: 0 0 0 1.5px var(--hair); }
   .btn.inspire { display: flex; align-items: center; gap: 8px; }
@@ -47,7 +49,7 @@
   .sticker b { width: 74px; height: 74px; border-radius: 50%; background: var(--butter); display: grid; place-items: center; font-weight: 800; font-size: 22px; letter-spacing: -0.03em; transform: rotate(-8deg); box-shadow: 0 6px 16px #0000001f; color: var(--ink); transition: background .3s; }
   .stage.building .sticker b { background: var(--accent); color: #fff; }
   .caption { position: absolute; left: 30px; top: 26px; }
-  .caption h1 { margin: 0; font-weight: 800; font-size: 54px; line-height: .92; letter-spacing: -0.05em; }
+  .caption h1 { margin: 0; font-weight: 600; font-size: 54px; line-height: .92; letter-spacing: -0.05em; }
   .caption h1 u { text-decoration: none; background: linear-gradient(transparent 62%, var(--sw, #fff) 62%); padding: 0 4px; transition: background .4s; }
   .caption p { margin: 10px 0 0; color: #2B1E16AA; font-size: 14px; }
   .stage.dark .caption, .stage.dark .caption p, .stage.dark .sticker, .stage.dark .rail { color: #FFF8EE; }
@@ -70,7 +72,7 @@
 
   .hud { position: absolute; left: 24px; bottom: 22px; display: flex; }
   .views { display: flex; gap: 4px; background: #FFFFFFCC; backdrop-filter: blur(10px); padding: 5px; border-radius: 999px; }
-  .views button { border: 0; background: none; border-radius: 999px; padding: 7px 13px; font: 600 12px 'Bricolage Grotesque', sans-serif; color: var(--muted); cursor: pointer; }
+  .views button { border: 0; background: none; border-radius: 999px; padding: 7px 13px; font: 600 12px 'Clash Display', sans-serif; color: var(--muted); cursor: pointer; }
   .views button.on { background: var(--ink); color: #fff; }
 
   .finale { position: absolute; right: 22px; bottom: 22px; width: 290px; background: var(--card); border-radius: 22px; padding: 18px; box-shadow: 0 20px 50px #0000002e; transform: translateY(150%) rotate(4deg); transition: transform .7s var(--spring); z-index: 2; }
@@ -86,7 +88,7 @@
 
   .panel { background: var(--card); border-radius: 28px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
   .tabs { position: relative; display: grid; grid-template-columns: 1fr 1fr; margin: 14px; background: var(--cream); border-radius: 999px; padding: 5px; }
-  .tabs button { position: relative; z-index: 1; border: 0; background: none; padding: 12px; font: 700 16px 'Bricolage Grotesque', sans-serif; color: var(--muted); cursor: pointer; transition: color .3s; }
+  .tabs button { position: relative; z-index: 1; border: 0; background: none; padding: 12px; font: 700 16px 'Clash Display', sans-serif; color: var(--muted); cursor: pointer; transition: color .3s; }
   .tabs button.on { color: #fff; }
   .tabs button span { font-weight: 500; font-size: 12px; margin-left: 6px; opacity: .8; }
   .tabs .pill { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc(50% - 5px); border-radius: 999px; background: var(--ink); transition: transform .45s var(--spring); }
@@ -116,7 +118,7 @@
   .pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
   .pots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 8px; }
-  .pot { border: 0; background: none; padding: 0; cursor: pointer; font: 600 13px 'Bricolage Grotesque', sans-serif; color: var(--ink); position: relative; }
+  .pot { border: 0; background: none; padding: 0; cursor: pointer; font: 600 13px 'Clash Display', sans-serif; color: var(--ink); position: relative; }
   .pot i { display: block; height: 56px; margin-bottom: 6px; border-radius: 46% 54% 42% 58% / 58% 44% 56% 42%; box-shadow: inset 0 -6px 0 #00000012, inset 0 0 0 1px #00000010; transition: transform .35s var(--spring), border-radius .6s; }
   .pot:hover i { transform: scale(1.06) rotate(-4deg); border-radius: 58% 42% 56% 44% / 44% 58% 42% 56%; }
   .pot.on i { box-shadow: inset 0 -6px 0 #00000012, 0 0 0 3px #fff, 0 0 0 5px var(--ink); }
@@ -124,7 +126,7 @@
   .pot input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
   .floors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 8px; }
-  .fl { border: 0; background: none; padding: 0; cursor: pointer; font: 600 13px/1.2 'Bricolage Grotesque', sans-serif; color: var(--ink); text-align: left; }
+  .fl { border: 0; background: none; padding: 0; cursor: pointer; font: 600 13px/1.2 'Clash Display', sans-serif; color: var(--ink); text-align: left; }
   .fl i { display: block; height: 44px; border-radius: 14px; margin-bottom: 6px; box-shadow: inset 0 0 0 1px #00000014; transition: transform .3s var(--spring); }
   .fl:hover i { transform: translateY(-2px) rotate(-2deg); }
   .fl.on i { box-shadow: inset 0 0 0 1px #00000014, 0 0 0 3px #fff, 0 0 0 5px var(--ink); }
@@ -158,14 +160,14 @@
   .pop h3 { margin: 0 0 10px; font-size: 14px; font-weight: 700; }
   .pop .switch { margin-top: 12px; }
   .allow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .al { border: 0; background: var(--cream); border-radius: 16px; padding: 10px 6px 8px; font: 600 13px 'Bricolage Grotesque', sans-serif; color: var(--ink); cursor: pointer; display: grid; justify-items: center; gap: 4px; position: relative; transition: opacity .2s; }
+  .al { border: 0; background: var(--cream); border-radius: 16px; padding: 10px 6px 8px; font: 600 13px 'Clash Display', sans-serif; color: var(--ink); cursor: pointer; display: grid; justify-items: center; gap: 4px; position: relative; transition: opacity .2s; }
   .al svg { background: #fff; border-radius: 8px; padding: 3px; }
   .al.off { opacity: .45; }
   .al.off::after { content: ''; position: absolute; left: 18%; right: 18%; top: 50%; height: 2.5px; background: var(--accent); transform: rotate(-24deg); border-radius: 2px; }
   .note { margin-top: 10px; font-size: 13px; color: var(--muted); }
   .note:empty { display: none; }
   .note b { color: var(--accent); }
-  .chip { border: 0; background: var(--cream); border-radius: 999px; padding: 8px 14px 8px 8px; font: 600 13px 'Bricolage Grotesque', sans-serif; color: var(--ink); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: transform .3s var(--spring); }
+  .chip { border: 0; background: var(--cream); border-radius: 999px; padding: 8px 14px 8px 8px; font: 600 13px 'Clash Display', sans-serif; color: var(--ink); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: transform .3s var(--spring); }
   .chip:hover { transform: translateY(-2px); }
   .chip.on { background: var(--ink); color: #fff; }
   .chip svg { background: #fff; border-radius: 50%; padding: 3px; }
@@ -175,7 +177,7 @@
   .tune .which { font-weight: 800; font-size: 34px; letter-spacing: -0.04em; line-height: 1; min-width: 64px; }
   .tune .which small { display: block; font-weight: 500; font-size: 11px; color: var(--muted); letter-spacing: 0; }
   .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-  .seg button { border: 0; background: #fff; border-radius: 12px; padding: 10px 0; font: 600 13px 'Bricolage Grotesque', sans-serif; color: var(--muted); cursor: pointer; }
+  .seg button { border: 0; background: #fff; border-radius: 12px; padding: 10px 0; font: 600 13px 'Clash Display', sans-serif; color: var(--muted); cursor: pointer; }
   .seg button.on { background: var(--accent); color: #fff; }
   .stepper { grid-column: 1 / -1; display: flex; gap: 6px; justify-content: space-between; }
   .stepper button { flex: 1; }
@@ -226,7 +228,7 @@
 </head>
 <body>
 <header>
-  <div class="word">twistory<i></i></div>
+  <div class="word">ImagineM<span class="macron">o</span>de<i></i></div>
   <div class="tagline" id="tagline"></div>
   <div class="cta"><button class="btn inspire" id="openInspire"><span id="inspireIcon"></span><span id="inspireLabel"></span></button></div>
 </header>
@@ -274,7 +276,7 @@
 <script>
   const S = Story;
   const COPY = {
-    tagline: 'Every shelf has a story.',
+    tagline: 'Design it first. Build it once.',
     inspire: 'Get inspired',
     done: 'Topped out!',
   };
