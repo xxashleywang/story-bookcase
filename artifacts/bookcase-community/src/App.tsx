@@ -31,7 +31,7 @@ import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } f
 import NotFound from '@/pages/not-found';
 import { ColorPicker } from '@/components/color-picker';
 import { BuildCelebration } from '@/components/build-celebration';
-import { ShelfKeyHint } from '@/components/shelf-key-hint';
+import { SHELF_HINT_SIZE, ShelfKeyHint } from '@/components/shelf-key-hint';
 import { placeShelfHint } from '@/lib/shelf-hint-placement';
 import { shouldCelebrateBuildCompletion } from '@/lib/build-celebration';
 import { moveShelfSelection, rotateShelfDirection, shelfActionFromKey } from '@/lib/shelf-keyboard';
@@ -387,8 +387,8 @@ function Configurator({
   }, [S, railFrame.height, railFrame.width, scene.model.size, steps.doneShelves]);
   const shelfHintStyle = useMemo<CSSProperties | undefined>(() => {
     if (selected < 0 || !railLayout || railFrame.height <= 0 || selected >= railLayout.hs.length) return undefined;
-    const hintWidth = Math.min(290, railFrame.width * 0.38);
-    const hintHeight = 108;
+    const hintWidth = SHELF_HINT_SIZE.width;
+    const hintHeight = SHELF_HINT_SIZE.height;
     const placement = placeShelfHint({
       stageWidth: railFrame.width,
       stageHeight: railFrame.height,
@@ -402,9 +402,13 @@ function Configurator({
       preferRight: true,
       allowSideSwitch: false,
     });
+    // The card sits in a shared pair slot, so the pointer slides to whichever shelf of the pair is selected.
+    const shelfY = railLayout.y(railLayout.hs[selected]);
+    const tail = Math.max(22, Math.min(hintHeight - 22, shelfY - (placement.top - hintHeight / 2)));
     return {
       '--shelf-hint-top': `${(placement.top / railFrame.height) * 100}%`,
       '--shelf-hint-left': `${placement.left}px`,
+      '--shelf-hint-tail': `${tail}px`,
     } as CSSProperties;
   }, [railFrame.height, railFrame.width, railLayout, scene.model.dirs, selected]);
 
@@ -708,9 +712,10 @@ function Configurator({
       {tab === 'style' && selected >= 0 && showShelfKeyHint && <ShelfKeyHint
         className="stage-shelf-hint"
         style={shelfHintStyle}
+        shelf={selected}
+        count={scene.model.dirs.length}
+        facing={directions[scene.model.dirs[selected]]?.label || 'Front'}
         onDismiss={() => setShowShelfKeyHint(false)}
-        canMoveUp={selected < scene.model.dirs.length - 1}
-        canMoveDown={selected > 0}
         onMoveUp={() => setSelected((old) => moveShelfSelection(old, scene.model.dirs.length, 1))}
         onMoveDown={() => setSelected((old) => moveShelfSelection(old, scene.model.dirs.length, -1))}
         onTurnLeft={() => setScene((old) => {
