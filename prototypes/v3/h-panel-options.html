@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ImagineMōde — Right panel, three alternatives</title>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap" rel="stylesheet">
+<style>
+  :root { --cream: #FFF8EE; --ink: #2B1E16; --muted: #94857A; --hair: #F0E4D4; --coral: #FF6B4A; --butter: #FFD66B; --wood: #D9A75A; --wood-dk: #B8853F; --wall: #F6F4F0; --floor: #E8CFA8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #F3EBDF; color: var(--ink); font: 14px/1.45 'Clash Display', system-ui, sans-serif; }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+  .ic { display: block; flex: none; }
+
+  .page { max-width: 1440px; margin: 0 auto; padding: 48px 32px 80px; }
+  .intro h1 { margin: 0; font-size: 40px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; }
+  .intro p { max-width: 760px; color: #2B1E16B0; margin: 12px 0 0; font-size: 15px; }
+  .diag { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0 8px; }
+  .diag div { background: #fff; border-radius: 18px; padding: 14px 16px; }
+  .diag b { display: block; font-size: 14px; margin-bottom: 4px; }
+  .diag span { color: var(--muted); font-size: 13px; }
+
+  .opt { margin-top: 56px; display: grid; grid-template-columns: 1fr 300px; gap: 28px; align-items: start; }
+  .opt-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; }
+  .opt-head .tag { background: var(--ink); color: #fff; font-weight: 600; font-size: 13px; border-radius: 999px; padding: 4px 12px; }
+  .opt-head h2 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.03em; }
+  .opt-head small { color: var(--muted); font-size: 15px; }
+  .notes { background: #fff; border-radius: 22px; padding: 20px; position: sticky; top: 20px; }
+  .notes h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .notes ul { margin: 0 0 18px; padding-left: 18px; }
+  .notes li { margin-bottom: 6px; }
+  .notes .rec { background: var(--butter); border-radius: 14px; padding: 10px 12px; font-weight: 500; }
+
+  /* App frame */
+  .app { background: var(--cream); border-radius: 26px; overflow: hidden; box-shadow: 0 24px 60px #2B1E1622; }
+  .app-top { height: 56px; display: flex; align-items: center; gap: 18px; padding: 0 22px; }
+  .logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 22px; letter-spacing: -0.04em; }
+  .logo-mark { width: 18px; height: 18px; position: relative; }
+  .logo-mark::before, .logo-mark::after { content: ''; position: absolute; background: var(--coral); border-radius: 3px; }
+  .logo-mark::before { left: 7px; top: 0; width: 4px; height: 18px; }
+  .logo-mark::after { top: 7px; left: 0; height: 4px; width: 18px; }
+  .app-top .tl { font-weight: 500; font-size: 13px; }
+  .app-top .right { margin-left: auto; display: flex; gap: 8px; }
+  .ghost { background: #fff; border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 500; box-shadow: 0 0 0 1.5px var(--hair); }
+
+  .app-main { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; padding: 0 12px 12px; height: 620px; }
+
+  /* Stage */
+  .stage { position: relative; border-radius: 22px; overflow: hidden; background: var(--wall); }
+  .stage .floorband { position: absolute; left: 0; right: 0; bottom: 0; height: 22%; background: repeating-linear-gradient(90deg, var(--floor) 0 78px, #DDBF92 78px 80px); }
+  .stage h3 { position: absolute; left: 22px; top: 18px; margin: 0; font-size: 34px; line-height: .95; letter-spacing: -0.05em; font-weight: 600; }
+  .stage .sub { position: absolute; left: 22px; top: 90px; color: #2B1E16AA; font-size: 12px; }
+  .stage .views { position: absolute; left: 16px; bottom: 14px; display: flex; gap: 2px; background: #FFFFFFD8; padding: 4px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+  .stage .views span { padding: 5px 10px; border-radius: 999px; color: var(--muted); }
+  .stage .views span.on { background: var(--ink); color: #fff; }
+  .case { position: absolute; left: 50%; top: 110px; bottom: 54px; width: 0; }
+  .case .pole { position: absolute; left: -4px; width: 8px; top: 0; bottom: 18px; background: var(--wood); border-radius: 3px; }
+  .case .foot { position: absolute; left: -36px; width: 72px; height: 22px; bottom: 0; background: var(--wood); border-radius: 3px; }
+  .case .sh { position: absolute; height: 10px; background: var(--wood); border-radius: 2px; box-shadow: 0 2px 0 var(--wood-dk); }
+  .case .sh.B { background: #C9A060; }
+  .case .sh.sel { box-shadow: 0 0 0 2px var(--coral), 0 2px 0 var(--wood-dk); background: #F2B58A; }
+  .case .pin { position: absolute; width: 22px; height: 22px; border-radius: 50%; background: var(--coral); color: #fff; font-size: 11px; font-weight: 600; display: grid; place-items: center; box-shadow: 0 0 0 3px #fff; }
+
+  /* Panel */
+  .panel { background: #fff; border-radius: 22px; display: flex; flex-direction: column; overflow: hidden; }
+  .tabs { margin: 10px; background: var(--cream); border-radius: 999px; padding: 4px; display: grid; grid-template-columns: 1fr 1fr; }
+  .tabs span { text-align: center; padding: 9px; font-weight: 600; font-size: 14px; color: var(--muted); border-radius: 999px; }
+  .tabs span.on { background: var(--ink); color: #fff; }
+  .scroll { flex: 1; overflow: auto; padding: 0 18px; }
+  .foot { padding: 12px 18px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1.5px solid var(--hair); }
+  .share { background: var(--coral); color: #fff; border-radius: 999px; padding: 9px 16px; font-weight: 600; font-size: 13px; display: flex; gap: 6px; align-items: center; }
+  .iconbtn { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 1.5px var(--hair); background: #fff; }
+  .sec { padding: 14px 0; }
+  .sec + .sec { border-top: 1.5px dotted var(--hair); }
+  .sec-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .sec-h b { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+  .sec-h small { color: var(--muted); font-size: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { white-space: nowrap; background: var(--cream); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+  .chip.on { background: var(--ink); color: #fff; }
+  .chip.dice { background: var(--butter); }
+  .chip.custom { background: #fff; box-shadow: inset 0 0 0 1.5px var(--coral); color: var(--coral); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .size { flex: 1; background: var(--cream); border-radius: 14px; padding: 9px 12px; }
+  .size b { display: block; font-size: 14px; font-weight: 600; }
+  .size span { font-size: 11px; opacity: .7; }
+  .size.on { background: var(--ink); color: #fff; }
+  .sw { width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 1px #0000001a; flex: none; }
+  .sw.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--ink); }
+  .link { color: var(--coral); font-weight: 600; font-size: 12px; display: inline-flex; gap: 4px; align-items: center; }
+  .muted { color: var(--muted); font-size: 12px; }
+
+  /* Option A: focus view */
+  .focus-top { display: flex; align-items: center; justify-content: space-between; padding: 4px 0 12px; }
+  .back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .big-num { display: flex; align-items: baseline; gap: 10px; }
+  .big-num b { word-spacing: .1em; font-size: 56px; font-weight: 600; line-height: .9; letter-spacing: -0.05em; }
+  .big-num span { color: var(--muted); font-size: 13px; }
+  .pad { margin: 16px auto 8px; display: grid; grid-template-columns: 76px 120px 76px; grid-template-rows: 46px 120px 46px; gap: 8px; width: max-content; }
+  .pad .d { background: var(--cream); border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 13px; }
+  .pad .d.on { background: var(--coral); color: #fff; }
+  .pad .back-d { grid-column: 2; grid-row: 1; }
+  .pad .left-d { grid-column: 1; grid-row: 2; flex-direction: column; }
+  .pad .right-d { grid-column: 3; grid-row: 2; flex-direction: column; }
+  .pad .front-d { grid-column: 2; grid-row: 3; }
+  .pad .top { grid-column: 2; grid-row: 2; border-radius: 18px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--hair); position: relative; }
+  .pad .top::before { content: ''; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px; border-radius: 3px; background: var(--wood); }
+  .pad .top i { position: absolute; left: 34px; right: 34px; top: 66px; height: 32px; border-radius: 6px; background: var(--coral); opacity: .85; }
+  .pad .top em { position: absolute; bottom: -2px; left: 0; right: 0; text-align: center; font-style: normal; font-size: 10px; color: var(--muted); }
+  .kbd-line { text-align: center; color: var(--muted); font-size: 12px; display: flex; justify-content: center; gap: 6px; align-items: center; }
+  .kbd { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; background: var(--cream); box-shadow: inset 0 -2px 0 var(--hair); color: var(--ink); }
+  .strip { display: flex; align-items: center; gap: 6px; }
+  .strip .n { flex: 1; height: 34px; border-radius: 10px; background: var(--cream); display: grid; place-items: center; font-size: 12px; font-weight: 600; position: relative; }
+  .strip .n.on { background: var(--ink); color: #fff; }
+  .strip .n.edit::after { content: ''; position: absolute; top: 4px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--coral); }
+  .done-row { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+  .done { background: var(--ink); color: #fff; border-radius: 999px; padding: 9px 18px; font-weight: 600; font-size: 13px; }
+
+  /* Option B: on-stage popover */
+  .pop { position: absolute; background: #fff; border-radius: 16px; padding: 10px; box-shadow: 0 14px 34px #2B1E1630; width: 196px; }
+  .pop::before { content: ''; position: absolute; left: -6px; top: 22px; width: 12px; height: 12px; background: #fff; transform: rotate(45deg); }
+  .pop-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .pop-h b { font-size: 13px; font-weight: 600; }
+  .pop-h .nav { display: flex; gap: 2px; }
+  .pop-h .nav span { width: 24px; height: 24px; border-radius: 8px; background: var(--cream); display: grid; place-items: center; }
+  .pop .dirs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .pop .dirs span { height: 38px; border-radius: 10px; background: var(--cream); display: grid; place-items: center; font-size: 10px; font-weight: 600; gap: 0; padding-top: 3px; }
+  .pop .dirs span.on { background: var(--coral); color: #fff; }
+  .pop .hint { margin-top: 8px; font-size: 10px; color: var(--muted); text-align: center; }
+  .callout { background: var(--cream); border-radius: 14px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; }
+  .callout b { font-weight: 600; }
+  .empty-tip { display: flex; gap: 10px; align-items: center; border-radius: 14px; padding: 10px 12px; box-shadow: inset 0 0 0 1.5px dashed var(--hair); border: 1.5px dashed var(--hair); color: var(--muted); font-size: 12px; margin-top: 10px; }
+
+  /* Option C: stepped accordion + shelf list */
+  .step { border-radius: 16px; margin-bottom: 8px; background: var(--cream); }
+  .step-h { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
+  .step-h .num { width: 22px; height: 22px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 600; }
+  .step-h b { font-size: 15px; font-weight: 600; }
+  .step-h small { margin-left: auto; color: var(--muted); font-size: 12px; }
+  .step.open { background: #fff; box-shadow: inset 0 0 0 1.5px var(--hair); }
+  .step.open .step-h .num { background: var(--ink); color: #fff; }
+  .step-body { padding: 0 14px 14px; }
+  .presets { display: flex; gap: 6px; overflow: hidden; margin-bottom: 12px; }
+  .list { border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 0 1.5px var(--hair); }
+  .li { display: grid; grid-template-columns: 26px 22px 1fr; align-items: center; gap: 8px; padding: 0 10px; height: 27px; font-size: 12px; }
+  .li + .li { border-top: 1px solid var(--hair); }
+  .li .no { font-weight: 600; color: var(--muted); }
+  .li .lbl { color: var(--muted); }
+  .li.sel { height: 46px; background: #FFF1EC; grid-template-columns: 26px 22px 1fr auto; }
+  .li.sel .no { color: var(--coral); }
+  .li .seg4 { display: flex; gap: 3px; }
+  .li .seg4 span { width: 30px; height: 30px; border-radius: 9px; background: #fff; display: grid; place-items: center; box-shadow: inset 0 0 0 1px var(--hair); }
+  .li .seg4 span.on { background: var(--coral); color: #fff; box-shadow: none; }
+  .glyph { width: 18px; height: 18px; border-radius: 4px; background: var(--cream); position: relative; }
+  .glyph::after { content: ''; position: absolute; background: var(--wood-dk); border-radius: 1px; }
+  .glyph.F::after { left: 3px; right: 3px; bottom: 2px; height: 5px; }
+  .glyph.B::after { left: 3px; right: 3px; top: 2px; height: 5px; }
+  .glyph.L::after { top: 3px; bottom: 3px; left: 2px; width: 5px; }
+  .glyph.R::after { top: 3px; bottom: 3px; right: 2px; width: 5px; }
+  .li.sel .glyph { background: #fff; }
+  .li.sel .glyph::after { background: var(--coral); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="intro">
+    <h1>Right panel: three ways to calm it down</h1>
+    <p>Layout sketches only. Each one shows the moment a shelf is selected (shelf 4, Pinwheel arrangement, Tall, Honey finish), which is when the current panel gets busy.</p>
+    <div class="diag">
+      <div><b>Four ways to pick a shelf</b><span>The dropdown, the "1 of 11" counter, Previous/Next buttons and the number pin on the model all do the same job.</span></div>
+      <div><b>Detail sits above the big picture</b><span>Turning one shelf comes before choosing an arrangement, even though most people pick an arrangement first.</span></div>
+      <div><b>Every button looks the same</b><span>Sizes, swatches, directions, presets and steppers are all cream pills, so nothing stands out as the main action.</span></div>
+      <div><b>Hint covers the model</b><span>The dark keyboard-controls card sits on top of the bookcase, right where you are looking.</span></div>
+    </div>
+  </div>
+
+  <section class="opt">
+    <div class="opt-head"><span class="tag">Option A</span><h2>Focus mode</h2><small>Selecting a shelf replaces the panel with a dedicated shelf editor</small></div>
+    <div class="app" data-variant="a">
+      <div class="app-top"><div class="logo"><span class="logo-mark"></span>ImagineMōde</div><span class="tl">Design first. Build once.</span><div class="right"><span class="ghost">Gallery</span><span class="ghost">Dev</span></div></div>
+      <div class="app-main">
+        <div class="stage" data-sel="0"><div class="floorband"></div><h3>Design your<br>bookcase</h3><div class="sub">Try different arrangements before you build.</div><div class="case"></div><div class="views"><span class="on">Front</span><span>Angled</span><span>Side</span><span>Top</span></div></div>
+        <div class="panel">
+          <div class="tabs"><span class="on">Style it</span><span>Build it</span></div>
+          <div class="scroll">
+            <div class="focus-top"><button class="back" data-i="chevL">All settings</button><button class="iconbtn" data-i="x" aria-label="Close"></button></div>
+            <div class="big-num"><b>Shelf 4</b><span>of 11, from bottom</span></div>
+            <div class="pad">
+              <span class="d back-d" data-i="up">Back</span>
+              <span class="d left-d" data-i="left">Left</span>
+              <span class="top"><i></i><em>top view</em></span>
+              <span class="d right-d" data-i="right">Right</span>
+              <span class="d front-d on" data-i="down">Front</span>
+            </div>
+            <div class="kbd-line"><span class="kbd" data-i="left"></span><span class="kbd" data-i="right"></span> turn &nbsp;&middot;&nbsp; <span class="kbd" data-i="up"></span><span class="kbd" data-i="down"></span> next / previous shelf</div>
+            <div class="sec" style="margin-top:14px">
+              <div class="sec-h"><b>Jump to shelf</b><small>dot = changed from Pinwheel</small></div>
+              <div class="strip" id="stripA"></div>
+            </div>
+            <div class="done-row"><span class="muted">Arrangement: <b style="color:var(--coral)">Custom</b> &middot; <span class="link">Reset to Pinwheel</span></span><button class="done">Done</button></div>
+          </div>
+          <div class="foot"><span class="iconbtn" data-i="link"></span><span class="share" data-i="spark">Share your bookcase</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <h3>What changes</h3>
+      <ul><li>Clicking a shelf swaps the panel to one job: turning that shelf. Everything else waits behind "All settings".</li><li>The direction buttons become a top-view compass, so "Left" and "Back" match what you see.</li><li>A single numbered strip replaces the dropdown, counter and Previous/Next buttons.</li><li>The keyboard tip moves under the compass and no longer covers the model.</li></ul>
+      <h3>Trade-offs</h3>
+      <ul><li>Simplest to scan; very little competes for attention.</li><li>You can't change the finish while a shelf is selected. You have to tap Done first.</li></ul>
+    </div>
+  </section>
+
+  <section class="opt">
+    <div class="opt-head"><span class="tag">Option B</span><h2>Edit on the model</h2><small>Per-shelf controls float beside the shelf; the panel keeps only whole-bookcase settings</small></div>
+    <div class="app" data-variant="b">
+      <div class="app-top"><div class="logo"><span class="logo-mark"></span>ImagineMōde</div><span class="tl">Design first. Build once.</span><div class="right"><span class="ghost">Gallery</span><span class="ghost">Dev</span></div></div>
+      <div class="app-main">
+        <div class="stage" data-sel="0" data-pop="1"><div class="floorband"></div><h3>Design your<br>bookcase</h3><div class="sub">Try different arrangements before you build.</div><div class="case"></div><div class="views"><span class="on">Front</span><span>Angled</span><span>Side</span><span>Top</span></div></div>
+        <div class="panel">
+          <div class="tabs"><span class="on">Style it</span><span>Build it</span></div>
+          <div class="scroll">
+            <div class="sec">
+              <div class="sec-h"><b>Bookcase</b><small>15¾" square footprint</small></div>
+              <div class="row"><div class="size"><b>Standard</b><span>62.5" &middot; 9 shelves</span></div><div class="size on"><b>Tall</b><span>75.5" &middot; 11 shelves</span></div></div>
+              <div class="row" style="margin-top:10px"><span class="sw" style="background:#E3E6E8"></span><span class="sw" style="background:#A89377"></span><span class="sw on" style="background:#E2A84E"></span><span class="sw" style="background:#8A9180"></span><span class="sw" style="background:#6E4335"></span><span class="sw" style="background:#3A3B47"></span><span class="sw" style="background:conic-gradient(#f3c4b4,#f0e2a8,#bfe0c4,#b8d3ea,#d5c3e8,#f3c4b4)"></span><span class="muted" style="margin-left:auto">Honey</span></div>
+            </div>
+            <div class="sec">
+              <div class="sec-h"><b>Arrangement</b><small>sets every shelf at once</small></div>
+              <div class="chips"><span class="chip">All front</span><span class="chip">Front / back</span><span class="chip">Left / right</span><span class="chip">Spiral</span><span class="chip">Pinwheel</span><span class="chip">Corner</span><span class="chip custom">Custom</span><span class="chip dice" data-i="dice">Randomize</span></div>
+              <div class="callout"><span><b>1 shelf</b> changed from Pinwheel</span><span class="link">Reset</span></div>
+            </div>
+            <div class="sec">
+              <div class="sec-h"><b>Room</b><small>White wall &middot; Pale oak</small></div>
+              <div class="row"><span class="sw" style="background:#fff"></span><span class="sw" style="background:#EBD3CF"></span><span class="sw" style="background:#D9E3D6"></span><span class="sw" style="background:#2B1E16"></span><span class="muted" style="margin:0 6px">floor</span><span class="sw on" style="background:#E8CFA8;border-radius:8px"></span><span class="sw" style="background:#9C6B43;border-radius:8px"></span><span class="sw" style="background:#CFC8BE;border-radius:8px"></span></div>
+            </div>
+          </div>
+          <div class="foot"><span class="iconbtn" data-i="link"></span><span class="share" data-i="spark">Share your bookcase</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <h3>What changes</h3>
+      <ul><li>Shelf direction leaves the panel entirely. A small card pops up next to the selected shelf with four direction buttons and up/down arrows.</li><li>The panel shrinks to three calm sections, top to bottom: Bookcase, Arrangement, Room. It looks the same whether or not a shelf is selected.</li><li>Manual tweaks show as a "Custom" chip plus a one-line reset.</li></ul>
+      <h3>Trade-offs</h3>
+      <ul><li>Feels the most direct: you edit the shelf you're looking at.</li><li>The card has to dodge the bookcase in Angled and Side views, so it needs the placement logic you already wrote for the keyboard hint.</li><li>Harder to fit on narrow or mobile screens.</li></ul>
+    </div>
+  </section>
+
+  <section class="opt">
+    <div class="opt-head"><span class="tag">Option C</span><h2>Steps + shelf list</h2><small>One section open at a time; every shelf is a row you can turn in place</small></div>
+    <div class="app" data-variant="c">
+      <div class="app-top"><div class="logo"><span class="logo-mark"></span>ImagineMōde</div><span class="tl">Design first. Build once.</span><div class="right"><span class="ghost">Gallery</span><span class="ghost">Dev</span></div></div>
+      <div class="app-main">
+        <div class="stage" data-sel="0"><div class="floorband"></div><h3>Design your<br>bookcase</h3><div class="sub">Try different arrangements before you build.</div><div class="case"></div><div class="views"><span class="on">Front</span><span>Angled</span><span>Side</span><span>Top</span></div></div>
+        <div class="panel">
+          <div class="tabs"><span class="on">Style it</span><span>Build it</span></div>
+          <div class="scroll" style="padding-top:2px">
+            <div class="step"><div class="step-h"><span class="num">1</span><b>Bookcase</b><small>Tall &middot; Honey</small><span data-i="chevD"></span></div></div>
+            <div class="step open">
+              <div class="step-h"><span class="num">2</span><b>Shelves</b><small>Custom, from Pinwheel</small><span data-i="chevU"></span></div>
+              <div class="step-body">
+                <div class="presets"><span class="chip">All front</span><span class="chip">Front / back</span><span class="chip on">Pinwheel</span><span class="chip">More</span><span class="chip dice" data-i="dice"></span></div>
+                <div class="list" id="listC"></div>
+              </div>
+            </div>
+            <div class="step"><div class="step-h"><span class="num">3</span><b>Room</b><small>White wall &middot; Pale oak</small><span data-i="chevD"></span></div></div>
+          </div>
+          <div class="foot"><span class="iconbtn" data-i="link"></span><span class="share" data-i="spark">Share your bookcase</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <h3>What changes</h3>
+      <ul><li>Settings become three numbered steps. Only one is open at a time, and the closed ones show a one-line summary.</li><li>"Shelves" puts arrangement presets first and then lists all 11 shelves, top to bottom like the real bookcase, each with a small direction icon.</li><li>The selected row expands to four direction buttons. Clicking the model or a row selects it, so no dropdown or Previous/Next is needed.</li></ul>
+      <h3>Trade-offs</h3>
+      <ul><li>Shows every shelf's direction at a glance, which also helps on the Build tab.</li><li>The densest of the three. Eleven rows is fine, but it would get long on a taller model.</li></ul>
+      <div class="rec">My pick: B for desktop, with C's shelf list as the fallback on mobile, where a floating card won't fit.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+const P = (d) => `<svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICON = {
+  up: P('<path d="M12 19V5M6 11l6-6 6 6"/>'),
+  down: P('<path d="M12 5v14M6 13l6 6 6-6"/>'),
+  left: P('<path d="M19 12H5M11 6l-6 6 6 6"/>'),
+  right: P('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+  chevL: P('<path d="M15 6l-6 6 6 6"/>'),
+  chevU: P('<path d="M6 15l6-6 6 6"/>'),
+  chevD: P('<path d="M6 9l6 6 6-6"/>'),
+  x: P('<path d="M6 6l12 12M18 6L6 18"/>'),
+  link: P('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'),
+  spark: P('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>'),
+  dice: P('<rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><circle cx="9" cy="15" r="1" fill="currentColor"/>'),
+};
+document.querySelectorAll('[data-i]').forEach((el) => {
+  el.insertAdjacentHTML(el.dataset.i === 'chevL' || el.dataset.i === 'spark' || el.dataset.i === 'dice' ? 'afterbegin' : 'beforeend', ICON[el.dataset.i]);
+});
+
+const DIRS = ['F', 'R', 'B', 'F', 'F', 'R', 'B', 'L', 'F', 'R', 'B'];
+const NAME = { F: 'Front', L: 'Left', B: 'Back', R: 'Right' };
+const SEL = 3;
+
+document.querySelectorAll('.stage').forEach((stage) => {
+  const c = stage.querySelector('.case');
+  const h = c.parentElement.clientHeight - 164;
+  let html = '<div class="pole"></div><div class="foot"></div>';
+  DIRS.forEach((d, i) => {
+    const y = h - 40 - i * ((h - 50) / 10);
+    const geo = { F: [-26, 52], B: [-20, 40], L: [-48, 44], R: [4, 44] }[d];
+    html += `<div class="sh ${d}${i === SEL ? ' sel' : ''}" style="top:${y}px;left:${geo[0]}px;width:${geo[1]}px"></div>`;
+    if (i === SEL) {
+      html += `<div class="pin" style="top:${y - 6}px;left:${geo[0] + geo[1] + 10}px">${i + 1}</div>`;
+      if (stage.dataset.pop) {
+        html += `<div class="pop" style="top:${y - 26}px;left:${geo[0] + geo[1] + 44}px">
+          <div class="pop-h"><b>Shelf ${i + 1} <span class="muted">of 11</span></b><div class="nav"><span>${ICON.chevD}</span><span>${ICON.chevU}</span></div></div>
+          <div class="dirs">${['F', 'L', 'B', 'R'].map((k) => `<span class="${k === d ? 'on' : ''}">${ICON[{ F: 'down', L: 'left', B: 'up', R: 'right' }[k]]}${NAME[k]}</span>`).join('')}</div>
+          <div class="hint">Arrow keys work too</div></div>`;
+      }
+    }
+  });
+  c.innerHTML = html;
+});
+
+document.getElementById('stripA').innerHTML =
+  `<button class="iconbtn" style="width:30px;height:30px">${ICON.chevL}</button>` +
+  DIRS.map((_, i) => `<span class="n${i === SEL ? ' on' : ''}${i === SEL ? ' edit' : ''}">${i + 1}</span>`).join('') +
+  `<button class="iconbtn" style="width:30px;height:30px;transform:scaleX(-1)">${ICON.chevL}</button>`;
+
+document.getElementById('listC').innerHTML = DIRS.map((d, i) => ({ d, i })).reverse().map(({ d, i }) =>
+  i === SEL
+    ? `<div class="li sel"><span class="no">${i + 1}</span><span class="glyph ${d}"></span><b style="font-size:13px">${NAME[d]}</b><span class="seg4">${['F', 'L', 'B', 'R'].map((k) => `<span class="${k === d ? 'on' : ''}" title="${NAME[k]}">${ICON[{ F: 'down', L: 'left', B: 'up', R: 'right' }[k]]}</span>`).join('')}</span></div>`
+    : `<div class="li"><span class="no">${i + 1}</span><span class="glyph ${d}"></span><span class="lbl">${NAME[d]}</span></div>`
+).join('');
+</script>
+</body>
+</html>
