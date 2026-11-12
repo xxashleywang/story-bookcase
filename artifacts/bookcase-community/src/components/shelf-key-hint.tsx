@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { X } from 'lucide-react';
 import { Kbd } from '@/components/ui/kbd';
 
@@ -17,8 +18,16 @@ function KeyCap({ direction }: { direction: 'up' | 'down' | 'left' | 'right' }) 
   </Kbd>;
 }
 
-export function ShelfKeyHint({ onDismiss, className = '' }: { onDismiss: () => void; className?: string }) {
-  return <aside className={`shelf-key-hint ${className}`.trim()} role="status" aria-live="polite">
+export function ShelfKeyHint({
+  onDismiss,
+  className = '',
+  style,
+}: {
+  onDismiss: () => void;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return <aside className={`shelf-key-hint ${className}`.trim()} style={style} role="status" aria-live="polite">
     <span className="sr-only">Use arrow keys. Up and down switch shelves. Left and right turns shelf direction.</span>
     <div className="shelf-key-hint-copy">
       <b>Keyboard controls</b>
