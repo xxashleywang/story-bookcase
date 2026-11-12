@@ -37,6 +37,7 @@ import { placeShelfHint } from '@/lib/shelf-hint-placement';
 import { shouldCelebrateBuildCompletion } from '@/lib/build-celebration';
 import { moveShelfSelection, rotateShelfDirection, shelfActionFromKey } from '@/lib/shelf-keyboard';
 import { advanceBuildProgress, buildSteps, normalizeBuildProgress, rewindBuildProgress } from '@/lib/build-steps';
+import { roomDesignChanged } from '@/lib/room-design';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -365,7 +366,6 @@ function Configurator({
 
   const S = window.Story;
   const defaults = useMemo(() => createDefaultScene(S), [S]);
-  const defaultModelCode = useMemo(() => S.encodeUnit(defaults.model), [S, defaults.model]);
   const activeColor = COLORS.find((c) => c.hex.toLowerCase() === scene.model.color.toLowerCase());
   const floorIsCustom = scene.floor.id === 'custom';
   const wallIsCustom = !WALLS.some(([, hex]) => hex.toLowerCase() === scene.wall.toLowerCase());
@@ -420,20 +420,10 @@ function Configurator({
     } as CSSProperties;
   }, [railFrame.height, railFrame.width, railLayout, scene.model.dirs, selected]);
 
-  const isAtDefault = tab === 'style'
-    && viewIndex === DEFAULT_VIEW_INDEX
-    && !showNumbers
-    && selected < 0
-    && !rolled
-    && !rulesOpen
-    && !noRepeat
-    && allowed.size === 4
-    && !progress.some(Boolean)
-    && S.encodeUnit(scene.model) === defaultModelCode
-    && scene.wall === defaults.wall
-    && scene.floor.id === defaults.floor.id
-    && scene.floorKind === defaults.floorKind
-    && scene.customFloorColor.toLowerCase() === defaults.customFloorColor.toLowerCase();
+  const roomChanged = roomDesignChanged(
+    { wall: scene.wall, floorId: scene.floor.id },
+    { wall: defaults.wall, floorId: defaults.floor.id },
+  );
 
   const numbersVisible = tab === 'build' || showNumbers;
   const showRail = viewIndex !== 3 && numbersVisible;
@@ -683,25 +673,17 @@ function Configurator({
     setScene((old) => ({ ...old, model }));
   };
 
-  const resetToDefault = () => {
+  const resetRoomDesign = () => {
     const next = createDefaultScene(S);
-    setScene({ ...next, model: { ...next.model, dirs: [...next.model.dirs] }, floor: { ...next.floor } });
-    setSelected(-1);
-    setTab('style');
-    setAllowed(new Set(['F', 'L', 'B', 'R']));
-    setNoRepeat(false);
-    setRulesOpen(false);
-    setNote('');
-    setRolled(false);
-    setRolling(false);
-    setShowShelfKeyHint(true);
-    setShowNumbers(false);
-    setViewIndex(DEFAULT_VIEW_INDEX);
-    const resetProgress = Array(next.model.dirs.length).fill(false);
-    setCompleted(resetProgress);
-    viewRef.current?.animateTo(VIEWS[DEFAULT_VIEW_INDEX][1], VIEWS[DEFAULT_VIEW_INDEX][2]);
-    window.Story3D.setProgress(next.model, resetProgress);
-    try { window.localStorage.removeItem(LAST_SCENE_KEY); } catch { /* storage may be unavailable */ }
+    // Room only. Bookcase size, finish, shelf directions, and every other
+    // configurator state stay. hashFor() then saves that bookcase with the default room.
+    setScene((old) => ({
+      ...old,
+      wall: next.wall,
+      floor: { ...next.floor },
+      floorKind: next.floorKind,
+      customFloorColor: next.customFloorColor,
+    }));
   };
 
   const saveShareLink = async () => {
@@ -761,7 +743,6 @@ function Configurator({
       <div className="sr-only" role="status" aria-live="polite">{completionAnnouncement}</div>
       <div className="views" role="group" aria-label="Bookcase view"><span className="view-label" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>View</span>{VIEWS.map(([label, yaw, tilt], i) => <button key={label} aria-pressed={viewIndex === i} className={viewIndex === i ? 'active' : ''} onClick={() => { setViewIndex(i); viewRef.current?.animateTo(yaw, tilt); }}>{label}</button>)}</div>
       {tab === 'style' && <button type="button" role="switch" aria-checked={showNumbers} className={`shelf-numbers-toggle ${showNumbers ? 'on' : ''}`} onClick={() => setShowNumbers((old) => !old)}><i className="shelf-numbers-switch" aria-hidden="true" />Shelf numbers</button>}
-      {tab === 'style' && <button type="button" className="button light small stage-reset" disabled={isAtDefault} onClick={resetToDefault}><RotateCcw size={14}/>Reset to default</button>}
     </section>
     <section className="control-panel">
       <div className={`tabs ${tab === 'build' ? 'building' : ''}`}><i className="tab-pill" />
@@ -788,7 +769,21 @@ function Configurator({
             </div>
           </section>
           <details className="section room-preview">
-            <summary><h2><span>Room design</span><small>{WALLS.find((w) => w[1] === scene.wall)?.[0] || 'Custom'} wall · {floorIsCustom ? 'Custom' : scene.floor.name}</small><ChevronDown size={16} aria-hidden="true" /></h2></summary>
+            <summary onClick={(event) => {
+              if (event.target instanceof Element && event.target.closest('.room-reset')) event.preventDefault();
+            }}><h2>
+              <span className="room-design-label">Room design
+                {roomChanged && <button type="button" className="button light small room-reset" onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  resetRoomDesign();
+                }}><RotateCcw size={14} aria-hidden="true" />Reset to default</button>}
+              </span>
+              <span className="room-design-status">
+                <small>{WALLS.find((w) => w[1] === scene.wall)?.[0] || 'Custom'} wall · {floorIsCustom ? 'Custom' : scene.floor.name}</small>
+                <ChevronDown className="room-design-chevron" size={16} aria-hidden="true" />
+              </span>
+            </h2></summary>
             <h3>Wall <small>{WALLS.find((w) => w[1] === scene.wall)?.[0] || `Custom ${scene.wall.toUpperCase()}`}</small></h3>
             <div className="swatches">{WALLS.map(([name, hex]) => <button key={hex} className={`swatch ${scene.wall === hex ? 'active' : ''}`} onClick={() => setWall(hex)}><i style={{ background: hex }} />{name}</button>)}
               <ColorPicker title="Custom wall" value={scene.wall} presets={WALL_PRESETS} onChange={setWall}
