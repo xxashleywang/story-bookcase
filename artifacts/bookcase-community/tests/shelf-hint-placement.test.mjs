@@ -51,6 +51,18 @@ test('moves to left side when right side would be clipped', () => {
   assert.ok(placement.left + BASE.hintWidth <= 760 - 14);
 });
 
+test('stays on right side when side switching is disabled', () => {
+  const placement = placeShelfHint({
+    ...BASE,
+    stageWidth: 760,
+    postX: 420,
+    selected: 3,
+    targetTop: 280,
+    allowSideSwitch: false,
+  });
+  assert.equal(placement.side, 'right');
+});
+
 test('keeps panel within stage bounds', () => {
   const placement = placeShelfHint({
     ...BASE,

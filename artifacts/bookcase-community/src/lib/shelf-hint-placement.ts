@@ -53,6 +53,7 @@ type PlacementInput = {
   hintWidth: number;
   hintHeight: number;
   preferRight?: boolean;
+  allowSideSwitch?: boolean;
 };
 
 type PlacementResult = { left: number; top: number; side: Side };
@@ -68,6 +69,7 @@ export function placeShelfHint({
   hintWidth,
   hintHeight,
   preferRight = true,
+  allowSideSwitch = true,
 }: PlacementInput): PlacementResult {
   const shelves = shelfYs.map((y, i) => shelfRect(postX, y, shelfDirs[i] || 'F'));
   if (!shelves.length || selected < 0 || selected >= shelfYs.length) {
@@ -86,7 +88,9 @@ export function placeShelfHint({
   const shelfRightEdge = Math.max(...shelves.map((rect) => rect.right));
   const baseLeft = shelfLeftEdge - HINT_SIDE_GAP - hintWidth;
   const baseRight = shelfRightEdge + HINT_SIDE_GAP;
-  const sideOrder: Side[] = preferRight ? ['right', 'left'] : ['left', 'right'];
+  const sideOrder: Side[] = allowSideSwitch
+    ? (preferRight ? ['right', 'left'] : ['left', 'right'])
+    : [preferRight ? 'right' : 'left'];
 
   const candidates = HINT_VERTICAL_NUDGES.flatMap((delta) => {
     const top = clamp(clampedTargetTop + delta, minTop, maxTop);

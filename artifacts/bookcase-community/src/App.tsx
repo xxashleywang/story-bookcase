@@ -407,8 +407,9 @@ function Configurator({
       targetTop,
       hintWidth,
       hintHeight,
-      // Requested behavior: try the right side first, then fall back only if invalid.
+      // Requested behavior update: keep the hint on the right side only.
       preferRight: true,
+      allowSideSwitch: false,
     });
     return {
       '--shelf-hint-top': `${(placement.top / railFrame.height) * 100}%`,

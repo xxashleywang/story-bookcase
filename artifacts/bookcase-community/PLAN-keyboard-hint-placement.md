@@ -1,6 +1,6 @@
 # Keyboard hint placement fix: Implementation Plan
 
-**Overall Progress:** `95%`
+**Overall Progress:** `100%`
 
 ## TLDR
 Keep the keyboard-controls hint visible and readable without covering shelves. The hint now uses a constraints-first placement helper: try the right side first, then fall back only when right placement would clip or collide. Also narrow the hint so it naturally fits more often.
@@ -56,3 +56,7 @@ Keep the keyboard-controls hint visible and readable without covering shelves. T
   - [x] 🟩 `node --test artifacts/bookcase-community/tests/shelf-keyboard.test.mjs artifacts/bookcase-community/tests/shelf-hint-placement.test.mjs` passed (11/11)
   - [ ] 🟨 Typecheck/build execution remains blocked in this VM due missing `node_modules` / `tsc`
   - [ ] 🟨 Manual visual pass with latest screenshots and local run pending
+
+- [x] 🟩 **Step 7: Post-review direction update**
+  - [x] 🟩 Locked placement to the right side only for current narrowed panel width (`allowSideSwitch: false`)
+  - [x] 🟩 Kept bounds/collision solver behavior while disabling left-side fallback
