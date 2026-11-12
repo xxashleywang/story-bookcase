@@ -397,11 +397,24 @@ function Configurator({
     const shelfY = railLayout.y(railLayout.hs[selected]);
     const topPercent = ((shelfY + 28) / railFrame.height) * 100;
     const clampedTop = Math.max(46, Math.min(84, topPercent));
-    // Low shelves show a number badge near the post; nudge the hint farther right
-    // there so the badge and hint panel do not collide.
-    const xOffset = clampedTop > 72 ? 106 : clampedTop > 66 ? 90 : 62;
-    return { '--shelf-hint-top': `${clampedTop}%`, '--shelf-hint-x': `${xOffset}px` } as CSSProperties;
-  }, [railFrame.height, railLayout, selected]);
+    const selectedDir = scene.model.dirs[selected] || 'F';
+    const hintWidth = Math.min(330, railFrame.width * 0.44);
+    const sideGap = clampedTop > 72 ? 32 : 22;
+    const edgePadding = 16;
+    const anchorX = railLayout.left;
+    const preferRight = selectedDir === 'L';
+    const spaceRight = railFrame.width - anchorX - sideGap - edgePadding;
+    const spaceLeft = anchorX - sideGap - edgePadding;
+    const canFitRight = spaceRight >= hintWidth;
+    const canFitLeft = spaceLeft >= hintWidth;
+    const useRight = preferRight ? (canFitRight || !canFitLeft) : (!canFitLeft && canFitRight);
+    let leftPx = useRight ? anchorX + sideGap : anchorX - sideGap - hintWidth;
+    leftPx = Math.max(edgePadding, Math.min(railFrame.width - hintWidth - edgePadding, leftPx));
+    return {
+      '--shelf-hint-top': `${clampedTop}%`,
+      '--shelf-hint-left': `${leftPx}px`,
+    } as CSSProperties;
+  }, [railFrame.height, railFrame.width, railLayout, scene.model.dirs, selected]);
 
   const isAtDefault = tab === 'style'
     && viewIndex === DEFAULT_VIEW_INDEX
