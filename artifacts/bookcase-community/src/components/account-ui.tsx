@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { useClerk, useUser } from '@clerk/react';
 import { Bookmark, ChevronDown, LoaderCircle, LogOut, UserRound } from 'lucide-react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { Build } from '@workspace/api-client-react';
 import { getGetBuildQueryKey, useRemoveFavourite, useSaveFavourite } from '@workspace/api-client-react';
@@ -59,9 +59,11 @@ export function AccountMenu() {
 
 /** My profile and Log out. Both account systems use this so the rows cannot drift. */
 function AccountMenuPanel({ name, logout, pending, failed }: { name: string; logout: () => void; pending: boolean; failed: boolean }) {
+  const [location] = useLocation();
+  const current = location.startsWith('/profile');
   return <DropdownMenu>
     <DropdownMenuTrigger asChild>
-      <button type="button" className="button light small account-menu-trigger" data-testid="button-account-menu">
+      <button type="button" className={`button light small account-menu-trigger${current ? ' is-current' : ''}`} data-testid="button-account-menu">
         <span>{name}</span><ChevronDown size={13} aria-hidden="true"/>
       </button>
     </DropdownMenuTrigger>
