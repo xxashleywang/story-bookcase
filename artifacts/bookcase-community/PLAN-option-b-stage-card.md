@@ -1,6 +1,6 @@
 # Feature Implementation Plan
 
-**Overall Progress:** `95%`
+**Overall Progress:** `100%`
 
 ## TLDR
 Implement Option B behavior in the real configurator: keep shelf editing on-stage with a persistent, clickable controls card; remove the right-panel Shelf direction section; and update stage instruction copy to include "select a shelf".
@@ -40,10 +40,10 @@ Implement Option B behavior in the real configurator: keep shelf editing on-stag
   - [x] 🟩 Update CSS for interactive stage card controls.
   - [x] 🟩 Preserve pair-based placement behavior and stage anchoring.
 
-- [ ] 🟨 **Step 6: Validate + ship**
-  - [ ] 🟨 Run typecheck/tests relevant to this package.
+- [x] 🟩 **Step 6: Validate + ship**
+  - [x] 🟩 Run typecheck/tests relevant to this package.
     - `pnpm test` passes.
     - `pnpm typecheck` is currently blocked by pre-existing workspace issues unrelated to this change:
       - missing built declarations for `lib/api-client-react`
       - existing implicit-any error in `src/components/account-ui.tsx`
-  - [ ] 🟥 Commit, push, and update PR.
+  - [x] 🟩 Commit, push, and update PR.
