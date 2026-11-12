@@ -400,7 +400,7 @@ function Configurator({
     celebrationTimeoutRef.current = window.setTimeout(() => {
       setIsCelebrating(false);
       celebrationTimeoutRef.current = null;
-    }, 1900);
+    }, 4400);
   }, [fullyBuilt, isCelebrating, reduceMotion, steps.doneSteps, steps.totalSteps, tab]);
   useEffect(() => {
     if (!hostRef.current || viewRef.current) return;
@@ -601,8 +601,8 @@ function Configurator({
         <p className="scene-sub">Try different arrangements before you build.</p>
       </div>
       {tab === 'style' && selected >= 0 && showShelfKeyHint && <ShelfKeyHint className="stage-shelf-hint" onDismiss={() => setShowShelfKeyHint(false)} />}
+      {tab === 'build' && isCelebrating && !reduceMotion && <BuildCelebration burstId={celebrationBurstId} />}
       {tab === 'build' && <div className={`scene-stamp${fullyBuilt ? ' is-complete' : ''}${isCelebrating ? ' is-celebrating' : ''}`} aria-label="Assembly progress">
-        {isCelebrating && !reduceMotion && <BuildCelebration burstId={celebrationBurstId} />}
         <svg viewBox="0 0 110 110"><defs><path id="stampCircle" d="M55,55 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" /></defs><text fontSize="10" fontWeight="700" letterSpacing="2.5" fill="currentColor"><textPath href="#stampCircle">{fullyBuilt ? 'BUILT IT · BUILT IT · BUILT IT · ' : 'TWIST IT · STACK IT · STYLE IT · '}</textPath></text></svg>
         <b>{fullyBuilt ? <span className="scene-stamp-success" aria-label="Bookcase complete"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="M5 12.5l4.2 4.1L19 7.8" /></svg></span> : `${steps.percent}%`}</b>
       </div>}
