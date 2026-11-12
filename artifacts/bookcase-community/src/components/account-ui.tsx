@@ -63,7 +63,7 @@ function AccountMenuPanel({ name, logout, pending, failed }: { name: string; log
   const current = location.startsWith('/profile');
   return <DropdownMenu>
     <DropdownMenuTrigger asChild>
-      <button type="button" className={`button light small account-menu-trigger${current ? ' is-current' : ''}`} data-testid="button-account-menu">
+      <button type="button" className={`button light small account-menu-trigger${current ? ' is-current' : ''}`} aria-current={current ? 'page' : undefined} data-testid="button-account-menu">
         <span>{name}</span><ChevronDown size={13} aria-hidden="true"/>
       </button>
     </DropdownMenuTrigger>

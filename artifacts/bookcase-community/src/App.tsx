@@ -286,7 +286,7 @@ function Header() {
     <Link className="brand" href="/"><BrandWordmark/></Link>
     <span className="tagline">Design first. Build once.</span>
     <nav className="top-actions">
-      <Link className={`button light small${inGallery ? ' is-current' : ''}`} href="/inspiration" aria-current={inGallery ? 'page' : undefined}>Gallery</Link>
+      <Link className={`nav-link${inGallery ? ' is-current' : ''}`} href="/inspiration" aria-current={inGallery ? 'page' : undefined}>Gallery</Link>
       {!isLoaded ? null : isSignedIn ? <AccountMenu/> : cursor.signedOutInApp
         ? <button type="button" className="button small" onClick={cursor.resumeSession}>Log in</button>
         : <Link className="button small" href="/sign-in">Log in</Link>}
