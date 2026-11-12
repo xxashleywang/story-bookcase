@@ -201,6 +201,7 @@ function takeShareIntent() { try { const v = window.sessionStorage.getItem(SHARE
 /** Route a share request through sign-in and username setup, preserving where it started. */
 function useShareGate(mode: 'photo' | 'blueprint') {
   const { isSignedIn, isLoaded } = useAuth();
+  const cursor = useCursorAccount();
   const [, setLocation] = useLocation();
   const { data:profile } = useGetMyProfile({ query:{ enabled:!!isSignedIn, queryKey:getGetMyProfileQueryKey() } });
   const ready = !!isSignedIn && !!profile?.isUsernameSet;
@@ -215,6 +216,14 @@ function useShareGate(mode: 'photo' | 'blueprint') {
     const here = `${stripBase(window.location.pathname)}${withoutParam(window.location.search, 'share')}`;
     const back = `${here}${here.includes('?') ? '&' : '?'}share=${intent}`;
     if (!isSignedIn) {
+      // A person who logged out in the app still has a Cursor session. Bring
+      // the account back on this page and let the share continue.
+      if (cursor.signedOutInApp) {
+        rememberShareIntent(`${back}${window.location.hash}`);
+        window.history.replaceState(null, '', `${window.location.pathname}${back.includes('?') ? back.slice(back.indexOf('?')) : ''}${window.location.hash}`);
+        cursor.resumeSession();
+        return;
+      }
       // Keep a local copy too: sign-in can finish on the profile page rather
       // than the redirect destination, especially during first-user setup.
       rememberShareIntent(`${back}${window.location.hash}`);
@@ -268,9 +277,9 @@ function Header() {
     <span className="tagline">Design first. Build once.</span>
     <nav className="top-actions">
       <Link className="button light small" href="/inspiration">Gallery</Link>
-      {!isLoaded ? null : isSignedIn ? <AccountMenu/> : cursor.previewSignedOut
-        ? <button type="button" className="button small" onClick={cursor.resumePreview}>Sign in</button>
-        : <Link className="button small" href="/sign-in">Sign in</Link>}
+      {!isLoaded ? null : isSignedIn ? <AccountMenu/> : cursor.signedOutInApp
+        ? <button type="button" className="button small" onClick={cursor.resumeSession}>Log in</button>
+        : <Link className="button small" href="/sign-in">Log in</Link>}
     </nav>
   </header>;
 }
@@ -1221,17 +1230,17 @@ function CursorSignIn() {
   const cursor = useCursorAccount();
   const [, setLocation] = useLocation();
   return <main className="auth-frame"><Link className="brand auth-mark" href="/"><BrandWordmark/></Link>
-    <p>{cursor.previewSignedOut
-      ? 'You are signed out of this preview.'
+    <p>{cursor.signedOutInApp
+      ? 'You are logged out. The planner is still yours. Log in when you want to share a photo.'
       : isLoaded && isSignedIn ? 'You are signed in with Cursor.' : 'This private app uses your Cursor sign-in. Open it from your Cursor link while you are signed in.'}</p>
-    {cursor.previewSignedOut
-      ? <button type="button" className="button coral" onClick={() => { cursor.resumePreview(); setLocation('/'); }}>Sign in</button>
+    {cursor.signedOutInApp
+      ? <button type="button" className="button coral" onClick={() => { cursor.resumeSession(); setLocation('/'); }}>Log in</button>
       : <Link className="button coral" href="/">Back to the planner</Link>}
   </main>;
 }
 function CursorRoutes() {
   const session = useCursorAccount();
-  const identity = session.user?.id ?? 'public';
+  const identity = session.viewerId ?? 'public';
   const client = useMemo(() => new QueryClient(), [identity]);
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   if (!session.isLoaded) return <div className="skeleton" aria-label="Loading account"/>;
