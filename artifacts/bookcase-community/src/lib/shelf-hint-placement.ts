@@ -4,7 +4,8 @@ type Side = 'left' | 'right';
 const HINT_EDGE_PADDING = 14;
 const HINT_COLLISION_PADDING = 8;
 const HINT_SIDE_GAP = 22;
-const HINT_VERTICAL_NUDGES = [0, -56, 56, -98, 98];
+/** Sit slightly below the lower shelf in a pair so the lowest slot covers the wall/floor line. */
+const HINT_PAIR_OFFSET = 26;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -42,6 +43,16 @@ function outOfBoundsDistance(rect: Rect, stageWidth: number, stageHeight: number
   return distance;
 }
 
+/** Shelves 1&2, 3&4, 5&6... share a slot. `selected` is 0-based from the bottom. */
+export function shelfHintPairIndex(selected: number): number {
+  return Math.floor(Math.max(0, selected) / 2);
+}
+
+/** Lower shelf in the selected pair (shelf 1 for 1–2, shelf 3 for 3–4, leftover odd shelf alone). */
+export function shelfHintPairStart(selected: number): number {
+  return shelfHintPairIndex(selected) * 2;
+}
+
 type PlacementInput = {
   stageWidth: number;
   stageHeight: number;
@@ -49,14 +60,13 @@ type PlacementInput = {
   shelfYs: number[];
   shelfDirs: string[];
   selected: number;
-  targetTop: number;
   hintWidth: number;
   hintHeight: number;
   preferRight?: boolean;
   allowSideSwitch?: boolean;
 };
 
-type PlacementResult = { left: number; top: number; side: Side };
+type PlacementResult = { left: number; top: number; side: Side; pairIndex: number };
 
 export function placeShelfHint({
   stageWidth,
@@ -65,25 +75,23 @@ export function placeShelfHint({
   shelfYs,
   shelfDirs,
   selected,
-  targetTop,
   hintWidth,
   hintHeight,
   preferRight = true,
   allowSideSwitch = true,
 }: PlacementInput): PlacementResult {
-  const shelves = shelfYs.map((y, i) => shelfRect(postX, y, shelfDirs[i] || 'F'));
-  if (!shelves.length || selected < 0 || selected >= shelfYs.length) {
-    return { left: HINT_EDGE_PADDING, top: clamp(targetTop, HINT_EDGE_PADDING, stageHeight - HINT_EDGE_PADDING), side: 'right' };
+  const pairIndex = shelfHintPairIndex(selected);
+  const pairStart = shelfHintPairStart(selected);
+  const fallbackTop = clamp(HINT_EDGE_PADDING + hintHeight / 2, HINT_EDGE_PADDING, stageHeight - HINT_EDGE_PADDING);
+  if (!shelfYs.length || selected < 0 || selected >= shelfYs.length) {
+    return { left: HINT_EDGE_PADDING, top: fallbackTop, side: 'right', pairIndex };
   }
 
-  // The selected shelf badge sits to the right of the post in this layout.
-  const selectedY = shelfYs[selected];
-  const badge: Rect = { left: postX + 40, right: postX + 88, top: selectedY - 24, bottom: selectedY + 24 };
-  const blocked = [...shelves, badge];
-
+  const shelves = shelfYs.map((y, i) => shelfRect(postX, y, shelfDirs[i] || 'F'));
+  const blocked = [...shelves];
   const minTop = HINT_EDGE_PADDING + hintHeight / 2;
   const maxTop = stageHeight - HINT_EDGE_PADDING - hintHeight / 2;
-  const clampedTargetTop = clamp(targetTop, minTop, maxTop);
+  const targetTop = clamp((shelfYs[pairStart] ?? shelfYs[selected]) + HINT_PAIR_OFFSET, minTop, maxTop);
   const shelfLeftEdge = Math.min(...shelves.map((rect) => rect.left));
   const shelfRightEdge = Math.max(...shelves.map((rect) => rect.right));
   const baseLeft = shelfLeftEdge - HINT_SIDE_GAP - hintWidth;
@@ -92,25 +100,21 @@ export function placeShelfHint({
     ? (preferRight ? ['right', 'left'] : ['left', 'right'])
     : [preferRight ? 'right' : 'left'];
 
-  const candidates = HINT_VERTICAL_NUDGES.flatMap((delta) => {
-    const top = clamp(clampedTargetTop + delta, minTop, maxTop);
-    return sideOrder.map((side) => {
-      const left = side === 'right' ? baseRight : baseLeft;
-      const rect = {
-        left,
-        right: left + hintWidth,
-        top: top - hintHeight / 2,
-        bottom: top + hintHeight / 2,
-      };
-      return { left, top, side, rect };
-    });
+  const candidates = sideOrder.map((side) => {
+    const left = side === 'right' ? baseRight : baseLeft;
+    const rect = {
+      left,
+      right: left + hintWidth,
+      top: targetTop - hintHeight / 2,
+      bottom: targetTop + hintHeight / 2,
+    };
+    return { left, top: targetTop, side, rect };
   });
 
   const firstValid = candidates.find((candidate) => outOfBoundsDistance(candidate.rect, stageWidth, stageHeight) === 0
     && blocked.every((rect) => !intersects(candidate.rect, rect, HINT_COLLISION_PADDING)));
-  if (firstValid) return { left: firstValid.left, top: firstValid.top, side: firstValid.side };
+  if (firstValid) return { left: firstValid.left, top: firstValid.top, side: firstValid.side, pairIndex };
 
-  // Last-resort fallback: clamp to stage, then minimise overlap + movement.
   let best = candidates[0];
   let bestScore = Number.POSITIVE_INFINITY;
   for (const candidate of candidates) {
@@ -119,14 +123,13 @@ export function placeShelfHint({
     const rect = { left, right: left + hintWidth, top: top - hintHeight / 2, bottom: top + hintHeight / 2 };
     const collisionArea = blocked.reduce((sum, blockedRect) => sum + overlapArea(rect, blockedRect), 0);
     const boundsPenalty = outOfBoundsDistance(rect, stageWidth, stageHeight);
-    const movementPenalty = Math.abs(top - clampedTargetTop);
     const sidePenalty = candidate.side === 'right' ? 0 : 24;
-    const score = collisionArea * 5 + boundsPenalty * 100 + movementPenalty + sidePenalty;
+    const score = collisionArea * 5 + boundsPenalty * 100 + sidePenalty;
     if (score < bestScore) {
       bestScore = score;
       best = { ...candidate, left, top, rect };
     }
   }
 
-  return { left: best.left, top: best.top, side: best.side };
+  return { left: best.left, top: best.top, side: best.side, pairIndex };
 }

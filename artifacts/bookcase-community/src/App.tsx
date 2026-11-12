@@ -393,8 +393,6 @@ function Configurator({
   }, [S, railFrame.height, railFrame.width, scene.model.size, steps.doneShelves]);
   const shelfHintStyle = useMemo<CSSProperties | undefined>(() => {
     if (selected < 0 || !railLayout || railFrame.height <= 0 || selected >= railLayout.hs.length) return undefined;
-    const shelfY = railLayout.y(railLayout.hs[selected]);
-    const targetTop = shelfY + 26;
     const hintWidth = Math.min(290, railFrame.width * 0.38);
     const hintHeight = 108;
     const placement = placeShelfHint({
@@ -404,10 +402,9 @@ function Configurator({
       shelfYs: railLayout.hs.map((height: number) => railLayout.y(height)),
       shelfDirs: scene.model.dirs,
       selected,
-      targetTop,
       hintWidth,
       hintHeight,
-      // Requested behavior update: keep the hint on the right side only.
+      // Right-side only, with 1&2 / 3&4 / 5&6 pair slots.
       preferRight: true,
       allowSideSwitch: false,
     });

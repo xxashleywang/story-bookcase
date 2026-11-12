@@ -1,62 +1,50 @@
-# Keyboard hint placement fix: Implementation Plan
+# Keyboard hint placement: Implementation Plan
 
 **Overall Progress:** `100%`
 
 ## TLDR
-Keep the keyboard-controls hint visible and readable without covering shelves. The hint now uses a constraints-first placement helper: try the right side first, then fall back only when right placement would clip or collide. Also narrow the hint so it naturally fits more often.
+Keyboard-tip placement uses fixed 2-shelf buckets so positions stay predictable: shelves 1&2 share one right-side slot, 3&4 share the next, 5&6 the next, and so on, matching the red-box guide.
 
 ## Scope
-**In scope:** `src/App.tsx`, `src/index.css`, one new helper in `src/lib/`, one new test in `tests/`.
+**In scope:** `src/App.tsx`, `src/lib/shelf-hint-placement.ts`, `tests/shelf-hint-placement.test.mjs`, this plan file.
 
 **Out of scope:**
-- Build progress flow and Build tab behavior
-- Gallery/profile/auth routes
-- Shelf geometry and rendering internals in `reference/story-v2.js`
+- Keyboard-tip content/controls redesign
+- Shelf geometry and model rendering
+- Build flow, randomize rules, and unrelated UI
 
 **Do not touch:**
-- URL hash persistence and scene serialization
-- Randomize rules behavior
-- Model keyboard controls semantics (arrow key actions)
+- `reference/story-v2.js` / `reference/story-core.js`
+- Gallery/profile/auth routes
+- Arrow-key action semantics
 
 ## Critical Decisions
-- **Right-first candidate order.** Placement always attempts right side first, and only switches when right is invalid (cut off or collision).
-- **Collision checks include every shelf plank.** Any overlap with any plank is treated as invalid.
-- **Narrower panel before complex movement.** Reduce width and tighten internals so valid placements are easier to find.
-- **One pure helper for placement.** Keep sizing/collision policy centralized and testable.
+- **Bucket by shelf pairs (`[1,2]`, `[3,4]`, `[5,6]`, ...).** A leftover odd shelf (9 or 11) gets its own slot.
+- **Right-side only.** No left-side switching at the current panel width.
+- **Anchor each pair to the lower shelf in that pair.** Keeps 1&2 at the floor/wall slot from the red-box guide.
 
 ## Tasks
 
-- [x] 🟩 **Step 0: Lock criteria**
-  - [x] 🟩 No overlap with any shelf plank
-  - [x] 🟩 Default to right-first fallback logic
-  - [x] 🟩 Make panel narrower
+- [x] 🟩 **Step 0: Lock acceptance criteria**
+  - [x] 🟩 Pair mapping: 1&2, 3&4, 5&6, and so on
+  - [x] 🟩 Red-box guide is the canonical right-column layout
+  - [x] 🟩 Keep right-side placement
 
-- [x] 🟩 **Step 1: Narrow panel footprint**
-  - [x] 🟩 Reduced stage hint width from `min(330px,44vw)` to `min(290px,38vw)`
-  - [x] 🟩 Tightened hint padding, gap, keycap sizes, and close button size
+- [x] 🟩 **Step 1: Define pair-to-slot mapping**
+  - [x] 🟩 `shelfHintPairIndex` / `shelfHintPairStart` bucket 0-based selected shelves
+  - [x] 🟩 Vertical slot from the lower shelf in the pair, plus a small floor-line offset
 
-- [x] 🟩 **Step 2: Add placement helper**
-  - [x] 🟩 Added `src/lib/shelf-hint-placement.ts` with candidate generation and constraints checks
-  - [x] 🟩 Implemented right-first side ordering with bounded fallbacks
+- [x] 🟩 **Step 2: Apply mapping in placement helper**
+  - [x] 🟩 Replaced per-shelf `targetTop` with pair-slot targeting
+  - [x] 🟩 Kept right-side X, optional left fallback, and stage bounds clamping
 
-- [x] 🟩 **Step 3: Enforce collisions + bounds**
-  - [x] 🟩 Reject candidates that overlap any shelf plank
-  - [x] 🟩 Keep hint fully within stage edges
-  - [x] 🟩 Include selected shelf badge as additional collision blocker
+- [x] 🟩 **Step 3: Preserve no-collision guardrails**
+  - [x] 🟩 Pair slots still reject plank overlap when a valid right slot exists
+  - [x] 🟩 In-bounds and no-overlap tests passed
 
-- [x] 🟩 **Step 4: Integrate helper**
-  - [x] 🟩 Wired helper into `Configurator` shelf hint style variables
-  - [x] 🟩 Preserved smooth top/left transitions
+- [x] 🟩 **Step 4: Add/update tests**
+  - [x] 🟩 Same pair resolves to the same Y/left slot
+  - [x] 🟩 `node --test artifacts/bookcase-community/tests/shelf-hint-placement.test.mjs` passed (8/8)
 
-- [x] 🟩 **Step 5: Add focused tests**
-  - [x] 🟩 Added `tests/shelf-hint-placement.test.mjs` for right-preference, fallback, bounds, and no-plank-overlap cases
-
-- [ ] 🟨 **Step 6: Verify in environment**
-  - [x] 🟩 `node --test artifacts/bookcase-community/tests/shelf-hint-placement.test.mjs` passed (4/4)
-  - [x] 🟩 `node --test artifacts/bookcase-community/tests/shelf-keyboard.test.mjs artifacts/bookcase-community/tests/shelf-hint-placement.test.mjs` passed (11/11)
-  - [ ] 🟨 Typecheck/build execution remains blocked in this VM due missing `node_modules` / `tsc`
-  - [ ] 🟨 Manual visual pass with latest screenshots and local run pending
-
-- [x] 🟩 **Step 7: Post-review direction update**
-  - [x] 🟩 Locked placement to the right side only for current narrowed panel width (`allowSideSwitch: false`)
-  - [x] 🟩 Kept bounds/collision solver behavior while disabling left-side fallback
+- [x] 🟩 **Step 5: Finalize**
+  - [x] 🟩 Commit and push on `cursor/fix-controls-tip-placement-8099`
