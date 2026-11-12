@@ -38,3 +38,16 @@ export function cleanupMessage(pending: number) {
   if (pending <= 0) return '';
   return `${pending} deleted ${pending === 1 ? 'photo is' : 'photos are'} still waiting to be cleared from storage.`;
 }
+
+/**
+ * Where Log out goes after this host has tried to drop its own cookies.
+ * `preview` stays on the local simulated viewer. `home` means the app no longer
+ * knows the viewer. `cursor` means it still does, so the Cursor web session has
+ * to end. `retry` means that check never finished.
+ */
+export function cursorLogoutDestination(localPreview: boolean, sessionStatus: number | null) {
+  if (localPreview) return 'preview' as const;
+  if (sessionStatus === 401) return 'home' as const;
+  if (sessionStatus === 200) return 'cursor' as const;
+  return 'retry' as const;
+}

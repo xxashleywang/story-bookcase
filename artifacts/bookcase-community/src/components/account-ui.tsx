@@ -9,8 +9,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import type { Build } from '@workspace/api-client-react';
 import { getGetBuildQueryKey, useRemoveFavourite, useSaveFavourite } from '@workspace/api-client-react';
 import { useDialogFocus } from '@/components/share-dialog';
-import { isAccountAffectedKey, readSaveIntent, saveIntentHref } from '@/lib/account';
-import { useCursorAccount } from '@/lib/cursor-account';
+import { cursorLogoutDestination, isAccountAffectedKey, readSaveIntent, saveIntentHref } from '@/lib/account';
+import { isLocalAccountPreview, markPreviewSignedOut, useCursorAccount } from '@/lib/cursor-account';
 import { clerkConfigured } from '@/lib/local-clerk';
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -57,27 +57,8 @@ export function AccountMenu() {
   return <ClerkAccountMenu/>;
 }
 
-function CursorAccountMenu() {
-  const { user } = useCursorAccount();
-  const name = user?.firstName || user?.fullName || 'Account';
-  return <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <button type="button" className="button light small account-menu-trigger" data-testid="button-account-menu">
-        <span>{name}</span><ChevronDown size={13} aria-hidden="true"/>
-      </button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" sideOffset={8} collisionPadding={12} className="account-menu" aria-label="Account">
-      <DropdownMenuItem asChild className="account-menu-item">
-        <Link href="/profile"><UserRound size={16} aria-hidden="true"/>My profile</Link>
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>;
-}
-
-function ClerkAccountMenu() {
-  const { user } = useUser();
-  const { logout, pending, failed } = useLogout();
-  const name = user?.firstName || user?.fullName || user?.username || 'Account';
+/** My profile and Log out. Both account systems use this so the rows cannot drift. */
+function AccountMenuPanel({ name, logout, pending, failed }: { name: string; logout: () => void; pending: boolean; failed: boolean }) {
   return <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <button type="button" className="button light small account-menu-trigger" data-testid="button-account-menu">
@@ -96,6 +77,64 @@ function ClerkAccountMenu() {
       {failed && <p className="account-menu-error" role="alert">Log out did not finish. Check your connection and retry.</p>}
     </DropdownMenuContent>
   </DropdownMenu>;
+}
+
+/**
+ * Ends the published Cursor session. Clears this host's cookies first.
+ * If the app still recognizes the viewer, the Cursor web session is what the
+ * gate is using, so the browser goes to Cursor's logout. Local preview never
+ * does that: it only hides the simulated viewer.
+ */
+function useCursorLogout() {
+  const client = useQueryClient();
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const logout = async () => {
+    if (pending) return;
+    setPending(true); setFailed(false);
+    const local = isLocalAccountPreview();
+    const home = `${basePath}/`;
+    await client.cancelQueries();
+    client.clear();
+    let response: Response | null = null;
+    try {
+      response = await fetch(`${basePath}/api/session/logout`, {
+        method: 'POST', credentials: 'same-origin', headers: { accept: 'application/json' },
+      });
+    } catch { response = null; }
+    if (local) {
+      markPreviewSignedOut();
+      window.location.assign(home);
+      return;
+    }
+    if (!response?.ok) { setFailed(true); setPending(false); return; }
+    let sessionStatus: number | null = null;
+    try {
+      const session = await fetch(`${basePath}/api/session`, {
+        headers: { accept: 'application/json' }, cache: 'no-store', credentials: 'same-origin',
+      });
+      sessionStatus = session.status;
+    } catch { sessionStatus = null; }
+    const next = cursorLogoutDestination(false, sessionStatus);
+    if (next === 'home') { window.location.assign(home); return; }
+    if (next === 'cursor') { window.location.assign('https://cursor.com/api/auth/logout'); return; }
+    setFailed(true); setPending(false);
+  };
+  return { logout, pending, failed };
+}
+
+function CursorAccountMenu() {
+  const { user } = useCursorAccount();
+  const { logout, pending, failed } = useCursorLogout();
+  const name = user?.firstName || user?.fullName || 'Account';
+  return <AccountMenuPanel name={name} logout={logout} pending={pending} failed={failed}/>;
+}
+
+function ClerkAccountMenu() {
+  const { user } = useUser();
+  const { logout, pending, failed } = useLogout();
+  const name = user?.firstName || user?.fullName || user?.username || 'Account';
+  return <AccountMenuPanel name={name} logout={() => { void logout(); }} pending={pending} failed={failed}/>;
 }
 
 /** Save toggle for a room post. Never rendered inside a link. */

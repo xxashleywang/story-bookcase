@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { cleanupMessage, isAccountAffectedKey, photoRemovalPlan, privateListKey, readSaveIntent, saveIntentHref } from '../src/lib/account.ts';
+import { cleanupMessage, cursorLogoutDestination, isAccountAffectedKey, photoRemovalPlan, privateListKey, readSaveIntent, saveIntentHref } from '../src/lib/account.ts';
 
 test('affected keys cover public, private, detail and summary caches', () => {
   assert.ok(isAccountAffectedKey(['/api/builds']));
@@ -29,6 +29,14 @@ test('removing every photo is flagged as a whole-post decision', () => {
   assert.deepEqual(photoRemovalPlan(['/a', '/b'], ['/a']), { remaining: ['/b'], removesLast: false });
   assert.equal(photoRemovalPlan(['/a'], ['/a']).removesLast, true);
   assert.equal(photoRemovalPlan(['/a', '/b', '/c', '/d', '/e', '/f'], ['/f']).remaining.length, 5);
+});
+
+test('cursor logout stays local, stays home, or ends the Cursor web session', () => {
+  assert.equal(cursorLogoutDestination(true, 200), 'preview');
+  assert.equal(cursorLogoutDestination(false, 401), 'home');
+  assert.equal(cursorLogoutDestination(false, 200), 'cursor');
+  assert.equal(cursorLogoutDestination(false, null), 'retry');
+  assert.equal(cursorLogoutDestination(false, 500), 'retry');
 });
 
 test('cleanup message is quiet when nothing is pending', () => {
