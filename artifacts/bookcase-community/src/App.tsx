@@ -31,8 +31,6 @@ import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } f
 import NotFound from '@/pages/not-found';
 import { ColorPicker } from '@/components/color-picker';
 import { BuildCelebration } from '@/components/build-celebration';
-import { ShelfSelector } from '@/components/shelf-selector';
-import { ShelfEditor } from '@/components/shelf-editor';
 import { ShelfKeyHint } from '@/components/shelf-key-hint';
 import { placeShelfHint } from '@/lib/shelf-hint-placement';
 import { shouldCelebrateBuildCompletion } from '@/lib/build-celebration';
@@ -341,23 +339,19 @@ function Configurator({
 
   const stageRef = useRef<HTMLElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
-  const shelfEditorRef = useRef<HTMLDivElement>(null);
   const rulesPopRef = useRef<HTMLDivElement>(null);
   const rulesButtonRef = useRef<HTMLButtonElement>(null);
   const viewRef = useRef<ViewHandle | null>(null);
   const selectRef = useRef<(index: number) => void>(() => undefined);
-  const [editorOpen, setEditorOpen] = useState(false);
   const [showShelfKeyHint, setShowShelfKeyHint] = useState(true);
   const [railFrame, setRailFrame] = useState({ width: 0, height: 0 });
   const [celebrationBurstId, setCelebrationBurstId] = useState(0);
   const [isCelebrating, setIsCelebrating] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [completionAnnouncement, setCompletionAnnouncement] = useState('');
-  const shelfArrowUseCount = useRef(0);
   const celebrationTimeoutRef = useRef<number | null>(null);
   selectRef.current = (i: number) => {
     setSelected(i);
-    setEditorOpen(true);
     hostRef.current?.focus({ preventScroll:true });
   };
 
@@ -417,7 +411,6 @@ function Configurator({
   const isAtDefault = tab === 'style'
     && viewIndex === DEFAULT_VIEW_INDEX
     && !showNumbers
-    && !editorOpen
     && selected < 0
     && !rolled
     && !rulesOpen
@@ -530,15 +523,14 @@ function Configurator({
   }, []);
 
   useEffect(() => {
-    if (!editorOpen && !rulesOpen) return;
+    if (!rulesOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
-      if (editorOpen) setEditorOpen(false);
-      if (rulesOpen) setRulesOpen(false);
+      setRulesOpen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [editorOpen, rulesOpen]);
+  }, [rulesOpen]);
 
   useEffect(() => {
     if (selected < 0 && !rulesOpen) return;
@@ -570,7 +562,6 @@ function Configurator({
       if (!start || moved) return;
       if (tab === 'style' && selected >= 0 && !keepsShelfSelection(start.el)) {
         setSelected(-1);
-        setEditorOpen(false);
       }
       if (rulesOpen && !keepsRulesOpen(start.el, rulesPopRef.current, rulesButtonRef.current)) {
         setRulesOpen(false);
@@ -595,13 +586,8 @@ function Configurator({
       });
       if (!action) return;
       event.preventDefault();
-      if (showShelfKeyHint) {
-        shelfArrowUseCount.current += 1;
-        if (shelfArrowUseCount.current >= 3) setShowShelfKeyHint(false);
-      }
       if (action.type === 'select') {
         setSelected((old) => moveShelfSelection(old, scene.model.dirs.length, action.step));
-        setEditorOpen(true);
         return;
       }
       setScene((old) => {
@@ -663,8 +649,6 @@ function Configurator({
     animate();
   };
 
-  const changeShelf = (index: number, dir: string) => updateModel((m) => ({ ...m, dirs: m.dirs.map((d: string, i: number) => i === index ? dir : d) }));
-
   const completeNextShelf = () => {
     const next = advanceBuildProgress(progress);
     if (next.every((value, i) => value === progress[i])) return;
@@ -698,7 +682,7 @@ function Configurator({
     setNote('');
     setRolled(false);
     setRolling(false);
-    setEditorOpen(false);
+    setShowShelfKeyHint(true);
     setShowNumbers(false);
     setViewIndex(DEFAULT_VIEW_INDEX);
     const resetProgress = Array(next.model.dirs.length).fill(false);
@@ -719,9 +703,25 @@ function Configurator({
       <div className="room-floor" />
       <div id="bookcase-model" ref={hostRef} tabIndex={-1} aria-label="Bookcase model" />
       <div className="scene-copy"><h1>Design your bookcase</h1>
-        <p className="scene-sub">Try different arrangements before you build.</p>
+        <p className="scene-sub">Select a shelf to build your arrangement.</p>
       </div>
-      {tab === 'style' && selected >= 0 && showShelfKeyHint && <ShelfKeyHint className="stage-shelf-hint" style={shelfHintStyle} onDismiss={() => setShowShelfKeyHint(false)} />}
+      {tab === 'style' && selected >= 0 && showShelfKeyHint && <ShelfKeyHint
+        className="stage-shelf-hint"
+        style={shelfHintStyle}
+        onDismiss={() => setShowShelfKeyHint(false)}
+        canMoveUp={selected < scene.model.dirs.length - 1}
+        canMoveDown={selected > 0}
+        onMoveUp={() => setSelected((old) => moveShelfSelection(old, scene.model.dirs.length, 1))}
+        onMoveDown={() => setSelected((old) => moveShelfSelection(old, scene.model.dirs.length, -1))}
+        onTurnLeft={() => setScene((old) => {
+          const dir = rotateShelfDirection(old.model.dirs[selected], -1);
+          return { ...old, model:{ ...old.model, dirs:old.model.dirs.map((d: string, i: number) => i === selected ? dir : d) } };
+        })}
+        onTurnRight={() => setScene((old) => {
+          const dir = rotateShelfDirection(old.model.dirs[selected], 1);
+          return { ...old, model:{ ...old.model, dirs:old.model.dirs.map((d: string, i: number) => i === selected ? dir : d) } };
+        })}
+      />}
       {tab === 'build' && isCelebrating && !reduceMotion && <BuildCelebration burstId={celebrationBurstId} />}
       {tab === 'build' && <div className={`scene-stamp${fullyBuilt ? ' is-complete' : ''}${isCelebrating ? ' is-celebrating' : ''}`} aria-label="Assembly progress">
         <svg viewBox="0 0 110 110"><defs><path id="stampCircle" d="M55,55 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" /></defs><text fontSize="10" fontWeight="700" letterSpacing="2.5" fill="currentColor"><textPath href="#stampCircle">{fullyBuilt ? 'BUILT IT · BUILT IT · BUILT IT · ' : 'TWIST IT · STACK IT · STYLE IT · '}</textPath></text></svg>
@@ -740,7 +740,6 @@ function Configurator({
             onClick={() => {
               if (tab !== 'style') return;
               setSelected(i);
-              setEditorOpen(true);
               hostRef.current?.focus({ preventScroll:true });
             }}>{numbersVisible ? i + 1 : ''}</button>;
         })}
@@ -766,13 +765,6 @@ function Configurator({
                   trigger={<button type="button" aria-label="Custom finish color" className={`color-input ${!activeColor ? 'active' : ''}`} style={!activeColor ? { background: scene.model.color } : undefined} />} />
               </div>
             </div>
-          </section>
-          <section className="section compact"><h2>Shelf direction</h2>
-            <ShelfSelector selected={selected} dirs={scene.model.dirs} onSelect={(i) => { setSelected(i); setEditorOpen(i >= 0); }}
-              onSelectionCommit={() => shelfEditorRef.current?.querySelector<HTMLButtonElement>('.dir-buttons button[aria-pressed="true"]')?.focus({ preventScroll:true })} />
-            {selected >= 0 && !editorOpen && <button className="button light small reopen-shelf" onClick={() => setEditorOpen(true)}>Edit shelf {selected + 1}</button>}
-            <ShelfEditor containerRef={shelfEditorRef} open={editorOpen} selected={selected} dirs={scene.model.dirs}
-              onDirection={(dir) => changeShelf(selected, dir)} onSelect={(i) => { setSelected(i); setEditorOpen(true); }} onClose={() => setEditorOpen(false)} />
           </section>
         </div>
         <div className="pane-scroll">
