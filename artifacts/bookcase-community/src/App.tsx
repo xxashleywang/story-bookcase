@@ -265,6 +265,54 @@ function Header() {
 }
 
 
+// Blank stage, headings, and empty panel space dismiss. Shelf faces, the rail,
+// the selector (including its portaled menu), the editor, and other controls do not.
+const SHELF_KEEP_SELECTOR = [
+  '.shelf-editor',
+  '.shelf-select',
+  '.shelf-select-menu',
+  '.build-rail-tick',
+  '.rules-pop',
+  '.views',
+  '.shelf-key-hint',
+  '.tw-picker',
+  '[data-radix-popper-content-wrapper]',
+  '[data-i]',
+  'button',
+  'a',
+  'input',
+  'select',
+  'textarea',
+  'label',
+  'summary',
+  '[role="button"]',
+  '[role="option"]',
+  '[role="switch"]',
+  '[role="tab"]',
+  '[role="combobox"]',
+  '[role="listbox"]',
+  '[role="slider"]',
+  '[role="menuitem"]',
+  '[role="dialog"]',
+  '[role="alertdialog"]',
+].join(', ');
+
+function pointerElement(target: EventTarget | null): Element | null {
+  if (target instanceof Element) return target;
+  if (target instanceof Node) return target.parentElement;
+  return null;
+}
+
+function keepsShelfSelection(target: Element): boolean {
+  return target.closest(SHELF_KEEP_SELECTOR) !== null;
+}
+
+function keepsRulesOpen(target: Element, pop: HTMLElement | null, button: HTMLElement | null): boolean {
+  return pop?.contains(target) === true
+    || button?.contains(target) === true
+    || target.closest('.rules-pop, .random-rules') !== null;
+}
+
 function Configurator({
   onPublish,
   onSceneChange,
@@ -293,6 +341,8 @@ function Configurator({
   const stageRef = useRef<HTMLElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const shelfEditorRef = useRef<HTMLDivElement>(null);
+  const rulesPopRef = useRef<HTMLDivElement>(null);
+  const rulesButtonRef = useRef<HTMLButtonElement>(null);
   const viewRef = useRef<ViewHandle | null>(null);
   const selectRef = useRef<(index: number) => void>(() => undefined);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -459,13 +509,63 @@ function Configurator({
   }, []);
 
   useEffect(() => {
-    if (!editorOpen) return;
+    if (!editorOpen && !rulesOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) setEditorOpen(false);
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (editorOpen) setEditorOpen(false);
+      if (rulesOpen) setRulesOpen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [editorOpen]);
+  }, [editorOpen, rulesOpen]);
+
+  useEffect(() => {
+    if (selected < 0 && !rulesOpen) return;
+    // The model captures the pointer, so click/pointerup are retargeted to the
+    // host. Decide from the pointerdown element. A drag over 4px is an orbit,
+    // matching the shelf-select slop in story-v2, and does not dismiss.
+    let origin: { x: number; y: number; el: Element } | null = null;
+    let dragged = false;
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0) return;
+      const el = pointerElement(event.target);
+      if (!el) return;
+      origin = { x: event.clientX, y: event.clientY, el };
+      dragged = false;
+    };
+    const onPointerUp = (event: PointerEvent) => {
+      if (!origin) return;
+      dragged = Math.abs(event.clientX - origin.x) + Math.abs(event.clientY - origin.y) > 4;
+    };
+    const onPointerCancel = () => {
+      origin = null;
+      dragged = false;
+    };
+    const onClick = () => {
+      const start = origin;
+      const moved = dragged;
+      origin = null;
+      dragged = false;
+      if (!start || moved) return;
+      if (tab === 'style' && selected >= 0 && !keepsShelfSelection(start.el)) {
+        setSelected(-1);
+        setEditorOpen(false);
+      }
+      if (rulesOpen && !keepsRulesOpen(start.el, rulesPopRef.current, rulesButtonRef.current)) {
+        setRulesOpen(false);
+      }
+    };
+    window.addEventListener('pointerdown', onPointerDown, true);
+    window.addEventListener('pointerup', onPointerUp, true);
+    window.addEventListener('pointercancel', onPointerCancel, true);
+    window.addEventListener('click', onClick, true);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('pointerup', onPointerUp, true);
+      window.removeEventListener('pointercancel', onPointerCancel, true);
+      window.removeEventListener('click', onClick, true);
+    };
+  }, [rulesOpen, selected, tab]);
 
   useEffect(() => {
     const onArrow = (event: KeyboardEvent) => {
@@ -633,7 +733,7 @@ function Configurator({
     <section className="control-panel">
       <div className={`tabs ${tab === 'build' ? 'building' : ''}`}><i className="tab-pill" />
         <button className={tab === 'style' ? 'active' : ''} onClick={() => setTab('style')}>Style it</button>
-        <button className={tab === 'build' ? 'active' : ''} onClick={() => setTab('build')}>Build it <small>{steps.doneSteps}/{steps.totalSteps}</small></button>
+        <button className={tab === 'build' ? 'active' : ''} onClick={() => setTab('build')}>Build it</button>
       </div>
       <div className="pane style-pane" hidden={tab !== 'style'}>
         <div className="pane-fixed">
@@ -657,8 +757,8 @@ function Configurator({
         <div className="pane-scroll">
           <section className="section"><h2>Try a shelf arrangement <small>{currentPattern}</small></h2>
             <div className="pattern-list"><div className="preset-grid" role="group" aria-label="Shelf arrangements">{S.PRESETS.map((preset: any) => <button key={preset.id} aria-pressed={preset.make(scene.model.dirs.length).join('') === scene.model.dirs.join('')} className={`pattern preset-option ${preset.make(scene.model.dirs.length).join('') === scene.model.dirs.join('') ? 'active' : ''}`} onClick={() => choosePattern(preset.id)}>{preset.name}</button>)}</div>
-              <span className="random-controls" role="group" aria-label="Randomize shelves"><button className={`pattern random random-dice ${rolled ? 'active' : ''}`} disabled={rolling} onClick={roll}><Dices size={15}/> Randomize</button><button aria-label="Randomize rules" aria-expanded={rulesOpen} className="pattern random random-rules" onClick={() => setRulesOpen(!rulesOpen)}><Settings size={16}/>Rules{4 - allowed.size + Number(noRepeat) ? <small>{4 - allowed.size + Number(noRepeat)}</small> : null}</button></span>
-              {rulesOpen && <div className="rules-pop"><h3>Randomize rules</h3><p className="rules-hint">Tap X to stop shelves facing that way.</p><div className="allowed-grid">{Object.entries(directions).map(([dir, detail]) => <button key={dir} aria-pressed={allowed.has(dir)} className={!allowed.has(dir) ? 'off' : ''} onClick={() => toggleAllowed(dir)}><span className="rule-toggle">{allowed.has(dir) ? <X size={11}/> : <Plus size={11}/>}</span>{iconPlan(dir, 24)}<span className="rule-label">{detail.label}</span><small>{allowed.has(dir) ? 'On' : 'Off'}</small></button>)}</div><button className={`toggle-row ${noRepeat ? 'on' : ''}`} aria-pressed={noRepeat} onClick={() => setNoRepeat(!noRepeat)}><i className="toggle" />No two neighbours alike</button><p className="note">{note}</p></div>}
+              <span className="random-controls" role="group" aria-label="Randomize shelves"><button className={`pattern random random-dice ${rolled ? 'active' : ''}`} disabled={rolling} onClick={roll}><Dices size={15}/> Randomize</button><button ref={rulesButtonRef} type="button" aria-label="Randomize rules" aria-expanded={rulesOpen} className="pattern random random-rules" onClick={() => setRulesOpen(!rulesOpen)}><Settings size={16}/>Rules{4 - allowed.size + Number(noRepeat) ? <small>{4 - allowed.size + Number(noRepeat)}</small> : null}</button></span>
+              {rulesOpen && <div ref={rulesPopRef} className="rules-pop"><h3>Randomize rules</h3><p className="rules-hint">Tap X to stop shelves facing that way.</p><div className="allowed-grid">{Object.entries(directions).map(([dir, detail]) => <button key={dir} aria-pressed={allowed.has(dir)} className={!allowed.has(dir) ? 'off' : ''} onClick={() => toggleAllowed(dir)}><span className="rule-toggle">{allowed.has(dir) ? <X size={11}/> : <Plus size={11}/>}</span>{iconPlan(dir, 24)}<span className="rule-label">{detail.label}</span><small>{allowed.has(dir) ? 'On' : 'Off'}</small></button>)}</div><button className={`toggle-row ${noRepeat ? 'on' : ''}`} aria-pressed={noRepeat} onClick={() => setNoRepeat(!noRepeat)}><i className="toggle" />No two neighbours alike</button><p className="note">{note}</p></div>}
             </div>
           </section>
           <details className="section room-preview">
