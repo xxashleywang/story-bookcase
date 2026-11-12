@@ -1,6 +1,6 @@
 # Room-only reset: Implementation Plan
 
-**Overall Progress:** `0%`
+**Overall Progress:** `100%`
 
 ## TLDR
 Move `Reset to default` off the bookcase stage and put it beside the **Room design** heading. Show it only after the wall or floor differs from the default room. Clicking it restores the room and leaves the bookcase exactly as the user designed it.
@@ -33,22 +33,22 @@ Move `Reset to default` off the bookcase stage and put it beside the **Room desi
 
 ## Tasks
 
-- [ ] 🟥 **Step 0: Create feature branch**
-  - [ ] 🟥 Branch off main: `cursor/room-design-reset-97f3`
+- [x] 🟩 **Step 0: Create feature branch**
+  - [x] 🟩 Branch off main: `cursor/room-design-reset-97f3`
 
-- [ ] 🟥 **Step 1: Room-changed helper**
-  - [ ] 🟥 Add a pure `roomDesignChanged` check for wall hex and floor id against the default room
-  - [ ] 🟥 Test: default room is false; another wall, a custom wall, and another floor (including `custom`) are true; a bookcase-only difference is false
+- [x] 🟩 **Step 1: Room-changed helper**
+  - [x] 🟩 Add a pure `roomDesignChanged` check for wall hex and floor id against the default room
+  - [x] 🟩 Test: default room is false; another wall, a custom wall, and another floor (including `custom`) are true; a bookcase-only difference is false
 
-- [ ] 🟥 **Step 2: Move the button**
-  - [ ] 🟥 Remove the stage button and the `.stage-reset` rule
-  - [ ] 🟥 Render `Reset to default` (existing `button light small` and `RotateCcw`) beside "Room design" only when `roomDesignChanged` is true
-  - [ ] 🟥 Stop the click from opening or closing the section, and keep the chevron as the only icon that rotates
+- [x] 🟩 **Step 2: Move the button**
+  - [x] 🟩 Remove the stage button and the `.stage-reset` rule
+  - [x] 🟩 Render `Reset to default` (existing `button light small` and `RotateCcw`) beside "Room design" only when `roomDesignChanged` is true
+  - [x] 🟩 Stop the click from opening or closing the section, and keep the chevron as the only icon that rotates
 
-- [ ] 🟥 **Step 3: Room-only reset**
-  - [ ] 🟥 Restore wall, floor, floor kind, and custom floor color from `createDefaultScene()`
-  - [ ] 🟥 Leave the bookcase model and every other piece of configurator state in place
-  - [ ] 🟥 Rely on `hashFor(scene)` to persist the kept bookcase with the default room
+- [x] 🟩 **Step 3: Room-only reset**
+  - [x] 🟩 Restore wall, floor, floor kind, and custom floor color from `createDefaultScene()`
+  - [x] 🟩 Leave the bookcase model and every other piece of configurator state in place
+  - [x] 🟩 Rely on `hashFor(scene)` to persist the kept bookcase with the default room
 
 ## Session size
 Four tasks, all in the configurator. Fits one session.
