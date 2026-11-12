@@ -335,6 +335,10 @@
     return `<svg width="${size}" height="${size}" viewBox="${-s} ${-s} ${s * 2} ${s * 2}" aria-label="${DIR_LABEL[dir]}"><rect x="-7.9" y="-7.9" width="15.8" height="15.8" rx="1" fill="none" stroke="${color}" stroke-width="0.8" opacity="0.35"/><rect x="${f.x0}" y="${f.z0}" width="${f.x1 - f.x0}" height="${f.z1 - f.z0}" fill="${color}"/><circle r="1.2" fill="${color}"/></svg>`;
   }
 
+  function esc(value) {
+    return String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+
   function printBuildSheet(units, title = 'Story Bookcase build sheet') {
     const list = Array.isArray(units) ? units : [units];
     let root = document.getElementById('story-print');
@@ -366,11 +370,11 @@
       svg.setAttribute('class', 'elev');
       renderElevation(svg, s, { labels: true, labelColor: '#111' });
       const rows = buildList(s).slice().reverse()
-        .map((r) => `<tr><td>${r.n}</td><td>${planGlyph(r.dir, '#111', 18)}</td><td><strong>${r.label}</strong></td><td><span class="tick"></span></td></tr>`)
+        .map((r) => `<tr><td>${esc(r.n)}</td><td>${planGlyph(r.dir, '#111', 18)}</td><td><strong>${esc(r.label)}</strong></td><td><span class="tick"></span></td></tr>`)
         .join('');
       const info = document.createElement('div');
-      info.innerHTML = `<h1>${title}${list.length > 1 ? ` — unit ${u + 1}` : ''}</h1>
-        <div class="meta">${SIZES[s.size].label} (${SIZES[s.size].height}" tall, ${SIZES[s.size].shelves} shelves) · ${colorName(s.color)} ${s.color}<br>
+      info.innerHTML = `<h1>${esc(title)}${list.length > 1 ? ` — unit ${u + 1}` : ''}</h1>
+        <div class="meta">${esc(SIZES[s.size].label)} (${esc(SIZES[s.size].height)}" tall, ${esc(SIZES[s.size].shelves)} shelves) · ${esc(colorName(s.color))} ${esc(s.color)}<br>
         Shelf 1 is the lowest. "Front" points toward the room. Directions are viewed from the front.</div>
         <table><thead><tr><th>Shelf</th><th>Plan</th><th>Faces</th><th>Done</th></tr></thead><tbody>${rows}</tbody></table>`;
       wrap.appendChild(svg);
