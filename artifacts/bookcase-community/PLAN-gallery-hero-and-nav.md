@@ -1,6 +1,6 @@
 # Gallery hero, empty-state CTA, and logged-in nav — Implementation Plan
 
-**Overall Progress:** `0%`
+**Overall Progress:** `100%`
 
 ## TLDR
 Four gallery/nav polish items from the screenshots, in the live app (`artifacts/bookcase-community`): rename the empty-state share button, cut the "Shelfies from the community." headline in half, delete the hero-right stats + share block, and paint the logged-in account chip coral.
@@ -34,30 +34,30 @@ Four gallery/nav polish items from the screenshots, in the live app (`artifacts/
 
 ## Tasks
 
-- [ ] 🟥 **Step 0: Create feature branch**
-  - [ ] 🟥 Branch off main: `git checkout -b cursor/gallery-hero-nav-0498`
+- [x] 🟩 **Step 0: Create feature branch**
+  - [x] 🟩 `cursor/gallery-hero-nav-0498` from the plan branch (plan file already on `cursor/gallery-hero-nav-plan-0498`)
 
-- [ ] 🟥 **Step 1: Rename the empty-state CTA**
-  - [ ] 🟥 In `Gallery` empty state, change `Share your bookcase` to `Share your design`
-  - [ ] 🟥 Keep the existing `Camera` SVG icon and `openShare` handler
+- [x] 🟩 **Step 1: Rename the empty-state CTA**
+  - [x] 🟩 Gallery empty state now says `Share your design`
+  - [x] 🟩 Kept the existing `Camera` SVG icon and `openShare` handler
 
-- [ ] 🟥 **Step 2: Halve the Shelfies headline**
-  - [ ] 🟥 In `src/index.css`, change `.gallery-hero h1` from `clamp(44px,7vw,82px)` to `clamp(22px,3.5vw,41px)`
+- [x] 🟩 **Step 2: Halve the Shelfies headline**
+  - [x] 🟩 `.gallery-hero h1` is now `clamp(22px,3.5vw,41px)`
 
-- [ ] 🟥 **Step 3: Remove the hero-right block**
-  - [ ] 🟥 Delete the second `gallery-hero` column (summary copy + `data-testid="button-share-room"`)
-  - [ ] 🟥 Remove `useGetCommunitySummary` from `Gallery` and its unused import if nothing else in the file still calls the hook
-  - [ ] 🟥 Drop `.gallery-hero > div:last-child` (it currently styles the right column; after the delete it would wrongly target the headline)
-  - [ ] 🟥 Simplify `.gallery-hero` from two-column flex to a single-column block
+- [x] 🟩 **Step 3: Remove the hero-right block**
+  - [x] 🟩 Deleted the second `gallery-hero` column (summary copy + `data-testid="button-share-room"`)
+  - [x] 🟩 Removed `useGetCommunitySummary` from `Gallery` and the unused import
+  - [x] 🟩 Dropped `.gallery-hero > div:last-child`
+  - [x] 🟩 `.gallery-hero` is a single-column block
 
-- [ ] 🟥 **Step 4: Coral account chip when signed in**
-  - [ ] 🟥 `AccountMenu` trigger: `button light small account-menu-trigger` → `button coral small account-menu-trigger`
-  - [ ] 🟥 Restyle `[data-state="open"]` so the chip stays coral (darker coral is fine; beige is not)
-  - [ ] 🟥 Confirm Gallery and Sign in chips are unchanged
+- [x] 🟩 **Step 4: Coral account chip when signed in**
+  - [x] 🟩 `AccountMenu` trigger is `button coral small account-menu-trigger`
+  - [x] 🟩 Open state uses darker coral `#e85a3c` instead of `--hairline`
+  - [x] 🟩 Gallery stays `button light small`; Sign in stays `button small`
 
-- [ ] 🟥 **Step 5: Verify**
-  - [ ] 🟥 `pnpm --filter @workspace/bookcase-community run typecheck`
-  - [ ] 🟥 `pnpm --filter @workspace/bookcase-community run test`
-  - [ ] 🟥 Browser: empty gallery (CTA says Share your design; no hero-right block; smaller headline)
-  - [ ] 🟥 Browser: logged-out nav (Gallery light, Sign in ink) vs logged-in nav (Gallery light, account chip coral) on gallery and Playroom
-  - [ ] 🟥 Browser: mobile viewport so the halved headline still reads as a title
+- [x] 🟩 **Step 5: Verify**
+  - [x] 🟩 `pnpm --filter @workspace/bookcase-community run typecheck`
+  - [x] 🟩 `pnpm --filter @workspace/bookcase-community run test` (54 passing)
+  - [x] 🟩 Empty gallery: CTA is Share your design; hero is only eyebrow + headline; computed h1 is 41px desktop / 22px at 390px
+  - [x] 🟩 Logged-out nav: Gallery `button light small`, Sign in `button small` on gallery and Playroom. Logged-in coral chip verified by class (`button coral small`) and a CSS injection (Clerk is not configured in this preview, so a real session was not used)
+  - [x] 🟩 Share your design click (signed out) goes to `/sign-in?redirect_url=...inspiration?share=photo`. Populated gallery has no share CTA. Playroom still says Share your bookcase.

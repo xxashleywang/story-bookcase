@@ -52,7 +52,7 @@ export function AccountMenu() {
   const name = user?.firstName || user?.fullName || user?.username || 'Account';
   return <DropdownMenu>
     <DropdownMenuTrigger asChild>
-      <button type="button" className="button light small account-menu-trigger" data-testid="button-account-menu">
+      <button type="button" className="button coral small account-menu-trigger" data-testid="button-account-menu">
         <span>{name}</span><ChevronDown size={13} aria-hidden="true"/>
       </button>
     </DropdownMenuTrigger>

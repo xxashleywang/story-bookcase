@@ -24,7 +24,7 @@ import type { InspirationHandoff } from '@/lib/analytics';
 import {
   getCheckUsernameAvailabilityQueryKey, getGetBuildQueryKey, getGetCommunitySummaryQueryKey,
   getGetMyProfileQueryKey, getListBuildsQueryKey, getListMyBuildsQueryKey, getListMyFavouritesQueryKey,
-  useCheckUsernameAvailability, useDeleteBuild, useGetBuild, useGetCommunitySummary, useGetMyProfile, useListBuilds,
+  useCheckUsernameAvailability, useDeleteBuild, useGetBuild, useGetMyProfile, useListBuilds,
   useListMyBuilds, useListMyFavourites, useRetryPhotoCleanup, useUpdateBuild, useUpdateMyProfile,
 } from '@workspace/api-client-react';
 import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } from 'wouter';
@@ -852,7 +852,6 @@ function Gallery() {
   const [, setLocation] = useLocation();
   const params = useMemo(() => ({ q:search.trim() || undefined, sort, limit:40 }), [search, sort]);
   const { data:builds, isLoading, isError, refetch } = useListBuilds(params);
-  const { data:summary } = useGetCommunitySummary();
   useEffect(() => {
     if (!gate.ready || !new URLSearchParams(window.location.search).has('share')) return;
     takeShareIntent();
@@ -861,7 +860,7 @@ function Gallery() {
   }, [gate.ready]);
   const openShare = () => gate.request(() => setShareOpen(true));
   return <div className="tw-shell"><Header/><main className="gallery-page">
-    <section className="gallery-hero"><div><span className="eyebrow">ImagineMōde gallery</span><h1>Shelfies from the community.</h1></div><div><p>{summary ? `${summary.totalBuilds} bookcases from ${summary.totalBuilders} people.` : 'Story bookcases styled by the community.'} Some come with a blueprint you can open and make your own.</p><button className="button coral small" onClick={openShare} data-testid="button-share-room"><Camera size={14}/>Share your bookcase</button></div></section>
+    <section className="gallery-hero"><span className="eyebrow">ImagineMōde gallery</span><h1>Shelfies from the community.</h1></section>
     <div className="gallery-tools"><label className="search-box"><Search size={17}/><input aria-label="Search bookcases" data-testid="input-search" placeholder="Search a bookcase, maker, or detail…" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
       <Select value={sort} onValueChange={(value) => setSort(value as 'recent' | 'popular')}>
         <SelectTrigger aria-label="Sort bookcases" data-testid="select-sort" className="sort-select-trigger">
@@ -874,7 +873,7 @@ function Gallery() {
       </Select>
     </div>
     {isLoading ? <LoadingCards/> : isError ? <div className="empty-state"><h2>We couldn't load the gallery.</h2><p>Your inspiration is still here; try once more.</p><button className="button" onClick={() => refetch()}>Try again</button></div> : builds?.length ? <div className="build-grid">{builds.map((build: Build) => <BuildCard key={build.id} build={build}/>)}</div> :
-      <div className="empty-state"><Camera size={23}/><h2>No bookcases in this corner yet.</h2><p>Try another search, or be the first to share one.</p><button className="button coral" onClick={openShare}>Share your bookcase</button></div>}
+      <div className="empty-state"><Camera size={23}/><h2>No bookcases in this corner yet.</h2><p>Try another search, or be the first to share one.</p><button className="button coral" onClick={openShare}>Share your design</button></div>}
     {shareOpen && <PublishDialog source="gallery" close={() => setShareOpen(false)} blueprint={null} attachByDefault={false} onSaved={(build) => {
       client.invalidateQueries({ queryKey:getListBuildsQueryKey() }); client.invalidateQueries({ queryKey:getGetCommunitySummaryQueryKey() }); setLocation(`/build/${build.id}`);
     }}/>}
