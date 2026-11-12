@@ -262,12 +262,15 @@ function BookcaseSketch({ color, dirs, tall = true }: { color: string; dirs: str
 }
 function Header() {
   const { isSignedIn, isLoaded } = useAuth();
+  const cursor = useCursorAccount();
   return <header className="topbar">
     <Link className="brand" href="/"><BrandWordmark/></Link>
     <span className="tagline">Design first. Build once.</span>
     <nav className="top-actions">
       <Link className="button light small" href="/inspiration">Gallery</Link>
-      {!isLoaded ? null : isSignedIn ? <AccountMenu/> : <Link className="button small" href="/sign-in">Sign in</Link>}
+      {!isLoaded ? null : isSignedIn ? <AccountMenu/> : cursor.previewSignedOut
+        ? <button type="button" className="button small" onClick={cursor.resumePreview}>Sign in</button>
+        : <Link className="button small" href="/sign-in">Sign in</Link>}
     </nav>
   </header>;
 }
@@ -1215,9 +1218,16 @@ function Router() {
 }
 function CursorSignIn() {
   const { isLoaded, isSignedIn } = useAuth();
+  const cursor = useCursorAccount();
+  const [, setLocation] = useLocation();
   return <main className="auth-frame"><Link className="brand auth-mark" href="/"><BrandWordmark/></Link>
-    <p>{isLoaded && isSignedIn ? 'You are signed in with Cursor.' : 'This private app uses your Cursor sign-in. Open it from your Cursor link while you are signed in.'}</p>
-    <Link className="button coral" href="/">Back to the planner</Link></main>;
+    <p>{cursor.previewSignedOut
+      ? 'You are signed out of this preview.'
+      : isLoaded && isSignedIn ? 'You are signed in with Cursor.' : 'This private app uses your Cursor sign-in. Open it from your Cursor link while you are signed in.'}</p>
+    {cursor.previewSignedOut
+      ? <button type="button" className="button coral" onClick={() => { cursor.resumePreview(); setLocation('/'); }}>Sign in</button>
+      : <Link className="button coral" href="/">Back to the planner</Link>}
+  </main>;
 }
 function CursorRoutes() {
   const session = useCursorAccount();

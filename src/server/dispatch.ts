@@ -1,6 +1,7 @@
 import { getIdentity, requireIdentity } from "../../cursor/identity";
 import { withSchema } from "../lib/db";
 import * as gallery from "./gallery";
+import { expiredSessionCookies } from "./session-cookies";
 
 const PRIVATE = { "cache-control": "private, no-store" };
 
@@ -78,6 +79,15 @@ export async function dispatch(method: string, request: Request, path: string[])
     if (!identity.verified) return json({ error: "Sign in required." }, 401);
     const name = identity.name.trim() || "Account";
     return json({ id: identity.sub, name, firstName: name.split(/\s+/)[0] || name });
+  }
+
+  if (key === "POST session/logout") {
+    if (!allowsMutation(request, "person")) return json({ error: "That request was blocked." }, 403);
+    const headers = new Headers(PRIVATE);
+    for (const cookie of expiredSessionCookies(request.headers.get("cookie") ?? "")) {
+      headers.append("set-cookie", cookie);
+    }
+    return new Response(null, { status: 204, headers });
   }
 
   if (key === "GET community/summary") {
