@@ -224,6 +224,7 @@ function routeId(raw: string | string[] | undefined): string {
 }
 
 router.get("/builds", async (req, res): Promise<void> => {
+  if (!getCurrentUserId(req)) { res.status(401).json({ error: "Sign in required." }); return; }
   res.setHeader("Cache-Control", "private, no-store");
   const parsed = ListBuildsQueryParams.safeParse(req.query);
   if (!parsed.success) {
@@ -281,6 +282,7 @@ router.get("/builds", async (req, res): Promise<void> => {
 });
 
 router.get("/builds/:id", async (req, res): Promise<void> => {
+  if (!getCurrentUserId(req)) { res.status(401).json({ error: "Sign in required." }); return; }
   res.setHeader("Cache-Control", "private, no-store");
   const parsed = GetBuildParams.safeParse({ id: routeId(req.params.id) });
   if (!parsed.success) {
@@ -480,7 +482,8 @@ router.delete("/builds/:id", photoMutation(async (req, res): Promise<void> => {
   res.sendStatus(204);
 }));
 
-router.get("/community/summary", async (_req, res): Promise<void> => {
+router.get("/community/summary", async (req, res): Promise<void> => {
+  if (!getCurrentUserId(req)) { res.status(401).json({ error: "Sign in required." }); return; }
   const [buildCount] = await db
     .select({ count: count() })
     .from(buildsTable);

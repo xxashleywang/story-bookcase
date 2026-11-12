@@ -86,13 +86,12 @@ router.post(
 /**
  * GET /storage/public-objects/*
  *
- * Serve public assets from PUBLIC_OBJECT_SEARCH_PATHS.
- * These are unconditionally public — no authentication or ACL checks.
- * IMPORTANT: Always provide this endpoint when object storage is set up.
+ * Signed-in viewers only. The path must stay inside the public asset folder.
  */
 router.get(
   '/storage/public-objects/*filePath',
   async (req: Request, res: Response) => {
+    if (!getAuth(req).userId) { res.status(401).json({ error: 'Sign in required.' }); return; }
     try {
       const raw = req.params.filePath;
       const filePath = Array.isArray(raw) ? raw.join('/') : raw;
@@ -129,10 +128,11 @@ router.get(
 /**
  * GET /storage/objects/*
  *
- * A gallery post's photo, with no account. Photos that are not on a post are not served.
- * The stored file stays private, so this route is the only way to see it.
+ * A gallery photo for a signed-in viewer. Photos that are not on a post are not served.
+ * The stored file stays private.
  */
 router.get('/storage/objects/*path', async (req: Request, res: Response) => {
+  if (!getAuth(req).userId) { res.status(401).json({ error: 'Sign in required.' }); return; }
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join('/') : raw;
