@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, X } from 'lucide-react';
 
 /** Card size used by the stage placement math; keep in sync with `.shelf-key-hint` in index.css. */
@@ -7,7 +7,19 @@ export const SHELF_HINT_SIZE = { width:236, height:184 };
 function PadButton({ icon, label, onClick, disabled = false, className = '' }: {
   icon: ReactNode; label: string; onClick: () => void; disabled?: boolean; className?: string;
 }) {
-  return <button type="button" className={`shelf-key-hint-btn ${className}`.trim()} onClick={onClick} disabled={disabled}>
+  const press = (event: MouseEvent<HTMLButtonElement>) => {
+    onClick();
+    // Pointer clicks (detail > 0) get a brief flash and drop focus so the outline does not read as a held selection.
+    // Keyboard activation keeps focus and its focus ring.
+    if (event.detail > 0) {
+      event.currentTarget.animate(
+        [{ boxShadow:'0 0 0 2px #ff6b4a' }, { boxShadow:'0 0 0 2px #ff6b4a00' }],
+        { duration:450, easing:'ease-out' },
+      );
+      event.currentTarget.blur();
+    }
+  };
+  return <button type="button" className={`shelf-key-hint-btn ${className}`.trim()} onClick={press} disabled={disabled}>
     {icon}<span>{label}</span>
   </button>;
 }

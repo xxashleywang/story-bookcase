@@ -707,7 +707,7 @@ function Configurator({
       <div className="room-floor" />
       <div id="bookcase-model" ref={hostRef} tabIndex={-1} aria-label="Bookcase model" />
       <div className="scene-copy"><h1>Design your bookcase</h1>
-        <p className="scene-sub">Select a shelf to build your arrangement.</p>
+        <p className="scene-sub">Select a shelf to start.</p>
       </div>
       {tab === 'style' && selected >= 0 && showShelfKeyHint && <ShelfKeyHint
         className="stage-shelf-hint"
@@ -775,7 +775,7 @@ function Configurator({
         <div className="pane-scroll">
           <section className="section"><h2>Try a shelf arrangement</h2>
             <div className="pattern-list"><div className="preset-grid" role="group" aria-label="Shelf arrangements">{S.PRESETS.map((preset: any) => <button key={preset.id} aria-pressed={preset.make(scene.model.dirs.length).join('') === scene.model.dirs.join('')} className={`pattern preset-option ${preset.make(scene.model.dirs.length).join('') === scene.model.dirs.join('') ? 'active' : ''}`} onClick={() => choosePattern(preset.id)}>{preset.name}</button>)}</div>
-              <span className="random-controls" role="group" aria-label="Randomize shelves"><button className={`pattern random random-dice ${rolled ? 'active' : ''}`} disabled={rolling} onClick={roll}><Dices size={15}/> Randomize</button><button ref={rulesButtonRef} type="button" aria-label="Randomize rules" aria-expanded={rulesOpen} className="pattern random random-rules" onClick={() => setRulesOpen(!rulesOpen)}><Settings size={16}/>Rules{4 - allowed.size + Number(noRepeat) ? <small>{4 - allowed.size + Number(noRepeat)}</small> : null}</button></span>
+              <span className="random-controls" role="group" aria-label="Randomize shelves"><button className={`pattern random random-dice ${rolling ? 'is-rolling' : ''}`} disabled={rolling} onClick={roll}><Dices size={15}/> Randomize</button><button ref={rulesButtonRef} type="button" aria-label="Randomize rules" aria-expanded={rulesOpen} className="pattern random random-rules" onClick={() => setRulesOpen(!rulesOpen)}><Settings size={16}/>Rules{4 - allowed.size + Number(noRepeat) ? <small>{4 - allowed.size + Number(noRepeat)}</small> : null}</button></span>
               {rulesOpen && <div ref={rulesPopRef} className="rules-pop"><h3>Randomize rules</h3><p className="rules-hint">Tap X to stop shelves facing that way.</p><div className="allowed-grid">{Object.entries(directions).map(([dir, detail]) => <button key={dir} aria-pressed={allowed.has(dir)} className={!allowed.has(dir) ? 'off' : ''} onClick={() => toggleAllowed(dir)}><span className="rule-toggle">{allowed.has(dir) ? <X size={11}/> : <Plus size={11}/>}</span>{iconPlan(dir, 24)}<span className="rule-label">{detail.label}</span><small>{allowed.has(dir) ? 'On' : 'Off'}</small></button>)}</div><button className={`toggle-row ${noRepeat ? 'on' : ''}`} aria-pressed={noRepeat} onClick={() => setNoRepeat(!noRepeat)}><i className="toggle" />No two neighbours alike</button><p className="note">{note}</p></div>}
             </div>
           </section>
