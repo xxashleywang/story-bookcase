@@ -148,7 +148,8 @@ test('photo-first API contract, persistence, ownership and historical photos', a
     assert.equal(photo.configuration, null);
     assert.equal(photo.colorHex, null);
     assert.deepEqual(photo.tags, []);
-    assert.equal((await request(`/builds/${photo.id}`)).status, 200);
+    assert.equal((await request(`/builds/${photo.id}`)).status, 401);
+    assert.equal((await request(`/builds/${photo.id}`, 'GET', null, owner)).status, 200);
     assert.equal((await request(`/builds/${photo.id}`, 'PATCH', { title:'Other' }, noUsername)).status, 404);
     assert.equal((await request(`/builds/${photo.id}`, 'DELETE', null, noUsername)).status, 404);
     const attached = await request(`/builds/${photo.id}`, 'PATCH', { configuration:blueprint }, owner);
@@ -199,7 +200,7 @@ test('photo-first API contract, persistence, ownership and historical photos', a
     assert.equal(saved.items[0].photoPaths.length, 4);
     assert.deepEqual((await (await request('/profiles/me/favourites', 'GET', null, owner)).json()).items, []);
     assert.equal((await (await request(`/builds/${photo.id}`, 'GET', null, noUsername)).json()).isFavourite, true);
-    assert.equal((await (await request(`/builds/${photo.id}`)).json()).isFavourite, false);
+    assert.equal((await request(`/builds/${photo.id}`)).status, 401);
     assert.equal((await request(`/builds/${photo.id}/favourite`, 'DELETE', null, owner)).status, 204);
     assert.equal((await (await request('/profiles/me/favourites', 'GET', null, noUsername)).json()).items.length, 1);
     // Explicit removal preserves unlimited historical sets and optional blueprints.
@@ -215,7 +216,8 @@ test('photo-first API contract, persistence, ownership and historical photos', a
     assert.deepEqual(remaining.photoPaths, paths.slice(0, 4));
     assert.deepEqual(remaining.configuration, blueprint);
     // A failed ACL/object deletion cannot leave an unreferenced photo publicly readable.
-    assert.equal((await request(`/storage${paths[4]}`)).status, 404);
+    assert.equal((await request(`/storage${paths[4]}`)).status, 401);
+    assert.equal((await request(`/storage${paths[4]}`, 'GET', null, owner)).status, 404);
     assert.equal((await (await request('/profiles/me/builds', 'GET', null, owner)).json()).cleanupPending, 1);
     assert.equal((await (await request('/profiles/me/photo-cleanup', 'POST', null, noUsername)).json()).pending, 0);
     assert.equal((await (await request('/profiles/me/photo-cleanup', 'POST', null, owner)).json()).pending, 1);
@@ -228,10 +230,11 @@ test('photo-first API contract, persistence, ownership and historical photos', a
     assert.equal((await request(`/builds/${photo.id}`, 'PATCH', { removePhotoPaths:[paths[0]] }, owner)).status, 200);
     assert.equal(m.storageEvents.filter(([action, p]) => action === 'delete' && p === paths[0]).length, eventsBefore);
     assert.equal((await db.select().from(uploadReservationsTable).where(eq(uploadReservationsTable.objectPath, paths[0]))).length, 1);
-    assert.equal((await request(`/storage${paths[0]}`)).status, 200);
+    assert.equal((await request(`/storage${paths[0]}`)).status, 401);
+    assert.equal((await request(`/storage${paths[0]}`, 'GET', null, owner)).status, 200);
     const last = await request(`/builds/${configPost.id}`, 'PATCH', { removePhotoPaths:[paths[0]] }, owner);
     assert.equal(last.status, 409);
-    assert.equal((await (await request(`/builds/${configPost.id}`)).json()).photoPaths.length, 1);
+    assert.equal((await (await request(`/builds/${configPost.id}`, 'GET', null, owner)).json()).photoPaths.length, 1);
     // Idempotent removal, persistence across independent requests and deleted saves.
     assert.equal((await request(`/builds/${photo.id}/favourite`, 'DELETE', null, noUsername)).status, 204);
     assert.equal((await request(`/builds/${photo.id}/favourite`, 'DELETE', null, noUsername)).status, 204);
@@ -240,10 +243,11 @@ test('photo-first API contract, persistence, ownership and historical photos', a
     const removals = await Promise.all([paths[1], paths[2]].map((p) =>
       request(`/builds/${concurrentPost.id}`, 'PATCH', { removePhotoPaths:[p] }, owner)));
     assert.ok(removals.every((r) => r.status === 200));
-    assert.deepEqual((await (await request(`/builds/${concurrentPost.id}`)).json()).photoPaths, [paths[0]]);
-    assert.equal((await request('/builds')).status, 200);
+    assert.deepEqual((await (await request(`/builds/${concurrentPost.id}`, 'GET', null, owner)).json()).photoPaths, [paths[0]]);
+    assert.equal((await request('/builds')).status, 401);
+    assert.equal((await request('/builds', 'GET', null, owner)).status, 200);
     assert.equal((await request(`/builds/${photo.id}`, 'DELETE', null, owner)).status, 204);
-    assert.equal((await request(`/builds/${photo.id}`)).status, 404);
+    assert.equal((await request(`/builds/${photo.id}`, 'GET', null, owner)).status, 404);
     assert.equal((await (await request('/profiles/me/favourites', 'GET', null, noUsername)).json()).items.length, 0);
     assert.equal((await request(`/builds/${photo.id}/favourite`, 'PUT', null, noUsername)).status, 404);
     await db.insert(favouritesTable).values(own.filter((b) => b.id !== photo.id).map((b) => ({ userId:noUsername, buildId:b.id })));
