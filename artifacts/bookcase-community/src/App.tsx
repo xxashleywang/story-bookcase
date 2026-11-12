@@ -19,7 +19,7 @@ import { cleanupMessage, privateListKey } from '@/lib/account';
 import { CursorAccountProvider, useCursorAccount } from '@/lib/cursor-account';
 import { clerkConfigured } from '@/lib/local-clerk';
 import { EditBuildDialog, PublishDialog } from '@/components/share-dialog';
-import { blueprintHref, readReferenceId, referenceHref, safePhotos, withoutParam } from '@/lib/community';
+import { addressHash, blueprintHref, readReferenceId, referenceHref, safePhotos, withoutParam } from '@/lib/community';
 import { completeInspirationHandoff, inspirationHref, trackEvent } from '@/lib/analytics';
 import type { InspirationHandoff } from '@/lib/analytics';
 import {
@@ -170,11 +170,19 @@ type ViewHandle = {
   playIntro: () => () => void;
 };
 
-function hashFor(scene: Scene) {
+function sceneConfig(scene: { model: any; wall: string; floor: { id: string }; floorKind: string; customFloorColor: string }) {
   const S = window.Story;
-  const config = `${S.encodeUnit(scene.model)}~${scene.wall.replace('#', '')}~${scene.floor.id}~${scene.floorKind}~${scene.customFloorColor.replace('#', '')}`;
-  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${config}`);
-  try { window.localStorage.setItem(LAST_SCENE_KEY, config); } catch { /* storage may be unavailable */ }
+  return `${S.encodeUnit(scene.model)}~${scene.wall.replace('#', '')}~${scene.floor.id}~${scene.floorKind}~${scene.customFloorColor.replace('#', '')}`;
+}
+
+function hashFor(scene: Scene) {
+  const config = sceneConfig(scene);
+  const hash = addressHash(config, sceneConfig(createDefaultScene(window.Story)));
+  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${hash}`);
+  try {
+    if (hash) window.localStorage.setItem(LAST_SCENE_KEY, config);
+    else window.localStorage.removeItem(LAST_SCENE_KEY);
+  } catch { /* storage may be unavailable */ }
 }
 function sceneBlueprint(scene: Scene): BuildConfiguration {
   return {

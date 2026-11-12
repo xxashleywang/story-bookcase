@@ -88,6 +88,11 @@ export function blueprintHref(base: string, config: BlueprintLike, encodeUnit: (
   return `${base || ''}/#${blueprintHash(config, encodeUnit)}`;
 }
 
+/** Empty for the factory default, so the address bar stays the bare domain. Any other design is `#` plus its config. */
+export function addressHash(config: string, defaultConfig: string) {
+  return config.toLowerCase() === defaultConfig.toLowerCase() ? '' : `#${config}`;
+}
+
 /** Photo-only handoff: keep whatever design the visitor already has, only add a reference id. */
 export function referenceHref(base: string, buildId: number) {
   return `${base || ''}/?ref=${buildId}`;

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  MAX_PHOTO_BYTES, blueprintHash, createPayload, mergePhotoSelection, photoCountLabel,
+  MAX_PHOTO_BYTES, addressHash, blueprintHash, createPayload, mergePhotoSelection, photoCountLabel,
   readReferenceId, referenceHref, safePhotos, updatePayload, validateShare, withoutParam,
 } from '../src/lib/community.ts';
 
@@ -49,6 +49,14 @@ test('update only touches photos when replaced and removes blueprint explicitly'
   const change = updatePayload({ title: 'T1', description: 'd', removeBlueprint: true, hadBlueprint: true, replacementPhotoPaths: ['/a'] });
   assert.equal(change.configuration, null);
   assert.deepEqual(change.photoPaths, ['/a']);
+});
+
+test('factory default keeps a bare address, and any change adds the config hash', () => {
+  const factory = 't-e2b062-FFRRBBLLFFR~F6F4F0~pale~Laminate~B9A48A';
+  assert.equal(addressHash(factory, factory), '');
+  assert.equal(addressHash(factory.toLowerCase(), factory), '');
+  const changed = 't-e4e8e7-FFRRBBLLFFR~F6F4F0~pale~Laminate~B9A48A';
+  assert.equal(addressHash(changed, factory), `#${changed}`);
 });
 
 test('blueprint hash keeps size, dirs, color, wall and floor', () => {
