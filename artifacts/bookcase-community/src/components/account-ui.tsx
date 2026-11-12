@@ -10,7 +10,7 @@ import type { Build } from '@workspace/api-client-react';
 import { getGetBuildQueryKey, useRemoveFavourite, useSaveFavourite } from '@workspace/api-client-react';
 import { useDialogFocus } from '@/components/share-dialog';
 import { cursorLogoutDestination, isAccountAffectedKey, readSaveIntent, saveIntentHref } from '@/lib/account';
-import { isLocalAccountPreview, markPreviewSignedOut, useCursorAccount } from '@/lib/cursor-account';
+import { useCursorAccount } from '@/lib/cursor-account';
 import { clerkConfigured } from '@/lib/local-clerk';
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -80,45 +80,23 @@ function AccountMenuPanel({ name, logout, pending, failed }: { name: string; log
 }
 
 /**
- * Ends the published Cursor session. Clears this host's cookies first.
- * If the app still recognizes the viewer, the Cursor web session is what the
- * gate is using, so the browser goes to Cursor's logout. Local preview never
- * does that: it only hides the simulated viewer.
+ * Hides the account on the page that is already open. The planner stays, and
+ * the browser is not sent to cursor.com. The Cursor gate session stays too, so
+ * a refresh can still open this private app. Log in shows the account again.
  */
 function useCursorLogout() {
   const client = useQueryClient();
+  const { signOutInApp } = useCursorAccount();
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
   const logout = async () => {
     if (pending) return;
     setPending(true); setFailed(false);
-    const local = isLocalAccountPreview();
-    const home = `${basePath}/`;
     await client.cancelQueries();
     client.clear();
-    let response: Response | null = null;
-    try {
-      response = await fetch(`${basePath}/api/session/logout`, {
-        method: 'POST', credentials: 'same-origin', headers: { accept: 'application/json' },
-      });
-    } catch { response = null; }
-    if (local) {
-      markPreviewSignedOut();
-      window.location.assign(home);
-      return;
-    }
-    if (!response?.ok) { setFailed(true); setPending(false); return; }
-    let sessionStatus: number | null = null;
-    try {
-      const session = await fetch(`${basePath}/api/session`, {
-        headers: { accept: 'application/json' }, cache: 'no-store', credentials: 'same-origin',
-      });
-      sessionStatus = session.status;
-    } catch { sessionStatus = null; }
-    const next = cursorLogoutDestination(false, sessionStatus);
-    if (next === 'home') { window.location.assign(home); return; }
-    if (next === 'cursor') { window.location.assign('https://cursor.com/api/auth/logout'); return; }
-    setFailed(true); setPending(false);
+    if (cursorLogoutDestination() !== 'stay') { setFailed(true); setPending(false); return; }
+    signOutInApp();
+    setPending(false);
   };
   return { logout, pending, failed };
 }

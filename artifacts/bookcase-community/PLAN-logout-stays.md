@@ -1,6 +1,6 @@
 # Feature Implementation Plan
 
-**Overall Progress:** `0%`
+**Overall Progress:** `100%`
 
 ## TLDR
 Log out currently leaves ImagineMōde and lands on `cursor.com` with `{"error":"Invalid navigation for logout request"}`. Log out should keep the person on the page they already have open. The header button then says **Log in**. Designing a bookcase stays free. Logging in is required only when they share or upload a photo.
@@ -33,18 +33,18 @@ Log out currently leaves ImagineMōde and lands on `cursor.com` with `{"error":"
 
 ## Tasks
 
-- [ ] 🟥 **Step 0: Create feature branch**
-  - [ ] 🟥 Branch off main: `cursor/logout-stays-on-page-652c`
+- [x] 🟩 **Step 0: Create feature branch**
+  - [x] 🟩 Branch off main: `cursor/logout-stays-on-page-652c`
 
-- [ ] 🟥 **Step 1: Log out stays here**
-  - [ ] 🟥 Remove the navigation to `cursor.com` and the full-page redirect home
-  - [ ] 🟥 Remember an in-app signed-out state and clear cached account data without leaving the current URL
-  - [ ] 🟥 Header shows `Log in` instead of the name menu
+- [x] 🟩 **Step 1: Log out stays here**
+  - [x] 🟩 Remove the navigation to `cursor.com` and the full-page redirect home
+  - [x] 🟩 Remember an in-app signed-out state and clear cached account data without leaving the current URL
+  - [x] 🟩 Header shows `Log in` instead of the name menu
 
-- [ ] 🟥 **Step 2: Log in restores the account**
-  - [ ] 🟥 `Log in` clears the in-app signed-out state when the Cursor session is still present
-  - [ ] 🟥 `Share your bookcase` while signed out this way logs them back in and opens the share, instead of the dead-end sign-in page
+- [x] 🟩 **Step 2: Log in restores the account**
+  - [x] 🟩 `Log in` clears the in-app signed-out state when the Cursor session is still present
+  - [x] 🟩 `Share your bookcase` while signed out this way logs them back in and opens the share, instead of the dead-end sign-in page
 
-- [ ] 🟥 **Step 3: Checks**
-  - [ ] 🟥 Update the logout-destination test so the published path never chooses Cursor's website
-  - [ ] 🟥 In the browser: log out, confirm the planner is still on screen and the button says `Log in`, change a shelf with no login prompt, then confirm share asks to log in
+- [x] 🟩 **Step 3: Checks**
+  - [x] 🟩 Update the logout-destination test so the published path never chooses Cursor's website
+  - [x] 🟩 In the browser: log out, confirm the planner is still on screen and the button says `Log in`, change a shelf with no login prompt, then confirm share asks to log in

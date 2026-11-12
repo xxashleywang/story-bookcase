@@ -40,14 +40,9 @@ export function cleanupMessage(pending: number) {
 }
 
 /**
- * Where Log out goes after this host has tried to drop its own cookies.
- * `preview` stays on the local simulated viewer. `home` means the app no longer
- * knows the viewer. `cursor` means it still does, so the Cursor web session has
- * to end. `retry` means that check never finished.
+ * Log out stays on the current page. Sending the browser to cursor.com shows
+ * "Invalid navigation for logout request" and hides the planner.
  */
-export function cursorLogoutDestination(localPreview: boolean, sessionStatus: number | null) {
-  if (localPreview) return 'preview' as const;
-  if (sessionStatus === 401) return 'home' as const;
-  if (sessionStatus === 200) return 'cursor' as const;
-  return 'retry' as const;
+export function cursorLogoutDestination() {
+  return 'stay' as const;
 }

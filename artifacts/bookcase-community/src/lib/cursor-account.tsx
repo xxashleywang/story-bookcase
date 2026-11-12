@@ -12,44 +12,42 @@ type AccountState = {
   isLoaded: boolean;
   isSignedIn: boolean;
   user: CursorAccountUser | null;
-  /** True only after Log out on a local preview. The published app never sets this. */
-  previewSignedOut: boolean;
-  /** Brings the simulated local viewer back. No-op for a real Cursor session. */
-  resumePreview: () => void;
+  /** Real viewer id. Kept while the account is hidden so the planner does not remount. */
+  viewerId: string | null;
+  /** True after Log out. The Cursor gate session is still there; the account is only hidden. */
+  signedOutInApp: boolean;
+  /** Shows the account menu again. Does not leave the page. */
+  resumeSession: () => void;
+  /** Hides the account on this page. Does not leave the page or end the Cursor session. */
+  signOutInApp: () => void;
 };
 
-const PREVIEW_SIGNOUT_KEY = 'twistory:preview-signed-out';
+const SIGNOUT_KEY = 'twistory:signed-out';
 const noop = () => {};
 
-export function isLocalAccountPreview() {
-  if (typeof window === 'undefined') return false;
-  const host = window.location.hostname;
-  return host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host.endsWith('.local');
+function rememberSignedOut() {
+  try { window.sessionStorage.setItem(SIGNOUT_KEY, '1'); } catch { /* ignore */ }
 }
 
-export function markPreviewSignedOut() {
-  try { window.sessionStorage.setItem(PREVIEW_SIGNOUT_KEY, '1'); } catch { /* ignore */ }
+function forgetSignedOut() {
+  try { window.sessionStorage.removeItem(SIGNOUT_KEY); } catch { /* ignore */ }
 }
 
-export function clearPreviewSignedOut() {
-  try { window.sessionStorage.removeItem(PREVIEW_SIGNOUT_KEY); } catch { /* ignore */ }
+function readSignedOut() {
+  try { return window.sessionStorage.getItem(SIGNOUT_KEY) === '1'; } catch { return false; }
 }
 
-function readPreviewSignedOut() {
-  if (!isLocalAccountPreview()) return false;
-  try { return window.sessionStorage.getItem(PREVIEW_SIGNOUT_KEY) === '1'; } catch { return false; }
-}
-
-const signedOut: AccountState = { isLoaded: false, isSignedIn: false, user: null, previewSignedOut: false, resumePreview: noop };
+const signedOut: AccountState = {
+  isLoaded: false, isSignedIn: false, user: null, viewerId: null, signedOutInApp: false,
+  resumeSession: noop, signOutInApp: noop,
+};
 const AccountContext = createContext<AccountState>(signedOut);
 
 export function CursorAccountProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<Omit<AccountState, 'previewSignedOut' | 'resumePreview'>>(signedOut);
-  const [previewSignedOut, setPreviewSignedOut] = useState(readPreviewSignedOut);
-  const resumePreview = () => {
-    clearPreviewSignedOut();
-    setPreviewSignedOut(false);
-  };
+  const [state, setState] = useState<Pick<AccountState, 'isLoaded' | 'isSignedIn' | 'user'>>(signedOut);
+  const [hidden, setHidden] = useState(readSignedOut);
+  const resumeSession = () => { forgetSignedOut(); setHidden(false); };
+  const signOutInApp = () => { rememberSignedOut(); setHidden(true); };
   useEffect(() => {
     let cancel = false;
     fetch('/api/session', { headers: { accept: 'application/json' }, cache: 'no-store' })
@@ -67,9 +65,16 @@ export function CursorAccountProvider({ children }: { children: ReactNode }) {
       .catch(() => { if (!cancel) setState({ isLoaded: true, isSignedIn: false, user: null }); });
     return () => { cancel = true; };
   }, []);
-  const shown: AccountState = previewSignedOut
-    ? { isLoaded: true, isSignedIn: false, user: null, previewSignedOut: true, resumePreview }
-    : { ...state, previewSignedOut: false, resumePreview };
+  const sessionPresent = state.isLoaded && state.isSignedIn;
+  const shown: AccountState = {
+    isLoaded: state.isLoaded,
+    isSignedIn: hidden ? false : state.isSignedIn,
+    user: hidden ? null : state.user,
+    viewerId: state.user?.id ?? null,
+    signedOutInApp: hidden && sessionPresent,
+    resumeSession,
+    signOutInApp,
+  };
   return <AccountContext.Provider value={shown}>{children}</AccountContext.Provider>;
 }
 

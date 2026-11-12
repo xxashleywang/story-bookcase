@@ -31,12 +31,8 @@ test('removing every photo is flagged as a whole-post decision', () => {
   assert.equal(photoRemovalPlan(['/a', '/b', '/c', '/d', '/e', '/f'], ['/f']).remaining.length, 5);
 });
 
-test('cursor logout stays local, stays home, or ends the Cursor web session', () => {
-  assert.equal(cursorLogoutDestination(true, 200), 'preview');
-  assert.equal(cursorLogoutDestination(false, 401), 'home');
-  assert.equal(cursorLogoutDestination(false, 200), 'cursor');
-  assert.equal(cursorLogoutDestination(false, null), 'retry');
-  assert.equal(cursorLogoutDestination(false, 500), 'retry');
+test('cursor logout stays on the page and never opens cursor.com', () => {
+  assert.equal(cursorLogoutDestination(), 'stay');
 });
 
 test('cleanup message is quiet when nothing is pending', () => {
