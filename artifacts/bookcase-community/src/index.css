@@ -171,7 +171,7 @@ html,body,#root { min-height:100%; } body { margin:0; background:var(--cream); c
 .shelf-key-hint-pad > :nth-child(2),.shelf-key-hint-pad > :nth-child(5) { animation:hintTap 1.6s ease-in-out infinite; }
 .shelf-key-hint-pad > :nth-child(4),.shelf-key-hint-pad > :nth-child(6) { animation:hintTap 1.6s ease-in-out .8s infinite; }
 .shelf-key-hint .icon-button.shelf-key-hint-close { width:28px; height:28px; background:var(--hint-close-bg); color:var(--hint-fg); }
-.stage-shelf-hint { position:absolute; z-index:4; left:50%; top:var(--shelf-hint-top,52%); transform:translate(62px,-50%); width:min(330px,44vw); transition:top .22s ease; }
+.stage-shelf-hint { position:absolute; z-index:4; left:50%; top:var(--shelf-hint-top,52%); transform:translate(var(--shelf-hint-x,62px),-50%); width:min(330px,44vw); transition:top .22s ease, transform .22s ease; }
 .shelf-editor button:focus-visible,.shelf-select-trigger:focus-visible,.room-preview summary:focus-visible { outline:2px solid var(--coral); outline-offset:2px; }
 .room-preview summary { list-style:none; cursor:pointer; }
 .room-preview summary::-webkit-details-marker { display:none; }

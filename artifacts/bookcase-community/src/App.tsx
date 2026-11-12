@@ -397,7 +397,10 @@ function Configurator({
     const shelfY = railLayout.y(railLayout.hs[selected]);
     const topPercent = ((shelfY + 28) / railFrame.height) * 100;
     const clampedTop = Math.max(46, Math.min(84, topPercent));
-    return { '--shelf-hint-top': `${clampedTop}%` } as CSSProperties;
+    // Low shelves show a number badge near the post; nudge the hint farther right
+    // there so the badge and hint panel do not collide.
+    const xOffset = clampedTop > 72 ? 106 : clampedTop > 66 ? 90 : 62;
+    return { '--shelf-hint-top': `${clampedTop}%`, '--shelf-hint-x': `${xOffset}px` } as CSSProperties;
   }, [railFrame.height, railLayout, selected]);
 
   const isAtDefault = tab === 'style'
