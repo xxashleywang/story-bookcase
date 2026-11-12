@@ -363,8 +363,6 @@ function Configurator({
   const S = window.Story;
   const defaults = useMemo(() => createDefaultScene(S), [S]);
   const defaultModelCode = useMemo(() => S.encodeUnit(defaults.model), [S, defaults.model]);
-  const pattern = S.PRESETS.find((preset: any) => preset.make(scene.model.dirs.length).join('') === scene.model.dirs.join(''));
-  const currentPattern = pattern?.name || (rolled ? 'Random roll' : 'Your own');
   const activeColor = COLORS.find((c) => c.hex.toLowerCase() === scene.model.color.toLowerCase());
   const floorIsCustom = scene.floor.id === 'custom';
   const wallIsCustom = !WALLS.some(([, hex]) => hex.toLowerCase() === scene.wall.toLowerCase());
@@ -392,6 +390,15 @@ function Configurator({
       floorY,
     };
   }, [S, railFrame.height, railFrame.width, scene.model.size, steps.doneShelves]);
+  const shelfHintStyle = useMemo<CSSProperties | undefined>(() => {
+    if (selected < 0 || !railLayout || railFrame.height <= 0 || selected >= railLayout.hs.length) return undefined;
+    // Keep the keyboard hint near the selected shelf; allow low shelves to push it
+    // down so it overlaps the wall/floor boundary slightly.
+    const shelfY = railLayout.y(railLayout.hs[selected]);
+    const topPercent = ((shelfY + 28) / railFrame.height) * 100;
+    const clampedTop = Math.max(46, Math.min(84, topPercent));
+    return { '--shelf-hint-top': `${clampedTop}%` } as CSSProperties;
+  }, [railFrame.height, railLayout, selected]);
 
   const isAtDefault = tab === 'style'
     && viewIndex === DEFAULT_VIEW_INDEX
@@ -700,7 +707,7 @@ function Configurator({
       <div className="scene-copy"><h1>Design your bookcase</h1>
         <p className="scene-sub">Try different arrangements before you build.</p>
       </div>
-      {tab === 'style' && selected >= 0 && showShelfKeyHint && <ShelfKeyHint className="stage-shelf-hint" onDismiss={() => setShowShelfKeyHint(false)} />}
+      {tab === 'style' && selected >= 0 && showShelfKeyHint && <ShelfKeyHint className="stage-shelf-hint" style={shelfHintStyle} onDismiss={() => setShowShelfKeyHint(false)} />}
       {tab === 'build' && isCelebrating && !reduceMotion && <BuildCelebration burstId={celebrationBurstId} />}
       {tab === 'build' && <div className={`scene-stamp${fullyBuilt ? ' is-complete' : ''}${isCelebrating ? ' is-celebrating' : ''}`} aria-label="Assembly progress">
         <svg viewBox="0 0 110 110"><defs><path id="stampCircle" d="M55,55 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" /></defs><text fontSize="10" fontWeight="700" letterSpacing="2.5" fill="currentColor"><textPath href="#stampCircle">{fullyBuilt ? 'BUILT IT · BUILT IT · BUILT IT · ' : 'TWIST IT · STACK IT · STYLE IT · '}</textPath></text></svg>
@@ -755,7 +762,7 @@ function Configurator({
           </section>
         </div>
         <div className="pane-scroll">
-          <section className="section"><h2>Try a shelf arrangement <small>{currentPattern}</small></h2>
+          <section className="section"><h2>Try a shelf arrangement</h2>
             <div className="pattern-list"><div className="preset-grid" role="group" aria-label="Shelf arrangements">{S.PRESETS.map((preset: any) => <button key={preset.id} aria-pressed={preset.make(scene.model.dirs.length).join('') === scene.model.dirs.join('')} className={`pattern preset-option ${preset.make(scene.model.dirs.length).join('') === scene.model.dirs.join('') ? 'active' : ''}`} onClick={() => choosePattern(preset.id)}>{preset.name}</button>)}</div>
               <span className="random-controls" role="group" aria-label="Randomize shelves"><button className={`pattern random random-dice ${rolled ? 'active' : ''}`} disabled={rolling} onClick={roll}><Dices size={15}/> Randomize</button><button ref={rulesButtonRef} type="button" aria-label="Randomize rules" aria-expanded={rulesOpen} className="pattern random random-rules" onClick={() => setRulesOpen(!rulesOpen)}><Settings size={16}/>Rules{4 - allowed.size + Number(noRepeat) ? <small>{4 - allowed.size + Number(noRepeat)}</small> : null}</button></span>
               {rulesOpen && <div ref={rulesPopRef} className="rules-pop"><h3>Randomize rules</h3><p className="rules-hint">Tap X to stop shelves facing that way.</p><div className="allowed-grid">{Object.entries(directions).map(([dir, detail]) => <button key={dir} aria-pressed={allowed.has(dir)} className={!allowed.has(dir) ? 'off' : ''} onClick={() => toggleAllowed(dir)}><span className="rule-toggle">{allowed.has(dir) ? <X size={11}/> : <Plus size={11}/>}</span>{iconPlan(dir, 24)}<span className="rule-label">{detail.label}</span><small>{allowed.has(dir) ? 'On' : 'Off'}</small></button>)}</div><button className={`toggle-row ${noRepeat ? 'on' : ''}`} aria-pressed={noRepeat} onClick={() => setNoRepeat(!noRepeat)}><i className="toggle" />No two neighbours alike</button><p className="note">{note}</p></div>}
