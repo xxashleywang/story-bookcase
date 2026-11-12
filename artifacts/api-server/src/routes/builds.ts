@@ -158,7 +158,9 @@ async function makePhotosPublic(
     for (const objectPath of uniquePaths) {
       await objectStorage.trySetObjectEntityAclPolicy(objectPath, {
         owner: userId,
-        visibility: "public",
+        // The gallery serves this photo because a post references it.
+        // The stored file stays private, so the address alone does not open it.
+        visibility: "private",
       });
       publicPaths.push(objectPath);
     }

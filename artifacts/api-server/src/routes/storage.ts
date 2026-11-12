@@ -13,7 +13,6 @@ import {
   buildsTable,
 } from '@workspace/db';
 
-import { ObjectPermission } from '../lib/objectAcl';
 import {
   ObjectNotFoundError,
   ObjectStorageService,
@@ -97,6 +96,10 @@ router.get(
     try {
       const raw = req.params.filePath;
       const filePath = Array.isArray(raw) ? raw.join('/') : raw;
+      if (!filePath || filePath.split('/').some((part) => part === '' || part === '.' || part === '..')) {
+        res.status(404).json({ error: 'File not found' });
+        return;
+      }
       const file = await objectStorageService.searchPublicObject(filePath);
       if (!file) {
         res.status(404).json({ error: 'File not found' });
@@ -126,33 +129,19 @@ router.get(
 /**
  * GET /storage/objects/*
  *
- * Serve object entities from PRIVATE_OBJECT_DIR.
- * These are served from a separate path from /public-objects and can optionally
- * be protected with authentication or ACL checks based on the use case.
+ * A gallery post's photo, with no account. Photos that are not on a post are not served.
+ * The stored file stays private, so this route is the only way to see it.
  */
 router.get('/storage/objects/*path', async (req: Request, res: Response) => {
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join('/') : raw;
     const objectPath = `/objects/${wildcardPath}`;
-    // The database reference is authoritative even when a storage ACL update
-    // failed. Previously cached URLs cannot be recalled, but new reads stop now.
     const [reference] = await db.select({ count: count() }).from(buildsTable)
       .where(sql`${buildsTable.photoPaths} @> ARRAY[${objectPath}]::text[]`);
     if (!reference?.count) { res.status(404).json({ error: 'Photo is no longer shared' }); return; }
     const objectFile =
       await objectStorageService.getObjectEntityFile(objectPath);
-
-    const userId = getAuth(req).userId;
-    const canAccess = await objectStorageService.canAccessObjectEntity({
-      userId: userId ?? undefined,
-      objectFile,
-      requestedPermission: ObjectPermission.READ,
-    });
-    if (!canAccess) {
-      res.status(403).json({ error: 'Photo is private' });
-      return;
-    }
 
     const response = await objectStorageService.downloadObject(objectFile);
 
