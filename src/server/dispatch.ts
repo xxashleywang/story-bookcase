@@ -43,6 +43,16 @@ async function withViewer(request: Request, mutation: boolean, run: (viewer: gal
   return withSchema(identity.stage, () => run(viewer));
 }
 
+/** Gallery browsing. A signed-in viewer still gets their own hearts and ownership; a guest can look. */
+async function withGuest(request: Request, run: (viewer: gallery.Viewer) => Promise<Response>) {
+  const identity = await getIdentity(request);
+  const viewer: gallery.Viewer = identity.verified
+    ? { id: identity.sub, name: identity.name, kind: identity.kind }
+    : { id: "", name: "", kind: "person" };
+  const stage = identity.verified ? identity.stage : "production";
+  return withSchema(stage, () => run(viewer));
+}
+
 function integerId(raw: string | undefined) {
   if (!raw || !/^[1-9][0-9]{0,8}$/.test(raw)) return null;
   return Number(raw);
@@ -91,11 +101,11 @@ export async function dispatch(method: string, request: Request, path: string[])
   }
 
   if (key === "GET community/summary") {
-    return withViewer(request, false, async () => send(await gallery.communitySummary()));
+    return withGuest(request, async () => send(await gallery.communitySummary()));
   }
 
   if (key === "GET builds") {
-    return withViewer(request, false, async (viewer) => send(await gallery.listBuilds(viewer, url.searchParams)));
+    return withGuest(request, async (viewer) => send(await gallery.listBuilds(viewer, url.searchParams)));
   }
 
   if (key === "POST builds") {
@@ -107,7 +117,7 @@ export async function dispatch(method: string, request: Request, path: string[])
   if (path[0] === "builds" && path.length === 2 && (method === "GET" || method === "PATCH" || method === "DELETE")) {
     const id = integerId(path[1]);
     if (!id) return json({ error: "Invalid build id." }, 400);
-    if (method === "GET") return withViewer(request, false, async (viewer) => send(await gallery.getBuild(viewer, id)));
+    if (method === "GET") return withGuest(request, async (viewer) => send(await gallery.getBuild(viewer, id)));
     if (method === "DELETE") return withViewer(request, true, async (viewer) => send(await gallery.deleteBuild(viewer, id)));
     const body = await readJson(request);
     if (!body) return json({ error: "Invalid build update." }, 400);
@@ -159,7 +169,7 @@ export async function dispatch(method: string, request: Request, path: string[])
   }
 
   if (method === "GET" && path[0] === "storage" && path[1] === "objects" && path[2] === "uploads" && path.length === 4) {
-    return withViewer(request, false, async (viewer) => {
+    return withGuest(request, async (viewer) => {
       const photo = await gallery.readPhoto(viewer, path[3]);
       if ("error" in photo) return json({ error: photo.error }, photo.status);
       const bytes = Buffer.from(photo.body);

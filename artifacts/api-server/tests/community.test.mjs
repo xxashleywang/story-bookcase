@@ -142,6 +142,8 @@ test('photo-first API contract, persistence, ownership and historical photos', a
     }
     const created = await request('/builds', 'POST', input, owner);
     assert.equal(created.status, 201);
+    assert.equal(m.storageEvents.some(([visibility]) => visibility === 'public'), false);
+    assert.ok(m.storageEvents.some(([visibility, path]) => visibility === 'private' && path === paths[0]));
     const photo = await created.json();
     assert.equal(photo.configuration, null);
     assert.equal(photo.colorHex, null);
