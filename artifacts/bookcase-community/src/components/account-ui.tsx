@@ -10,7 +10,8 @@ import type { Build } from '@workspace/api-client-react';
 import { getGetBuildQueryKey, useRemoveFavourite, useSaveFavourite } from '@workspace/api-client-react';
 import { useDialogFocus } from '@/components/share-dialog';
 import { isAccountAffectedKey, readSaveIntent, saveIntentHref } from '@/lib/account';
-import { clerkEnabled } from '@/lib/local-clerk';
+import { useCursorAccount } from '@/lib/cursor-account';
+import { clerkConfigured } from '@/lib/local-clerk';
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 
@@ -37,6 +38,11 @@ export function useLogout() {
 }
 
 export function LogoutButton({ className = 'button light small' }: { className?: string }) {
+  if (!clerkConfigured) return null;
+  return <ClerkLogoutButton className={className}/>;
+}
+
+function ClerkLogoutButton({ className = 'button light small' }: { className?: string }) {
   const { logout, pending, failed } = useLogout();
   return <span className="logout-wrap">
     <button type="button" className={className} onClick={logout} disabled={pending} data-testid="button-logout">
@@ -47,6 +53,28 @@ export function LogoutButton({ className = 'button light small' }: { className?:
 }
 
 export function AccountMenu() {
+  if (!clerkConfigured) return <CursorAccountMenu/>;
+  return <ClerkAccountMenu/>;
+}
+
+function CursorAccountMenu() {
+  const { user } = useCursorAccount();
+  const name = user?.firstName || user?.fullName || 'Account';
+  return <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <button type="button" className="button light small account-menu-trigger" data-testid="button-account-menu">
+        <span>{name}</span><ChevronDown size={13} aria-hidden="true"/>
+      </button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" sideOffset={8} collisionPadding={12} className="account-menu" aria-label="Account">
+      <DropdownMenuItem asChild className="account-menu-item">
+        <Link href="/profile"><UserRound size={16} aria-hidden="true"/>My profile</Link>
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>;
+}
+
+function ClerkAccountMenu() {
   const { user } = useUser();
   const { logout, pending, failed } = useLogout();
   const name = user?.firstName || user?.fullName || user?.username || 'Account';
@@ -72,13 +100,22 @@ export function AccountMenu() {
 
 /** Save toggle for a room post. Never rendered inside a link. */
 export function FavouriteButton(props: { build: Build; variant?: 'card' | 'detail' }) {
-  if (!clerkEnabled) return null;
-  return <FavouriteButtonAuthed {...props} />;
+  if (!clerkConfigured) return <CursorFavouriteButton {...props}/>;
+  return <ClerkFavouriteButton {...props}/>;
 }
 
-function FavouriteButtonAuthed({ build, variant = 'card' }: { build: Build; variant?: 'card' | 'detail' }) {
+function ClerkFavouriteButton(props: { build: Build; variant?: 'card' | 'detail' }) {
   const { isSignedIn, user } = useUser();
-  const identity = isSignedIn ? user?.id ?? null : null;
+  return <FavouriteControl {...props} isSignedIn={!!isSignedIn} userId={isSignedIn ? user?.id ?? null : null}/>;
+}
+
+function CursorFavouriteButton(props: { build: Build; variant?: 'card' | 'detail' }) {
+  const { isSignedIn, isLoaded, user } = useCursorAccount();
+  return <FavouriteControl {...props} isSignedIn={isLoaded && isSignedIn} userId={isLoaded && isSignedIn ? user?.id ?? null : null}/>;
+}
+
+function FavouriteControl({ build, variant = 'card', isSignedIn, userId }: { build: Build; variant?: 'card' | 'detail'; isSignedIn: boolean; userId: string | null }) {
+  const identity = userId;
   const identityRef = useRef(identity);
   identityRef.current = identity;
   const client = useQueryClient();

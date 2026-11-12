@@ -16,7 +16,8 @@ import {
 import type { Build, BuildConfiguration, BuildPage, BuildUpdate, Profile } from '@workspace/api-client-react';
 import { AccountMenu, ConfirmDialog, FavouriteButton, LogoutButton, refreshAccountViews } from '@/components/account-ui';
 import { cleanupMessage, privateListKey } from '@/lib/account';
-import { clerkEnabled } from '@/lib/local-clerk';
+import { CursorAccountProvider, useCursorAccount } from '@/lib/cursor-account';
+import { clerkConfigured } from '@/lib/local-clerk';
 import { EditBuildDialog, PublishDialog } from '@/components/share-dialog';
 import { blueprintHref, readReferenceId, referenceHref, safePhotos, withoutParam } from '@/lib/community';
 import { completeInspirationHandoff, inspirationHref, trackEvent } from '@/lib/analytics';
@@ -49,15 +50,21 @@ declare global {
 }
 
 const LAST_SCENE_KEY = 'twistory:last-scene';
-const clerkPubKey = clerkEnabled
+const clerkPubKey = clerkConfigured
   ? publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
   : '';
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+type AccountUser = {
+  id?: string | null;
+  firstName?: string | null;
+  fullName?: string | null;
+  username?: string | null;
+} | null;
 type AuthState = {
   isSignedIn: boolean;
   isLoaded: boolean;
-  user: ReturnType<typeof useUser>['user'];
+  user: AccountUser;
 };
 const signedOutAuth: AuthState = { isSignedIn: false, isLoaded: true, user: null };
 const AuthContext = createContext<AuthState>(signedOutAuth);
@@ -66,7 +73,7 @@ function useAuth() {
 }
 function ClerkAuthBridge({ children }: { children: ReactNode }) {
   const { isSignedIn, isLoaded, user } = useUser();
-  return <AuthContext.Provider value={{ isSignedIn: !!isSignedIn, isLoaded, user }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ isSignedIn: !!isSignedIn, isLoaded, user: user ?? null }}>{children}</AuthContext.Provider>;
 }
 function BrandWordmark() {
   return <>
@@ -193,7 +200,7 @@ function rememberShareIntent(path: string) { try { window.sessionStorage.setItem
 function takeShareIntent() { try { const v = window.sessionStorage.getItem(SHARE_INTENT_KEY); window.sessionStorage.removeItem(SHARE_INTENT_KEY); return v; } catch { return null; } }
 /** Route a share request through sign-in and username setup, preserving where it started. */
 function useShareGate(mode: 'photo' | 'blueprint') {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const [, setLocation] = useLocation();
   const { data:profile } = useGetMyProfile({ query:{ enabled:!!isSignedIn, queryKey:getGetMyProfileQueryKey() } });
   const ready = !!isSignedIn && !!profile?.isUsernameSet;
@@ -204,6 +211,7 @@ function useShareGate(mode: 'photo' | 'blueprint') {
     }
   }, [isSignedIn, profile, setLocation]);
   const request = (open: () => void, intent: string = mode) => {
+    if (!isLoaded) return;
     const here = `${stripBase(window.location.pathname)}${withoutParam(window.location.search, 'share')}`;
     const back = `${here}${here.includes('?') ? '&' : '?'}share=${intent}`;
     if (!isSignedIn) {
@@ -253,13 +261,13 @@ function BookcaseSketch({ color, dirs, tall = true }: { color: string; dirs: str
   </svg>;
 }
 function Header() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   return <header className="topbar">
     <Link className="brand" href="/"><BrandWordmark/></Link>
     <span className="tagline">Design first. Build once.</span>
     <nav className="top-actions">
       <Link className="button light small" href="/inspiration">Gallery</Link>
-      {isSignedIn ? <AccountMenu/> : <Link className="button small" href="/sign-in">Sign in</Link>}
+      {!isLoaded ? null : isSignedIn ? <AccountMenu/> : <Link className="button small" href="/sign-in">Sign in</Link>}
     </nav>
   </header>;
 }
@@ -1192,8 +1200,33 @@ function Router() {
     </ClerkAuthBridge>
   </ClerkProvider>;
 }
+function CursorSignIn() {
+  const { isLoaded, isSignedIn } = useAuth();
+  return <main className="auth-frame"><Link className="brand auth-mark" href="/"><BrandWordmark/></Link>
+    <p>{isLoaded && isSignedIn ? 'You are signed in with Cursor.' : 'This private app uses your Cursor sign-in. Open it from your Cursor link while you are signed in.'}</p>
+    <Link className="button coral" href="/">Back to the planner</Link></main>;
+}
+function CursorRoutes() {
+  const session = useCursorAccount();
+  const identity = session.user?.id ?? 'public';
+  const client = useMemo(() => new QueryClient(), [identity]);
+  useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
+  if (!session.isLoaded) return <div className="skeleton" aria-label="Loading account"/>;
+  return <QueryClientProvider client={client}>
+    <AuthContext.Provider value={{ isSignedIn: session.isSignedIn, isLoaded: true, user: session.user }}>
+      <Switch key={identity}>
+        <Route path="/" component={Home}/>
+        <Route path="/inspiration" component={Gallery}/>
+        <Route path="/build/:id" component={DetailPage}/>
+        <Route path="/profile" component={ProfilePage}/>
+        <Route path="/sign-in/*?" component={CursorSignIn}/>
+        <Route path="/sign-up/*?" component={CursorSignIn}/>
+        <Route component={NotFound}/>
+      </Switch>
+    </AuthContext.Provider>
+  </QueryClientProvider>;
+}
 function App() {
-  if (!clerkPubKey && clerkEnabled) throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
-  return <WouterRouter base={basePath}><Router/></WouterRouter>;
+  return <WouterRouter base={basePath}>{clerkPubKey ? <Router/> : <CursorAccountProvider><CursorRoutes/></CursorAccountProvider>}</WouterRouter>;
 }
 export default App;

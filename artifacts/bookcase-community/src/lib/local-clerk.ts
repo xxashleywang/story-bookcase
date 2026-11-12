@@ -1,6 +1,3 @@
-/** Local preview has no Clerk instance. Never derive a clerk.localhost key. */
-export const isLocalHost =
-  typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-export const clerkEnabled = !(isLocalHost && !import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+/** Clerk is the account system on Replit. Cursor hosting signs people in itself, so this stays off unless the key is set. */
+export const clerkConfigured = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+export const clerkEnabled = clerkConfigured;
