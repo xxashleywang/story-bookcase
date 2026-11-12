@@ -34,6 +34,7 @@ import { BuildCelebration } from '@/components/build-celebration';
 import { ShelfSelector } from '@/components/shelf-selector';
 import { ShelfEditor } from '@/components/shelf-editor';
 import { ShelfKeyHint } from '@/components/shelf-key-hint';
+import { placeShelfHint } from '@/lib/shelf-hint-placement';
 import { shouldCelebrateBuildCompletion } from '@/lib/build-celebration';
 import { moveShelfSelection, rotateShelfDirection, shelfActionFromKey } from '@/lib/shelf-keyboard';
 import { advanceBuildProgress, buildSteps, normalizeBuildProgress, rewindBuildProgress } from '@/lib/build-steps';
@@ -392,27 +393,26 @@ function Configurator({
   }, [S, railFrame.height, railFrame.width, scene.model.size, steps.doneShelves]);
   const shelfHintStyle = useMemo<CSSProperties | undefined>(() => {
     if (selected < 0 || !railLayout || railFrame.height <= 0 || selected >= railLayout.hs.length) return undefined;
-    // Keep the keyboard hint near the selected shelf; allow low shelves to push it
-    // down so it overlaps the wall/floor boundary slightly.
     const shelfY = railLayout.y(railLayout.hs[selected]);
-    const topPercent = ((shelfY + 28) / railFrame.height) * 100;
-    const clampedTop = Math.max(46, Math.min(84, topPercent));
-    const selectedDir = scene.model.dirs[selected] || 'F';
-    const hintWidth = Math.min(330, railFrame.width * 0.44);
-    const sideGap = clampedTop > 72 ? 32 : 22;
-    const edgePadding = 16;
-    const anchorX = railLayout.left;
-    const preferRight = selectedDir === 'L';
-    const spaceRight = railFrame.width - anchorX - sideGap - edgePadding;
-    const spaceLeft = anchorX - sideGap - edgePadding;
-    const canFitRight = spaceRight >= hintWidth;
-    const canFitLeft = spaceLeft >= hintWidth;
-    const useRight = preferRight ? (canFitRight || !canFitLeft) : (!canFitLeft && canFitRight);
-    let leftPx = useRight ? anchorX + sideGap : anchorX - sideGap - hintWidth;
-    leftPx = Math.max(edgePadding, Math.min(railFrame.width - hintWidth - edgePadding, leftPx));
+    const targetTop = shelfY + 26;
+    const hintWidth = Math.min(290, railFrame.width * 0.38);
+    const hintHeight = 108;
+    const placement = placeShelfHint({
+      stageWidth: railFrame.width,
+      stageHeight: railFrame.height,
+      postX: railFrame.width / 2,
+      shelfYs: railLayout.hs.map((height: number) => railLayout.y(height)),
+      shelfDirs: scene.model.dirs,
+      selected,
+      targetTop,
+      hintWidth,
+      hintHeight,
+      // Requested behavior: try the right side first, then fall back only if invalid.
+      preferRight: true,
+    });
     return {
-      '--shelf-hint-top': `${clampedTop}%`,
-      '--shelf-hint-left': `${leftPx}px`,
+      '--shelf-hint-top': `${(placement.top / railFrame.height) * 100}%`,
+      '--shelf-hint-left': `${placement.left}px`,
     } as CSSProperties;
   }, [railFrame.height, railFrame.width, railLayout, scene.model.dirs, selected]);
 
