@@ -1,6 +1,6 @@
 # Feature Implementation Plan
 
-**Overall Progress:** `0%`
+**Overall Progress:** `100%`
 
 ## TLDR
 Selecting **Build it** should put the planner at `/build-it` on the existing host (`imaginemode.apps.grok.bot`). Selecting **Style it** returns the path to `/`. The design hash and query string stay. The 3D scene does not reload.
@@ -30,26 +30,26 @@ Selecting **Build it** should put the planner at `/build-it` on the existing hos
 
 ## Tasks
 
-- [ ] 🟥 **Step 0: Create feature branch**
-  - [ ] 🟥 Branch off main: `cursor/build-it-url-ff67` (this plan is already on that branch)
+- [x] 🟩 **Step 0: Create feature branch**
+  - [x] 🟩 Branch off main: `cursor/build-it-url-ff67` (this plan is already on that branch)
 
-- [ ] 🟥 **Step 1: Path helper**
-  - [ ] 🟥 Add `plannerTabFromPath` and `plannerPathForTab` in `artifacts/bookcase-community/src/lib/planner-tab.ts`
-  - [ ] 🟥 Cover `/`, `/build-it`, and any other path (Style it) in `artifacts/bookcase-community/tests/planner-tab.test.mjs`
+- [x] 🟩 **Step 1: Path helper**
+  - [x] 🟩 Add `plannerTabFromPath` and `plannerPathForTab` in `artifacts/bookcase-community/src/lib/planner-tab.ts`
+  - [x] 🟩 Cover `/`, `/build-it`, and any other path (Style it) in `artifacts/bookcase-community/tests/planner-tab.test.mjs`
 
-- [ ] 🟥 **Step 2: Keep Home mounted for both paths**
-  - [ ] 🟥 In `AccountRoutes`, `LocalRoutes`, and `CursorRoutes`, render `Home` when the location is `/` or `/build-it`, and use the existing `<Switch>` for every other path
-  - [ ] 🟥 Do not key `Home` by the path
+- [x] 🟩 **Step 2: Keep Home mounted for both paths**
+  - [x] 🟩 In `AccountRoutes`, `LocalRoutes`, and `CursorRoutes`, render `Home` when the location is `/` or `/build-it`, and use the existing `<Switch>` for every other path
+  - [x] 🟩 Do not key `Home` by the path
 
-- [ ] 🟥 **Step 3: Sync the tab and the address**
-  - [ ] 🟥 Initialize `tab` in `Configurator` from `plannerTabFromPath(stripBase(window.location.pathname))`
-  - [ ] 🟥 Build it click: `replaceState` to `/build-it` plus the current search and hash, then `setTab('build')`
-  - [ ] 🟥 Style it click: `replaceState` to `/` plus the current search and hash, then `setTab('style')`
-  - [ ] 🟥 Leave `hashFor` writing `pathname + search + hash` so later edits stay on whichever path is current
+- [x] 🟩 **Step 3: Sync the tab and the address**
+  - [x] 🟩 Initialize `tab` in `Configurator` from `plannerTabFromPath(stripBase(window.location.pathname))`
+  - [x] 🟩 Build it click: `replaceState` to `/build-it` plus the current search and hash, then `setTab('build')`
+  - [x] 🟩 Style it click: `replaceState` to `/` plus the current search and hash, then `setTab('style')`
+  - [x] 🟩 Leave `hashFor` writing `pathname + search + hash` so later edits stay on whichever path is current
 
-- [ ] 🟥 **Step 4: Verify**
-  - [ ] 🟥 `pnpm test` includes the new helper test
-  - [ ] 🟥 In the browser: Style it is `/`; Build it becomes `/build-it`; switching back returns to `/`; the hash (when a design is not the default) and `?ref=` stay; the 3D scene does not replay its intro; refresh on `/build-it` opens Build it; Gallery → Back restores the last tab
+- [x] 🟩 **Step 4: Verify**
+  - [x] 🟩 `pnpm test` includes the new helper test
+  - [x] 🟩 In the browser: Style it is `/`; Build it becomes `/build-it`; switching back returns to `/`; the hash (when a design is not the default) and `?ref=` stay; the 3D scene does not replay its intro; refresh on `/build-it` opens Build it; Gallery → Back restores the last tab
 
 ## Session size
 Five steps, one UI control plus a route guard. Fits one session.

@@ -37,6 +37,8 @@ import { placeShelfHint } from '@/lib/shelf-hint-placement';
 import { shouldCelebrateBuildCompletion } from '@/lib/build-celebration';
 import { moveShelfSelection, rotateShelfDirection, shelfActionFromKey } from '@/lib/shelf-keyboard';
 import { advanceBuildProgress, buildSteps, normalizeBuildProgress, rewindBuildProgress } from '@/lib/build-steps';
+import { isPlannerPath, plannerAddress, plannerTabFromPath } from '@/lib/planner-tab';
+import type { PlannerTab } from '@/lib/planner-tab';
 import { roomDesignChanged } from '@/lib/room-design';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -178,6 +180,7 @@ function sceneConfig(scene: { model: any; wall: string; floor: { id: string }; f
 function hashFor(scene: Scene) {
   const config = sceneConfig(scene);
   const hash = addressHash(config, sceneConfig(createDefaultScene(window.Story)));
+  // Keep the current path (/ or /build-it). Tab clicks set it; design edits must not bounce it back to /.
   window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${hash}`);
   try {
     if (hash) window.localStorage.setItem(LAST_SCENE_KEY, config);
@@ -352,7 +355,18 @@ function Configurator({
 }) {
   const [scene, setScene] = useState<Scene>(() => initialScene());
   const [selected, setSelected] = useState(-1);
-  const [tab, setTab] = useState<'style' | 'build'>('style');
+  const [location] = useLocation();
+  const [tab, setTab] = useState<PlannerTab>(() => plannerTabFromPath(stripBase(window.location.pathname)));
+  const selectTab = (next: PlannerTab) => {
+    // Replace the current history entry so Home stays mounted. Search and the design hash stay.
+    window.history.replaceState(null, '', plannerAddress(basePath, next, window.location.search, window.location.hash));
+    setTab(next);
+  };
+  useEffect(() => {
+    // Wouter hears replaceState, and it also hears the logo and back/forward.
+    // Home stays mounted for both planner paths, so the tab follows the path.
+    setTab(plannerTabFromPath(location));
+  }, [location]);
   const [allowed, setAllowed] = useState(new Set(['F', 'L', 'B', 'R']));
   const [noRepeat, setNoRepeat] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -768,8 +782,8 @@ function Configurator({
     </section>
     <section className="control-panel">
       <div className={`tabs ${tab === 'build' ? 'building' : ''}`}><i className="tab-pill" />
-        <button className={tab === 'style' ? 'active' : ''} onClick={() => setTab('style')}>Style it</button>
-        <button className={tab === 'build' ? 'active' : ''} onClick={() => setTab('build')}>Build it</button>
+        <button className={tab === 'style' ? 'active' : ''} onClick={() => selectTab('style')}>Style it</button>
+        <button className={tab === 'build' ? 'active' : ''} onClick={() => selectTab('build')}>Build it</button>
       </div>
       <div className="pane style-pane" hidden={tab !== 'style'}>
         <div className="pane-fixed">
@@ -1178,6 +1192,17 @@ function ClerkQueryClientCacheInvalidator() {
   }, [addListener, client]);
   return null;
 }
+/**
+ * / and /build-it are the same planner. A router change between them would
+ * unmount Home and replay the shelf intro, so tab clicks use replaceState
+ * and both paths render this one Home. The key is the signed-in identity,
+ * so an account change still remounts the planner. The path does not.
+ */
+function PlannerOrSwitch({ switchKey, children }: { switchKey?: string; children: ReactNode }) {
+  const [location] = useLocation();
+  if (isPlannerPath(location)) return <Home key={switchKey} />;
+  return <Switch key={switchKey}>{children}</Switch>;
+}
 /** Separate cache instances and component state at the identity boundary.
  * A late mutation can only write to its original, now-disconnected account cache.
  */
@@ -1189,29 +1214,27 @@ function AccountRoutes() {
   if (!isLoaded) return <div className="skeleton" aria-label="Loading account"/>;
   return <QueryClientProvider client={client}>
     <ClerkQueryClientCacheInvalidator key={`cache-${identity}`}/>
-    <Switch key={identity}>
-      <Route path="/" component={Home}/>
+    <PlannerOrSwitch switchKey={identity}>
       <Route path="/inspiration" component={Gallery}/>
       <Route path="/build/:id" component={DetailPage}/>
       <Route path="/profile" component={ProfilePage}/>
       <Route path="/sign-in/*?" component={BrandedSignIn}/>
       <Route path="/sign-up/*?" component={BrandedSignUp}/>
       <Route component={NotFound}/>
-    </Switch>
+    </PlannerOrSwitch>
   </QueryClientProvider>;
 }
 function LocalRoutes() {
   const client = useMemo(() => new QueryClient(), []);
   return <QueryClientProvider client={client}>
-    <Switch>
-      <Route path="/" component={Home}/>
+    <PlannerOrSwitch>
       <Route path="/inspiration" component={Gallery}/>
       <Route path="/build/:id" component={DetailPage}/>
       <Route path="/profile" component={ProfilePage}/>
       <Route path="/sign-in/*?" component={LocalAuthDisabled}/>
       <Route path="/sign-up/*?" component={LocalAuthDisabled}/>
       <Route component={NotFound}/>
-    </Switch>
+    </PlannerOrSwitch>
   </QueryClientProvider>;
 }
 function Router() {
@@ -1255,15 +1278,14 @@ function CursorRoutes() {
   if (!session.isLoaded) return <div className="skeleton" aria-label="Loading account"/>;
   return <QueryClientProvider client={client}>
     <AuthContext.Provider value={{ isSignedIn: session.isSignedIn, isLoaded: true, user: session.user }}>
-      <Switch key={identity}>
-        <Route path="/" component={Home}/>
+      <PlannerOrSwitch switchKey={identity}>
         <Route path="/inspiration" component={Gallery}/>
         <Route path="/build/:id" component={DetailPage}/>
         <Route path="/profile" component={ProfilePage}/>
         <Route path="/sign-in/*?" component={CursorSignIn}/>
         <Route path="/sign-up/*?" component={CursorSignIn}/>
         <Route component={NotFound}/>
-      </Switch>
+      </PlannerOrSwitch>
     </AuthContext.Provider>
   </QueryClientProvider>;
 }
