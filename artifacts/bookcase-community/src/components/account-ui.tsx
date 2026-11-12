@@ -10,6 +10,7 @@ import type { Build } from '@workspace/api-client-react';
 import { getGetBuildQueryKey, useRemoveFavourite, useSaveFavourite } from '@workspace/api-client-react';
 import { useDialogFocus } from '@/components/share-dialog';
 import { isAccountAffectedKey, readSaveIntent, saveIntentHref } from '@/lib/account';
+import { clearFakeAuth, FAKE_AUTH_NAME } from '@/lib/fake-auth';
 import { clerkEnabled } from '@/lib/local-clerk';
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -46,13 +47,13 @@ export function LogoutButton({ className = 'button light small' }: { className?:
   </span>;
 }
 
-export function AccountMenu() {
-  const { user } = useUser();
-  const { logout, pending, failed } = useLogout();
-  const name = user?.firstName || user?.fullName || user?.username || 'Account';
+function AccountMenuView({ name, preview, pending, failed, onLogout }: {
+  name: string; preview?: boolean; pending: boolean; failed: boolean; onLogout: () => void;
+}) {
   return <DropdownMenu>
     <DropdownMenuTrigger asChild>
-      <button type="button" className="button coral small account-menu-trigger" data-testid="button-account-menu">
+      <button type="button" className="button coral small account-menu-trigger" data-testid="button-account-menu"
+        title={preview ? 'Local preview, not a real account' : undefined}>
         <span>{name}</span><ChevronDown size={13} aria-hidden="true"/>
       </button>
     </DropdownMenuTrigger>
@@ -61,13 +62,31 @@ export function AccountMenu() {
         <Link href="/profile"><UserRound size={16} aria-hidden="true"/>My profile</Link>
       </DropdownMenuItem>
       <DropdownMenuItem className="account-menu-item account-menu-logout" disabled={pending}
-        onSelect={(event) => { event.preventDefault(); void logout(); }} data-testid="button-account-logout">
+        onSelect={(event) => { event.preventDefault(); onLogout(); }} data-testid="button-account-logout">
         {pending ? <LoaderCircle size={16} className="spin" aria-hidden="true"/> : <LogOut size={16} aria-hidden="true"/>}
-        {pending ? 'Logging out…' : failed ? 'Retry log out' : 'Log out'}
+        {pending ? 'Logging out…' : failed ? 'Retry log out' : preview ? 'Exit preview' : 'Log out'}
       </DropdownMenuItem>
       {failed && <p className="account-menu-error" role="alert">Log out did not finish. Check your connection and retry.</p>}
     </DropdownMenuContent>
   </DropdownMenu>;
+}
+
+function PreviewAccountMenu() {
+  return <AccountMenuView name={FAKE_AUTH_NAME} preview pending={false} failed={false} onLogout={() => {
+    clearFakeAuth();
+    window.location.assign(`${window.location.pathname}${window.location.hash}`);
+  }}/>;
+}
+
+function ClerkAccountMenu() {
+  const { user } = useUser();
+  const { logout, pending, failed } = useLogout();
+  const name = user?.firstName || user?.fullName || user?.username || 'Account';
+  return <AccountMenuView name={name} pending={pending} failed={failed} onLogout={() => { void logout(); }}/>;
+}
+
+export function AccountMenu() {
+  return clerkEnabled ? <ClerkAccountMenu/> : <PreviewAccountMenu/>;
 }
 
 /** Save toggle for a room post. Never rendered inside a link. */

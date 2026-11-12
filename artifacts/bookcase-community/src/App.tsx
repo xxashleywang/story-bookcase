@@ -16,6 +16,7 @@ import {
 import type { Build, BuildConfiguration, BuildPage, BuildUpdate, Profile } from '@workspace/api-client-react';
 import { AccountMenu, ConfirmDialog, FavouriteButton, LogoutButton, refreshAccountViews } from '@/components/account-ui';
 import { cleanupMessage, privateListKey } from '@/lib/account';
+import { consumeFakeAuth, isFakeAuthOn } from '@/lib/fake-auth';
 import { clerkEnabled } from '@/lib/local-clerk';
 import { EditBuildDialog, PublishDialog } from '@/components/share-dialog';
 import { blueprintHref, readReferenceId, referenceHref, safePhotos, withoutParam } from '@/lib/community';
@@ -68,6 +69,11 @@ function useAuth() {
 function ClerkAuthBridge({ children }: { children: ReactNode }) {
   const { isSignedIn, isLoaded, user } = useUser();
   return <AuthContext.Provider value={{ isSignedIn: !!isSignedIn, isLoaded, user }}>{children}</AuthContext.Provider>;
+}
+function FakeAuthProvider({ children }: { children: ReactNode }) {
+  const [on] = useState(() => consumeFakeAuth());
+  const value = on ? { isSignedIn:true, isLoaded:true, user:null } : signedOutAuth;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 function BrandWordmark() {
   return <>
@@ -196,8 +202,9 @@ function takeShareIntent() { try { const v = window.sessionStorage.getItem(SHARE
 function useShareGate(mode: 'photo' | 'blueprint') {
   const { isSignedIn } = useAuth();
   const [, setLocation] = useLocation();
-  const { data:profile } = useGetMyProfile({ query:{ enabled:!!isSignedIn, queryKey:getGetMyProfileQueryKey() } });
-  const ready = !!isSignedIn && !!profile?.isUsernameSet;
+  const preview = isFakeAuthOn();
+  const { data:profile } = useGetMyProfile({ query:{ enabled:!!isSignedIn && !preview, queryKey:getGetMyProfileQueryKey() } });
+  const ready = !!isSignedIn && !preview && !!profile?.isUsernameSet;
   useEffect(() => {
     if (isSignedIn && profile && !profile.isUsernameSet && new URLSearchParams(window.location.search).has('share')) {
       rememberShareIntent(`${stripBase(window.location.pathname)}${window.location.search}${window.location.hash}`);
@@ -207,6 +214,7 @@ function useShareGate(mode: 'photo' | 'blueprint') {
   const request = (open: () => void, intent: string = mode) => {
     const here = `${stripBase(window.location.pathname)}${withoutParam(window.location.search, 'share')}`;
     const back = `${here}${here.includes('?') ? '&' : '?'}share=${intent}`;
+    if (preview) { setLocation('/profile'); return; }
     if (!isSignedIn) {
       // Keep a local copy too: sign-in can finish on the profile page rather
       // than the redirect destination, especially during first-user setup.
@@ -1030,8 +1038,9 @@ function ProfilePage() {
     const next = tab === 'uploads' ? 'favourites' : 'uploads';
     setTab(next); tabRefs.current[next]?.focus();
   };
-  const shell = (body: ReactNode) => <div className="tw-shell"><Header/><main className="gallery-page profile-page">{isSignedIn && (!profile || profileLoading || profileError) && <LogoutButton/>}{body}</main></div>;
+  const shell = (body: ReactNode) => <div className="tw-shell"><Header/><main className="gallery-page profile-page">{isSignedIn && !isFakeAuthOn() && (!profile || profileLoading || profileError) && <LogoutButton/>}{body}</main></div>;
   if (!isLoaded || (userId && profileLoading)) return shell(<div className="profile-loading" aria-label="Loading your page"><div className="skeleton profile-head-skeleton"/><div className="profile-grid">{[0, 1, 2].map((i) => <div className="skeleton profile-skeleton" key={i}/>)}</div></div>);
+  if (isFakeAuthOn()) return shell(<section className="profile-gate"><span className="eyebrow">Local preview</span><h1>This is a fake signed-in session.</h1><p>The coral account chip in the nav is the change to review. Profile, sharing, and favourites still need Clerk.</p></section>);
   if (!userId) return shell(<section className="profile-gate"><span className="profile-gate-mark" aria-hidden="true"><Bookmark size={26}/></span><span className="eyebrow">Your own corner</span><h1>Your posts and the ones you saved, together.</h1><p>Sign in to see your uploads and keep a private shelf of bookcases you want to come back to.</p><Link className="button coral" href="/sign-in">Sign in to ImagineMōde</Link></section>);
   if (profileError || !profile) return shell(<section className="profile-gate"><h1>Your page would not open.</h1><p>Your posts are safe. This is a loading problem.</p><button className="button" onClick={() => refetch()}>Try again</button></section>);
   const member = profile;
@@ -1181,15 +1190,17 @@ function AccountRoutes() {
 function LocalRoutes() {
   const client = useMemo(() => new QueryClient(), []);
   return <QueryClientProvider client={client}>
-    <Switch>
-      <Route path="/" component={Home}/>
-      <Route path="/inspiration" component={Gallery}/>
-      <Route path="/build/:id" component={DetailPage}/>
-      <Route path="/profile" component={ProfilePage}/>
-      <Route path="/sign-in/*?" component={LocalAuthDisabled}/>
-      <Route path="/sign-up/*?" component={LocalAuthDisabled}/>
-      <Route component={NotFound}/>
-    </Switch>
+    <FakeAuthProvider>
+      <Switch>
+        <Route path="/" component={Home}/>
+        <Route path="/inspiration" component={Gallery}/>
+        <Route path="/build/:id" component={DetailPage}/>
+        <Route path="/profile" component={ProfilePage}/>
+        <Route path="/sign-in/*?" component={LocalAuthDisabled}/>
+        <Route path="/sign-up/*?" component={LocalAuthDisabled}/>
+        <Route component={NotFound}/>
+      </Switch>
+    </FakeAuthProvider>
   </QueryClientProvider>;
 }
 function Router() {

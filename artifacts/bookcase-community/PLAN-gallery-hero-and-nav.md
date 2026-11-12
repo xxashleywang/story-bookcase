@@ -1,6 +1,6 @@
 # Gallery hero, empty-state CTA, and logged-in nav — Implementation Plan
 
-**Overall Progress:** `100%`
+**Overall Progress:** `100%` (plus local fake-auth preview)
 
 ## TLDR
 Four gallery/nav polish items from the screenshots, in the live app (`artifacts/bookcase-community`): rename the empty-state share button, cut the "Shelfies from the community." headline in half, delete the hero-right stats + share block, and paint the logged-in account chip coral.
@@ -61,3 +61,7 @@ Four gallery/nav polish items from the screenshots, in the live app (`artifacts/
   - [x] 🟩 Empty gallery: CTA is Share your design; hero is only eyebrow + headline; computed h1 is 41px desktop / 22px at 390px
   - [x] 🟩 Logged-out nav: Gallery `button light small`, Sign in `button small` on gallery and Playroom. Logged-in coral chip verified by class (`button coral small`) and a CSS injection (Clerk is not configured in this preview, so a real session was not used)
   - [x] 🟩 Share your design click (signed out) goes to `/sign-in?redirect_url=...inspiration?share=photo`. Populated gallery has no share CTA. Playroom still says Share your bookcase.
+
+- [x] 🟩 **Step 6: Local fake-auth preview**
+  - [x] 🟩 Loopback only: `http://localhost:5173/inspiration?fakeAuth=1` (or `127.0.0.1`). `?fakeAuth=0` or Account menu "Exit preview" turns it off.
+  - [x] 🟩 Stays off on any non-loopback host, even if the query param is present.
