@@ -1,6 +1,7 @@
 import { getIdentity, requireIdentity } from "../../cursor/identity";
 import { withSchema } from "../lib/db";
 import * as gallery from "./gallery";
+import { PHOTO_BODY_LIMIT, readBounded, readJsonObject } from "./limited-body";
 import { expiredSessionCookies } from "./session-cookies";
 
 const PRIVATE = { "cache-control": "private, no-store" };
@@ -43,6 +44,12 @@ async function withViewer(request: Request, mutation: boolean, run: (viewer: gal
   return withSchema(identity.stage, () => run(viewer));
 }
 
+/** Sign-in before any request body is read. A signed-out caller must not be able to force a buffer. */
+async function requireSignedIn(request: Request) {
+  const identity = await requireIdentity(request);
+  return identity instanceof Response ? identity : null;
+}
+
 function integerId(raw: string | undefined) {
   if (!raw || !/^[1-9][0-9]{0,8}$/.test(raw)) return null;
   return Number(raw);
@@ -52,20 +59,6 @@ function cursorOf(search: URLSearchParams) {
   const raw = search.get("cursor");
   if (!raw) return null;
   return integerId(raw);
-}
-
-async function readJson(request: Request) {
-  const length = Number(request.headers.get("content-length") ?? 0);
-  if (length > 100_000) return null;
-  const text = await request.text();
-  if (text.length > 100_000) return null;
-  if (!text) return {};
-  try {
-    const body = JSON.parse(text);
-    return body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : null;
-  } catch {
-    return null;
-  }
 }
 
 export async function dispatch(method: string, request: Request, path: string[]): Promise<Response> {
@@ -99,7 +92,9 @@ export async function dispatch(method: string, request: Request, path: string[])
   }
 
   if (key === "POST builds") {
-    const body = await readJson(request);
+    const denied = await requireSignedIn(request);
+    if (denied) return denied;
+    const body = await readJsonObject(request);
     if (!body) return json({ error: "Check the build details and photos." }, 400);
     return withViewer(request, true, async (viewer) => send(await gallery.createBuild(viewer, body), 201));
   }
@@ -109,7 +104,9 @@ export async function dispatch(method: string, request: Request, path: string[])
     if (!id) return json({ error: "Invalid build id." }, 400);
     if (method === "GET") return withViewer(request, false, async (viewer) => send(await gallery.getBuild(viewer, id)));
     if (method === "DELETE") return withViewer(request, true, async (viewer) => send(await gallery.deleteBuild(viewer, id)));
-    const body = await readJson(request);
+    const denied = await requireSignedIn(request);
+    if (denied) return denied;
+    const body = await readJsonObject(request);
     if (!body) return json({ error: "Invalid build update." }, 400);
     return withViewer(request, true, async (viewer) => send(await gallery.updateBuild(viewer, id, body)));
   }
@@ -124,7 +121,9 @@ export async function dispatch(method: string, request: Request, path: string[])
 
   if (key === "GET profiles/me") return withViewer(request, false, async (viewer) => send(await gallery.getProfile(viewer)));
   if (key === "PATCH profiles/me") {
-    const body = await readJson(request);
+    const denied = await requireSignedIn(request);
+    if (denied) return denied;
+    const body = await readJsonObject(request);
     if (!body || typeof body.username !== "string") return json({ error: "Usernames must be 3–24 characters and include at least one letter or number." }, 400);
     return withViewer(request, true, async (viewer) => send(await gallery.saveUsername(viewer, body.username as string)));
   }
@@ -144,16 +143,18 @@ export async function dispatch(method: string, request: Request, path: string[])
   }
 
   if (key === "POST storage/uploads/request-url") {
-    const body = await readJson(request);
+    const denied = await requireSignedIn(request);
+    if (denied) return denied;
+    const body = await readJsonObject(request);
     if (!body) return json({ error: "Missing or invalid required fields" }, 400);
     return withViewer(request, true, async (viewer) => send(await gallery.requestUpload(viewer, body)));
   }
 
   if (method === "PUT" && path[0] === "storage" && path[1] === "uploads" && path[2] === "raw" && path.length === 4) {
-    const length = Number(request.headers.get("content-length") ?? 0);
-    if (length > 12_000_000) return json({ error: "That photo is larger than 12 MB." }, 413);
-    const bytes = new Uint8Array(await request.arrayBuffer());
-    if (bytes.byteLength > 12_000_000) return json({ error: "That photo is larger than 12 MB." }, 413);
+    const denied = await requireSignedIn(request);
+    if (denied) return denied;
+    const bytes = await readBounded(request, PHOTO_BODY_LIMIT);
+    if (!bytes) return json({ error: "That photo is larger than 12 MB." }, 413);
     const type = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
     return withViewer(request, true, async (viewer) => send(await gallery.storeUpload(viewer, path[3], type, bytes)));
   }
