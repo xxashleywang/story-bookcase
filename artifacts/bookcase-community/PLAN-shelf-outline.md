@@ -1,10 +1,8 @@
 # Feature Implementation Plan
-**Overall Progress:** `0%`
+**Overall Progress:** `100%`
 
 ## TLDR
 Two small Playroom edits, nothing else. Selecting a shelf focuses `#bookcase-model`, and the browser’s default focus outline is clipped by `.stage` (`overflow: hidden` + `border-radius: 28px`), so the stage card shows a broken navy ring. Hide that outline in CSS and leave the focus calls in place so keyboard shelf controls keep working. In the Build it meter, change `Base and post are counted.` to `Base and post are in place.` and leave the rest of that sentence alone.
-
-This document is the plan only. It does not implement the UI change.
 
 ## Scope
 **In scope:**
@@ -47,19 +45,19 @@ This document is the plan only. It does not implement the UI change.
 
 ## Tasks
 
-- [ ] 🟥 **Step 0: Feature branch**
-  - [ ] 🟥 From current `main`, create `cursor/shelf-outline-copy-af5f`. Cloud agents must use the `cursor/` prefix and the `-af5f` suffix, not `feature/`.
-  - [ ] 🟥 Land the product edit on that branch. Do not implement it on the plan branch.
+- [x] 🟩 **Step 0: Feature branch**
+  - [x] 🟩 From current `main`, create `cursor/shelf-outline-copy-6484` (this run’s required suffix; not the plan-branch name `-af5f`).
+  - [x] 🟩 Land the product edit on that branch. Do not implement it on the plan branch.
 
-- [ ] 🟥 **Step 1: Remove the clipped navy focus outline**
-  - [ ] 🟥 In `artifacts/bookcase-community/src/index.css`, add `#bookcase-model:focus, #bookcase-model:focus-visible { outline: none; }` beside the existing `#bookcase-model` rule.
-  - [ ] 🟥 Leave both `hostRef.current?.focus({ preventScroll:true })` calls, `tabIndex={-1}`, and `aria-label="Bookcase model"` unchanged.
+- [x] 🟩 **Step 1: Remove the clipped navy focus outline**
+  - [x] 🟩 In `artifacts/bookcase-community/src/index.css`, add `#bookcase-model:focus, #bookcase-model:focus-visible { outline: none; }` beside the existing `#bookcase-model` rule.
+  - [x] 🟩 Leave both `hostRef.current?.focus({ preventScroll:true })` calls, `tabIndex={-1}`, and `aria-label="Bookcase model"` unchanged.
 
-- [ ] 🟥 **Step 2: Build meter sentence**
-  - [ ] 🟥 In `artifacts/bookcase-community/src/App.tsx`, change the incomplete-build meter phrase to `Base and post are in place.`
-  - [ ] 🟥 Keep the `Next: shelf N, facing …` continuation, the finished-state line, the progress math, and the `Build it` tab label.
+- [x] 🟩 **Step 2: Build meter sentence**
+  - [x] 🟩 In `artifacts/bookcase-community/src/App.tsx`, change the incomplete-build meter phrase to `Base and post are in place.`
+  - [x] 🟩 Keep the `Next: shelf N, facing …` continuation, the finished-state line, the progress math, and the `Build it` tab label.
 
-- [ ] 🟥 **Step 3: Verify in the browser**
-  - [ ] 🟥 On Style it, select a shelf by clicking the model and by clicking a rail tick. The stage card has no navy/blue ring, and the rounded corners stay clean.
-  - [ ] 🟥 With a shelf selected, ArrowUp/ArrowDown still move the selection and ArrowLeft/ArrowRight still rotate it (window `keydown` in `Configurator`).
-  - [ ] 🟥 On Build it, before the bookcase is finished, the meter reads `Base and post are in place. Next: shelf N, facing …`. The finished line and the tab fraction are unchanged.
+- [x] 🟩 **Step 3: Verify in the browser**
+  - [x] 🟩 On Style it, select a shelf by clicking the model and by clicking a rail tick. The stage card has no navy/blue ring, and the rounded corners stay clean.
+  - [x] 🟩 With a shelf selected, ArrowUp/ArrowDown still move the selection and ArrowLeft/ArrowRight still rotate it (window `keydown` in `Configurator`).
+  - [x] 🟩 On Build it, before the bookcase is finished, the meter reads `Base and post are in place. Next: shelf N, facing …`. The finished line and the tab fraction are unchanged.
