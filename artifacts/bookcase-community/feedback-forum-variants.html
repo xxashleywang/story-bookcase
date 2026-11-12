@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ImagineMode Community Feedback Mockups</title>
+  <style>
+    :root {
+      --bg: #fff8ee;
+      --panel: #ffffff;
+      --ink: #2b1e16;
+      --muted: #7f7268;
+      --line: #eadfce;
+      --accent: #ff6b4a;
+      --accent-soft: #fff0eb;
+      --ok: #2f8a5b;
+      --radius-lg: 22px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #fff8ee 0%, #fffaf3 65%, #fffefb 100%);
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+      margin-right: auto;
+    }
+
+    .topbtn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .topbtn.active {
+      border-color: transparent;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .hero {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 3.4vw, 36px);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .sub {
+      color: var(--muted);
+      max-width: 74ch;
+    }
+
+    .pillrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      padding: 8px 12px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .pill[data-selected="true"] {
+      border-color: transparent;
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .banner {
+      border: 1px solid #ffcdbf;
+      background: var(--accent-soft);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: #64362a;
+      font-size: 14px;
+    }
+
+    .layout-switch {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .layout-switch button {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .layout-switch button[data-on="true"] {
+      border-color: transparent;
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .board {
+      display: none;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: #fff;
+      padding: 14px;
+    }
+
+    .board.on { display: block; }
+
+    .v2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 14px;
+    }
+
+    .feed, .composer, .panel, .table {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fff;
+    }
+
+    .composer {
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      position: sticky;
+      top: 12px;
+    }
+
+    .composer h3, .panel h3, .table h3 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"], textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font: inherit;
+      color: inherit;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .cta {
+      border: 0;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .feed {
+      overflow: hidden;
+    }
+
+    .post {
+      display: grid;
+      grid-template-columns: 56px minmax(0, 1fr);
+      gap: 10px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .post:last-child { border-bottom: 0; }
+
+    .vote {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 6px;
+      display: grid;
+      justify-items: center;
+      gap: 6px;
+      height: max-content;
+    }
+
+    .vote button {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+    }
+
+    .vote b { font-size: 15px; }
+
+    .meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .name { color: var(--ink); font-weight: 700; }
+
+    .tag {
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      padding: 2px 8px;
+      font-size: 12px;
+      color: #5f544b;
+      background: #fff;
+    }
+
+    .tag.ok {
+      border-color: #bee4ce;
+      color: var(--ok);
+      background: #eefaf3;
+    }
+
+    .title {
+      margin: 0 0 4px;
+      font-size: 17px;
+      letter-spacing: -0.01em;
+    }
+
+    .excerpt {
+      margin: 0;
+      color: #52453d;
+    }
+
+    .actions {
+      margin-top: 9px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .actions button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      padding: 6px 10px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      color: #4f443c;
+    }
+
+    .v3 {
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .table {
+      overflow: hidden;
+    }
+
+    .table .head,
+    .table .line {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) 140px 120px 120px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+    }
+
+    .table .head {
+      background: #fff8f1;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6a5e55;
+      font-weight: 700;
+    }
+
+    .table .line {
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    .table .line:last-child {
+      border-bottom: 0;
+    }
+
+    .kicker {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .upvote-chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      width: max-content;
+      cursor: pointer;
+      background: #fff;
+      font-weight: 700;
+    }
+
+    .muted { color: var(--muted); }
+
+    @media (max-width: 980px) {
+      .v2 { grid-template-columns: 1fr; }
+      .composer { position: static; }
+      .table .head,
+      .table .line {
+        grid-template-columns: 64px minmax(0, 1fr);
+      }
+      .hide-mobile { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">ImagineMode</div>
+      <button class="topbtn active" type="button" aria-label="Open feedback">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v10H8l-4 4z"/></svg>
+        Feedback
+      </button>
+      <button class="topbtn" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Add idea
+      </button>
+    </div>
+
+    <section class="hero">
+      <h1>Community feedback space<br>for requests, votes, and ideas</h1>
+      <p class="sub">External community-facing concept for your app. Users must log in to post or vote, but they can choose to post as Anonymous.</p>
+
+      <div class="pillrow" id="namePills">
+        <button class="pill" data-selected="true">Feedback</button>
+        <button class="pill">Idea hub</button>
+        <button class="pill">Wish wall</button>
+        <button class="pill">Build board</button>
+        <button class="pill">What should we add?</button>
+        <button class="pill">Feature garden</button>
+      </div>
+
+      <div class="banner">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v6c0 5-3.5 7.5-8 8-4.5-.5-8-3-8-8V7z"/></svg>
+        <div><strong>Login required for posting and upvoting.</strong> You can still hide your identity by turning on <strong>Post as Anonymous</strong> when submitting feedback.</div>
+      </div>
+    </section>
+
+    <div class="layout-switch">
+      <button type="button" data-layout="b" data-on="true">Version B · Feed + sticky composer</button>
+      <button type="button" data-layout="c">Version C · Compact forum list</button>
+    </div>
+
+    <section class="board v2 on" id="layoutB">
+      <div class="v2">
+        <div class="feed">
+          <article class="post">
+            <div class="vote">
+              <button type="button" class="vote-up" aria-label="Upvote"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+              <b>86</b>
+            </div>
+            <div>
+              <div class="meta"><span class="name">Anonymous</span><span>2h ago</span><span class="tag">Discovery</span><span class="tag ok">Popular</span></div>
+              <h2 class="title">Let me save and compare multiple shelf drafts</h2>
+              <p class="excerpt">I want to keep version A and B, then quickly flip between them without losing changes.</p>
+              <div class="actions"><button type="button">28 comments</button><button type="button">Follow</button><button type="button">Share</button></div>
+            </div>
+          </article>
+
+          <article class="post">
+            <div class="vote">
+              <button type="button" class="vote-up" aria-label="Upvote"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+              <b>61</b>
+            </div>
+            <div>
+              <div class="meta"><span class="name">Lila M.</span><span>5h ago</span><span class="tag">Mobile</span></div>
+              <h2 class="title">Mobile layout should keep build steps pinned</h2>
+              <p class="excerpt">On phone, I lose context while scrolling. A bottom step tracker would help a lot.</p>
+              <div class="actions"><button type="button">11 comments</button><button type="button">Follow</button><button type="button">Share</button></div>
+            </div>
+          </article>
+
+          <article class="post">
+            <div class="vote">
+              <button type="button" class="vote-up" aria-label="Upvote"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+              <b>34</b>
+            </div>
+            <div>
+              <div class="meta"><span class="name">Anonymous</span><span>1d ago</span><span class="tag">Sharing</span></div>
+              <h2 class="title">Public link for my setup with comments on shelves</h2>
+              <p class="excerpt">Let me share a link where friends can click each shelf and leave suggestions.</p>
+              <div class="actions"><button type="button">7 comments</button><button type="button">Follow</button><button type="button">Share</button></div>
+            </div>
+          </article>
+        </div>
+
+        <aside class="composer">
+          <h3>Add your feedback</h3>
+          <input type="text" value="I wish there was..." aria-label="Idea title">
+          <textarea aria-label="Feedback details">I would love to see this because...</textarea>
+          <div class="row">
+            <select aria-label="Category">
+              <option>Feature request</option>
+              <option>UX improvement</option>
+              <option>Bug report</option>
+              <option>Community idea</option>
+            </select>
+          </div>
+          <label class="row" for="anonymousB">
+            <input id="anonymousB" type="checkbox" checked>
+            <span>Post as Anonymous</span>
+          </label>
+          <div class="small">You are logged in for moderation and safety, but your name can stay hidden from the community.</div>
+          <button class="cta" type="button">Share feedback</button>
+        </aside>
+      </div>
+    </section>
+
+    <section class="board v3" id="layoutC">
+      <div class="v3">
+        <div class="panel">
+          <h3>Quick post</h3>
+          <div class="row">
+            <input type="text" value="Short request title">
+            <button class="cta" type="button">Post</button>
+          </div>
+          <div class="row">
+            <label for="anonymousC"><input id="anonymousC" type="checkbox" checked> Post as Anonymous</label>
+            <span class="small">Login required for posting and voting.</span>
+          </div>
+        </div>
+
+        <div class="table">
+          <h3 style="padding:12px 12px 0;">Top community requests</h3>
+          <div class="head">
+            <div>Votes</div>
+            <div>Idea</div>
+            <div class="hide-mobile">Status</div>
+            <div class="hide-mobile">Author</div>
+            <div class="hide-mobile">Last active</div>
+          </div>
+
+          <div class="line">
+            <div><button class="upvote-chip" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>112</button></div>
+            <div>
+              <div><strong>Template library for starter shelf styles</strong></div>
+              <div class="kicker">Auto-apply a style pack in one click</div>
+            </div>
+            <div class="hide-mobile"><span class="tag ok">Planned</span></div>
+            <div class="hide-mobile">Anonymous</div>
+            <div class="hide-mobile muted">1h ago</div>
+          </div>
+
+          <div class="line">
+            <div><button class="upvote-chip" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>89</button></div>
+            <div>
+              <div><strong>Find ideas by room type</strong></div>
+              <div class="kicker">Living room, office, kids room, studio</div>
+            </div>
+            <div class="hide-mobile"><span class="tag">Reviewing</span></div>
+            <div class="hide-mobile">Rico P.</div>
+            <div class="hide-mobile muted">4h ago</div>
+          </div>
+
+          <div class="line">
+            <div><button class="upvote-chip" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>73</button></div>
+            <div>
+              <div><strong>Show dimensions live while arranging shelves</strong></div>
+              <div class="kicker">Always-on size overlay for confidence before build</div>
+            </div>
+            <div class="hide-mobile"><span class="tag">Open</span></div>
+            <div class="hide-mobile">Anonymous</div>
+            <div class="hide-mobile muted">7h ago</div>
+          </div>
+
+          <div class="line">
+            <div><button class="upvote-chip" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>51</button></div>
+            <div>
+              <div><strong>Community profile pages with saved setups</strong></div>
+              <div class="kicker">Optional profile for creators who want attribution</div>
+            </div>
+            <div class="hide-mobile"><span class="tag">Open</span></div>
+            <div class="hide-mobile">Sam C.</div>
+            <div class="hide-mobile muted">1d ago</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const byId = (id) => document.getElementById(id);
+    const layoutButtons = document.querySelectorAll("[data-layout]");
+    const layoutB = byId("layoutB");
+    const layoutC = byId("layoutC");
+    const namePills = document.querySelectorAll("#namePills .pill");
+
+    layoutButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const isB = button.getAttribute("data-layout") === "b";
+        layoutButtons.forEach((b) => b.setAttribute("data-on", String(b === button)));
+        layoutB.classList.toggle("on", isB);
+        layoutC.classList.toggle("on", !isB);
+      });
+    });
+
+    namePills.forEach((pill) => {
+      pill.addEventListener("click", () => {
+        namePills.forEach((item) => item.setAttribute("data-selected", String(item === pill)));
+      });
+    });
+
+    document.querySelectorAll(".vote-up, .upvote-chip").forEach((button) => {
+      button.addEventListener("click", () => {
+        const counter = button.closest(".vote")?.querySelector("b");
+        if (counter) counter.textContent = String(Number(counter.textContent || "0") + 1);
+        const chipText = button.childNodes[button.childNodes.length - 1];
+        if (chipText && chipText.nodeType === Node.TEXT_NODE) {
+          const current = Number(chipText.textContent.trim());
+          chipText.textContent = " " + String(current + 1);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
