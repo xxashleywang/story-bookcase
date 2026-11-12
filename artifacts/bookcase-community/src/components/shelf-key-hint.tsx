@@ -1,48 +1,68 @@
-import type { CSSProperties } from 'react';
-import { X } from 'lucide-react';
-import { Kbd } from '@/components/ui/kbd';
+import type { CSSProperties, MouseEvent, ReactNode } from 'react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, X } from 'lucide-react';
 
-function KeyCap({ direction }: { direction: 'up' | 'down' | 'left' | 'right' }) {
-  return <Kbd className="shelf-key-hint-cap" aria-hidden="true">
-    <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-      <path
-        d={
-          direction === 'up' ? 'M8 3l4 4H9v6H7V7H4z'
-            : direction === 'down' ? 'M8 13l4-4H9V3H7v6H4z'
-              : direction === 'left' ? 'M3 8l4-4v3h6v2H7v3z'
-                : 'M13 8l-4-4v3H3v2h6v3z'
-        }
-        fill="currentColor"
-      />
-    </svg>
-  </Kbd>;
+/** Card size used by the stage placement math; keep in sync with `.shelf-key-hint` in index.css. */
+export const SHELF_HINT_SIZE = { width:236, height:184 };
+
+function PadButton({ icon, label, onClick, disabled = false, className = '' }: {
+  icon: ReactNode; label: string; onClick: () => void; disabled?: boolean; className?: string;
+}) {
+  const press = (event: MouseEvent<HTMLButtonElement>) => {
+    onClick();
+    // Pointer clicks (detail > 0) get a brief flash and drop focus so the outline does not read as a held selection.
+    // Keyboard activation keeps focus and its focus ring.
+    if (event.detail > 0) {
+      event.currentTarget.animate(
+        [{ boxShadow:'0 0 0 2px #ff6b4a' }, { boxShadow:'0 0 0 2px #ff6b4a00' }],
+        { duration:450, easing:'ease-out' },
+      );
+      event.currentTarget.blur();
+    }
+  };
+  return <button type="button" className={`shelf-key-hint-btn ${className}`.trim()} onClick={press} disabled={disabled}>
+    {icon}<span>{label}</span>
+  </button>;
 }
 
 export function ShelfKeyHint({
+  shelf,
+  count,
+  facing,
   onDismiss,
+  onMoveUp,
+  onMoveDown,
+  onTurnLeft,
+  onTurnRight,
   className = '',
   style,
 }: {
+  shelf: number;
+  count: number;
+  facing: string;
   onDismiss: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onTurnLeft: () => void;
+  onTurnRight: () => void;
   className?: string;
   style?: CSSProperties;
 }) {
-  return <aside className={`shelf-key-hint ${className}`.trim()} style={style} role="status" aria-live="polite">
-    <span className="sr-only">Use arrow keys. Up and down switch shelves. Left and right turns shelf direction.</span>
-    <div className="shelf-key-hint-copy">
-      <b>Keyboard controls</b>
-      <span>Use arrows to move and turn shelves.</span>
+  return <aside className={`shelf-key-hint ${className}`.trim()} style={style} aria-label={`Shelf ${shelf + 1} controls`}>
+    <div className="shelf-key-hint-head">
+      <div>
+        <b>Shelf {shelf + 1} <span>of {count}</span></b>
+        <small>Faces {facing.toLowerCase()}</small>
+      </div>
+      <button type="button" className="shelf-key-hint-close" aria-label="Close shelf controls" onClick={onDismiss}>
+        <X size={14} />
+      </button>
     </div>
-    <div className="shelf-key-hint-pad" aria-hidden="true">
-      <span className="shelf-key-hint-pad-empty" />
-      <KeyCap direction="up" />
-      <span className="shelf-key-hint-pad-empty" />
-      <KeyCap direction="left" />
-      <KeyCap direction="down" />
-      <KeyCap direction="right" />
+    <div className="shelf-key-hint-pad" role="group" aria-label="Move or turn the shelf" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight">
+      <PadButton className="is-up" icon={<ArrowUp size={16} />} label="Shelf up" onClick={onMoveUp} disabled={shelf >= count - 1} />
+      <PadButton icon={<ArrowLeft size={16} />} label="Turn left" onClick={onTurnLeft} />
+      <PadButton icon={<ArrowDown size={16} />} label="Shelf down" onClick={onMoveDown} disabled={shelf <= 0} />
+      <PadButton icon={<ArrowRight size={16} />} label="Turn right" onClick={onTurnRight} />
     </div>
-    <button type="button" className="icon-button shelf-key-hint-close" aria-label="Dismiss keyboard hint" onClick={onDismiss}>
-      <X size={14} />
-    </button>
+    <p className="shelf-key-hint-foot">Arrow keys work too</p>
   </aside>;
 }
