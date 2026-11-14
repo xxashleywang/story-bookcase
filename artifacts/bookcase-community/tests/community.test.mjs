@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   MAX_PHOTO_BYTES, addressHash, blueprintHash, createPayload, mergePhotoSelection, photoCountLabel,
-  readGalleryBlueprint, readReferenceId, referenceHref, safePhotos, shareGateDecision, updatePayload,
-  validateShare, withoutParam,
+  readGalleryBlueprint, readReferenceId, referenceHref, safePhotos, shareGateDecision, shareTitle, updatePayload,
+  validateShare, withCoverFirst, withoutParam,
 } from '../src/lib/community.ts';
 
 const file = (name, size = 1000, type = 'image/jpeg', lastModified = 1) => ({ name, size, type, lastModified });
@@ -41,6 +41,24 @@ test('photo-only create payload carries no invented configuration or tags', () =
   const payload = createPayload({ title: ' Nook ', description: ' ', photoPaths: ['/objects/1'], blueprint: null });
   assert.deepEqual(payload, { title: 'Nook', description: null, photoPaths: ['/objects/1'], configuration: null });
   assert.equal('tags' in payload, false);
+});
+
+test('a photo share can skip the title, and a blank title becomes a date label', () => {
+  assert.equal(validateShare({ photoCount: 1, requireTitle: false }), null);
+  assert.match(validateShare({ photoCount: 0, requireTitle: false }), /photo/);
+  const now = new Date(2026, 10, 14, 12);
+  assert.equal(shareTitle('', now), 'November 14');
+  assert.equal(shareTitle('  ', now), 'November 14');
+  assert.equal(shareTitle('Nook', now), 'Nook');
+  const quiet = createPayload({ photoPaths: ['/objects/1'], blueprint: null, now });
+  assert.equal(quiet.title, 'November 14');
+  assert.equal(quiet.description, null);
+});
+
+test('the chosen photo moves to the front and becomes the cover', () => {
+  assert.deepEqual(withCoverFirst(['a', 'b', 'c'], 2), ['c', 'a', 'b']);
+  assert.deepEqual(withCoverFirst(['a', 'b'], 0), ['a', 'b']);
+  assert.deepEqual(withCoverFirst(['only'], 1), ['only']);
 });
 
 test('update only touches photos when replaced and removes blueprint explicitly', () => {

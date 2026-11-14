@@ -103,20 +103,38 @@ export function photoCountLabel(count: number, max = MAX_PHOTOS) {
   return `${count} of ${max} photos`;
 }
 
+/** Move the chosen photo to the front. Index 0 is the cover, and the gallery shows that photo largest. */
+export function withCoverFirst<T>(items: readonly T[], index: number): T[] {
+  if (!Number.isInteger(index) || index <= 0 || index >= items.length) return items as T[];
+  return [items[index], ...items.slice(0, index), ...items.slice(index + 1)];
+}
+
+/**
+ * The share form does not ask for a title. The builds table still requires one,
+ * so a blank title becomes a short date label that is never shown in the form.
+ */
+export function shareTitle(title = '', now = new Date()) {
+  const trimmed = title.trim();
+  if (trimmed.length >= 2) return trimmed;
+  return now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+}
+
 /** Validate the text + photo part of a share before any upload starts. */
-export function validateShare(input: { title: string; photoCount: number }) {
-  const title = input.title.trim();
-  if (title.length < 2) return 'Give it a title with at least 2 characters.';
-  if (title.length > 80) return 'Keep the title under 80 characters.';
+export function validateShare(input: { title?: string; photoCount: number; requireTitle?: boolean }) {
+  if (input.requireTitle !== false) {
+    const title = (input.title ?? '').trim();
+    if (title.length < 2) return 'Give it a title with at least 2 characters.';
+    if (title.length > 80) return 'Keep the title under 80 characters.';
+  }
   if (input.photoCount < 1) return 'Add at least one room photo.';
   if (input.photoCount > MAX_PHOTOS) return `Choose up to ${MAX_PHOTOS} photos.`;
   return null;
 }
 
-export function createPayload(input: { title: string; description: string; photoPaths: string[]; blueprint: BlueprintLike | null }) {
+export function createPayload(input: { title?: string; description?: string; photoPaths: string[]; blueprint: BlueprintLike | null; now?: Date }) {
   return {
-    title: input.title.trim(),
-    description: input.description.trim() || null,
+    title: shareTitle(input.title ?? '', input.now),
+    description: (input.description ?? '').trim() || null,
     photoPaths: input.photoPaths,
     configuration: input.blueprint,
   };

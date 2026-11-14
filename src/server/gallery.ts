@@ -154,6 +154,20 @@ function cleanText(value: unknown, max: number) {
   return trimmed;
 }
 
+/** Same quiet label as shareTitle in the community client. Used only when create omits a title. */
+function fallbackTitle(now = new Date()) {
+  return now.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+}
+
+function resolveCreateTitle(value: unknown) {
+  if (value == null) return fallbackTitle();
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return fallbackTitle();
+  if (trimmed.length < 2 || trimmed.length > 80) return undefined;
+  return trimmed;
+}
+
 async function purgeStale(query: Query, userId: string) {
   await query(
     `delete from ${table("photos")} where user_id = $1 and attached = false and created_at < now() - interval '1 day'`,
@@ -301,7 +315,7 @@ async function claimPhotos(query: Query, userId: string, paths: string[]) {
 }
 
 export async function createBuild(viewer: Viewer, body: Record<string, unknown>) {
-  const title = cleanText(body.title, 80);
+  const title = resolveCreateTitle(body.title);
   const description = cleanText(body.description, 1200);
   const paths = body.photoPaths;
   const config = parseConfig(body.configuration);
