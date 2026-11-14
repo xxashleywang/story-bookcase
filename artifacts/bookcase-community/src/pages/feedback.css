@@ -12,30 +12,29 @@
 }
 
 .feedback-hero {
-  background: white;
-  border: 1px solid var(--hairline);
-  border-radius: 22px;
-  padding: 20px;
-  margin-bottom: 16px;
+  padding: 4px 0 18px;
+  margin-bottom: 4px;
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .feedback-hero h1 {
   margin: 0;
-  font-size: clamp(28px, 3.6vw, 40px);
+  font-size: clamp(34px, 3.6vw, 52px);
   font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.05em;
+  line-height: 0.91;
+  letter-spacing: -0.065em;
 }
 
 .feedback-sub {
   margin: 0;
+  max-width: 40em;
   color: var(--muted-ink);
-  max-width: 74ch;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
-.feedback-pills,
 .feedback-switch,
 .feedback-row,
 .feedback-meta,
@@ -46,7 +45,6 @@
   align-items: center;
 }
 
-.feedback-pill,
 .feedback-switch button,
 .feedback-actions button,
 .feedback-upvote {
@@ -57,27 +55,18 @@
   font: inherit;
 }
 
-.feedback-pill,
 .feedback-switch button,
 .feedback-upvote {
   border-radius: 999px;
   font-weight: 700;
 }
 
-.feedback-pill {
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.feedback-pill[aria-pressed="true"],
 .feedback-switch button[aria-pressed="true"] {
   border-color: transparent;
   background: var(--ink);
   color: white;
 }
 
-.feedback-pill:focus-visible,
 .feedback-switch button:focus-visible,
 .feedback-vote button:focus-visible,
 .feedback-actions button:focus-visible,
@@ -89,20 +78,6 @@
   outline: 2px solid var(--coral);
   outline-offset: 2px;
 }
-
-.feedback-banner {
-  border: 1px solid #ffcdbf;
-  background: #fff1e6;
-  border-radius: 14px;
-  padding: 12px 14px;
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  color: #64362a;
-  font-size: 14px;
-}
-
-.feedback-banner svg { flex: none; margin-top: 2px; }
 
 .feedback-switch { margin-bottom: 12px; }
 
@@ -274,7 +249,7 @@
 .feedback-head,
 .feedback-line {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) 140px 120px 120px;
+  grid-template-columns: 72px minmax(0, 1.4fr) 140px 110px;
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
@@ -320,8 +295,9 @@
 
 @media (max-width: 680px) {
   .feedback-page { padding: 4px 16px 50px; }
-  .feedback-hero { padding: 16px; border-radius: 18px; }
+  .feedback-hero { padding: 4px 0 14px; }
   .feedback-hero h1 { font-size: 28px; }
+  .feedback-sub { font-size: 14px; }
   .feedback-switch button { flex: 1 1 100%; }
   .feedback-board { border-radius: 18px; padding: 10px; }
   .feedback-toolbar .button { width: 100%; }

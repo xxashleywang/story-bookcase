@@ -4,18 +4,9 @@ import './feedback.css';
 
 /**
  * Layout prototype for the community feedback page.
- * Name pills, the B/C switch, and vote counts stay on this page.
+ * The B/C switch and vote counts stay on this page.
  * Nothing is collected, stored, or submitted.
  */
-
-const NAMES = [
-  'Feedback',
-  'Idea hub',
-  'Wish wall',
-  'Build board',
-  'What should we add?',
-  'Feature garden',
-] as const;
 
 type Tag = { label: string; ok?: boolean };
 
@@ -35,8 +26,6 @@ type ListRow = {
   votes: number;
   title: string;
   detail: string;
-  status: string;
-  statusOk?: boolean;
   author: string;
   active: string;
 };
@@ -80,8 +69,6 @@ const LIST: ListRow[] = [
     votes: 112,
     title: 'Template library for starter shelf styles',
     detail: 'Auto-apply a style pack in one click',
-    status: 'Planned',
-    statusOk: true,
     author: 'Anonymous',
     active: '1h ago',
   },
@@ -90,7 +77,6 @@ const LIST: ListRow[] = [
     votes: 89,
     title: 'Find ideas by room type',
     detail: 'Living room, office, kids room, studio',
-    status: 'Reviewing',
     author: 'Rico P.',
     active: '4h ago',
   },
@@ -99,7 +85,6 @@ const LIST: ListRow[] = [
     votes: 73,
     title: 'Show dimensions live while arranging shelves',
     detail: 'Always-on size overlay for confidence before build',
-    status: 'Open',
     author: 'Anonymous',
     active: '7h ago',
   },
@@ -108,7 +93,6 @@ const LIST: ListRow[] = [
     votes: 51,
     title: 'Community profile pages with saved setups',
     detail: 'Optional profile for creators who want attribution',
-    status: 'Open',
     author: 'Sam C.',
     active: '1d ago',
   },
@@ -141,10 +125,6 @@ function UpIcon() {
   return <StrokeIcon size={14}><path d="M12 19V5M6 11l6-6 6 6" /></StrokeIcon>;
 }
 
-function ShieldIcon() {
-  return <StrokeIcon size={18}><path d="M12 3l8 4v6c0 5-3.5 7.5-8 8-4.5-.5-8-3-8-8V7z" /></StrokeIcon>;
-}
-
 function TagList({ tags }: { tags: Tag[] }) {
   return (
     <>
@@ -156,8 +136,7 @@ function TagList({ tags }: { tags: Tag[] }) {
 }
 
 export default function FeedbackPage({ header }: { header: ReactNode }) {
-  const [name, setName] = useState<(typeof NAMES)[number]>('Feedback');
-  const [layout, setLayout] = useState<'b' | 'c'>('b');
+  const [layout, setLayout] = useState<'b' | 'c'>('c');
   const [feedVotes, setFeedVotes] = useState(() => FEED.map((post) => post.votes));
   const [listVotes, setListVotes] = useState(() => LIST.map((row) => row.votes));
   const composerTitle = useRef<HTMLInputElement>(null);
@@ -189,25 +168,8 @@ export default function FeedbackPage({ header }: { header: ReactNode }) {
         </div>
 
         <section className="feedback-hero">
-          <h1>Community feedback space<br />for requests, votes, and ideas</h1>
-          <p className="feedback-sub">External community-facing concept for your app. Users must log in to post or vote, but they can choose to post as Anonymous.</p>
-          <div className="feedback-pills" role="group" aria-label="Page name">
-            {NAMES.map((label) => (
-              <button
-                key={label}
-                className="feedback-pill"
-                type="button"
-                aria-pressed={name === label}
-                onClick={() => setName(label)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="feedback-banner">
-            <ShieldIcon />
-            <div><strong>Login required for posting and upvoting.</strong> You can still hide your identity by turning on <strong>Post as Anonymous</strong> when submitting feedback.</div>
-          </div>
+          <h1>Make a wish.</h1>
+          <p className="feedback-sub">Got an idea? Share it. Vote on it. We'll read it.</p>
         </section>
 
         <div className="feedback-switch" role="group" aria-label="Feedback layout">
@@ -289,7 +251,6 @@ export default function FeedbackPage({ header }: { header: ReactNode }) {
                 <div className="feedback-head" aria-hidden="true">
                   <div>Votes</div>
                   <div>Idea</div>
-                  <div className="feedback-hide-narrow">Status</div>
                   <div className="feedback-hide-narrow">Author</div>
                   <div className="feedback-hide-narrow">Last active</div>
                 </div>
@@ -305,7 +266,6 @@ export default function FeedbackPage({ header }: { header: ReactNode }) {
                       <div><strong>{row.title}</strong></div>
                       <div className="feedback-kicker">{row.detail}</div>
                     </div>
-                    <div className="feedback-hide-narrow"><span className={row.statusOk ? 'feedback-tag is-ok' : 'feedback-tag'}>{row.status}</span></div>
                     <div className="feedback-hide-narrow">{row.author}</div>
                     <div className="feedback-hide-narrow feedback-muted">{row.active}</div>
                   </div>
