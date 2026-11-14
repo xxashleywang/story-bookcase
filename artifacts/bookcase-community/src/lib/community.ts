@@ -1,5 +1,7 @@
 // Pure helpers for photo-first community sharing. Kept framework-free so they can be unit tested with node --test.
 
+import { encodeDesign } from './design-url.ts';
+
 export const MAX_PHOTOS = 4;
 export const MAX_PHOTO_BYTES = 12_000_000;
 export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'] as const;
@@ -85,7 +87,9 @@ export function blueprintHash(config: BlueprintLike, encodeUnit: (m: { size: str
 }
 
 export function blueprintHref(base: string, config: BlueprintLike, encodeUnit: (m: { size: string; color: string; dirs: string[] }) => string) {
-  return `${base || ''}/#${blueprintHash(config, encodeUnit)}`;
+  const configHash = blueprintHash(config, encodeUnit);
+  const code = encodeDesign(configHash);
+  return code ? `${base || ''}/d/${code}` : `${base || ''}/#${configHash}`;
 }
 
 /** Empty for the factory default, so the address bar stays the bare domain. Any other design is `#` plus its config. */
@@ -93,9 +97,9 @@ export function addressHash(config: string, defaultConfig: string) {
   return config.toLowerCase() === defaultConfig.toLowerCase() ? '' : `#${config}`;
 }
 
-/** Photo-only handoff: keep whatever design the visitor already has, only add a reference id. */
+/** Photo-only handoff: keep whatever design the visitor already has, and name the reference in the path. */
 export function referenceHref(base: string, buildId: number) {
-  return `${base || ''}/?ref=${buildId}`;
+  return `${base || ''}/from/${buildId}`;
 }
 
 export function readReferenceId(search: string) {

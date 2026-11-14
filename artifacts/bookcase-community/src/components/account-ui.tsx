@@ -60,7 +60,7 @@ export function AccountMenu() {
 /** My profile and Log out. Both account systems use this so the rows cannot drift. */
 function AccountMenuPanel({ name, logout, pending, failed }: { name: string; logout: () => void; pending: boolean; failed: boolean }) {
   const [location] = useLocation();
-  const current = location.startsWith('/profile');
+  const current = location.startsWith('/my-profile') || location.startsWith('/profile');
   return <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <button type="button" className={`button light small account-menu-trigger${current ? ' is-current' : ''}`} aria-current={current ? 'page' : undefined} data-testid="button-account-menu">
@@ -69,7 +69,7 @@ function AccountMenuPanel({ name, logout, pending, failed }: { name: string; log
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" sideOffset={8} collisionPadding={12} className="account-menu" aria-label="Account">
       <DropdownMenuItem asChild className="account-menu-item">
-        <Link href="/profile"><UserRound size={16} aria-hidden="true"/>My profile</Link>
+        <Link href="/my-profile"><UserRound size={16} aria-hidden="true"/>My profile</Link>
       </DropdownMenuItem>
       <DropdownMenuItem className="account-menu-item account-menu-logout" disabled={pending}
         onSelect={(event) => { event.preventDefault(); void logout(); }} data-testid="button-account-logout">

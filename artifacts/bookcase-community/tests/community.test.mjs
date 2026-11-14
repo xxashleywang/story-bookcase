@@ -66,7 +66,7 @@ test('blueprint hash keeps size, dirs, color, wall and floor', () => {
 });
 
 test('reference handoff helpers and safe photo fallback', () => {
-  assert.equal(referenceHref('/app', 12), '/app/?ref=12');
+  assert.equal(referenceHref('/app', 12), '/app/from/12');
   assert.equal(readReferenceId('?ref=12'), 12);
   assert.equal(readReferenceId('?ref=abc'), null);
   assert.equal(withoutParam('?ref=3&x=1', 'ref'), '?x=1');
