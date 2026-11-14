@@ -74,5 +74,6 @@ test('outcomes are wired after publishing, rendering, image loading and dismissa
   assert.match(app, /onLoad=\{\(\) => \{\s+if \(!isError && build\?\.id === id\) completeInspirationHandoff\('reference'\)/);
   assert.match(app, /setReference\(null\);\s+trackEvent\('inspiration_reference_dismissed', \{ source:'playroom', type:'reference' \}\)/);
   assert.match(app, /PublishDialog source="gallery"/);
-  assert.match(app, /PublishDialog source="playroom"/);
+  assert.match(app, /setLocation\(GALLERY_SHARE_PATH, \{ replace: true \}\)/);
+  assert.doesNotMatch(app, /PublishDialog source="playroom"/);
 });

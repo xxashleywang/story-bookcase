@@ -19,7 +19,7 @@ import { cleanupMessage, privateListKey } from '@/lib/account';
 import { CursorAccountProvider, useCursorAccount } from '@/lib/cursor-account';
 import { clerkConfigured } from '@/lib/local-clerk';
 import { EditBuildDialog, PublishDialog } from '@/components/share-dialog';
-import { blueprintHref, readReferenceId, referenceHref, safePhotos, withoutParam } from '@/lib/community';
+import { blueprintHref, readGalleryBlueprint, readReferenceId, referenceHref, safePhotos, shareGateDecision, withoutParam } from '@/lib/community';
 import { designConfigFromLocation, encodeDesign, formatPlannerPath, locationWithoutShare, parsePlannerPath, shareHref, shareReturnPath } from '@/lib/design-url';
 import { GALLERY_PATH, GALLERY_SHARE_PATH, PROFILE_PATH, legacyPageTarget, profilePath, profileTab } from '@/lib/pages';
 import { completeInspirationHandoff, inspirationHref, trackEvent } from '@/lib/analytics';
@@ -224,16 +224,55 @@ function openBlueprint(config: BuildConfiguration, handoff?: InspirationHandoff)
 }
 const photoUrl = (path: string) => `/api/storage${path}`;
 const SHARE_INTENT_KEY = 'twistory:share-intent';
+const GALLERY_BLUEPRINT_KEY = 'twistory:gallery-blueprint';
+const PROFILE_SHARE_NOTICE = 'Your design is safe. We couldn\'t load your page. Try again.';
 function rememberShareIntent(path: string) { try { window.sessionStorage.setItem(SHARE_INTENT_KEY, path); } catch { /* ignore */ } }
 function takeShareIntent() { try { const v = window.sessionStorage.getItem(SHARE_INTENT_KEY); window.sessionStorage.removeItem(SHARE_INTENT_KEY); return v; } catch { return null; } }
+function stashGalleryBlueprint(scene: Scene) {
+  try { window.sessionStorage.setItem(GALLERY_BLUEPRINT_KEY, JSON.stringify(sceneBlueprint(scene))); } catch { /* storage may be unavailable */ }
+}
+function takeGalleryBlueprint(): BuildConfiguration | null {
+  try {
+    const raw = window.sessionStorage.getItem(GALLERY_BLUEPRINT_KEY);
+    window.sessionStorage.removeItem(GALLERY_BLUEPRINT_KEY);
+    return readGalleryBlueprint(raw);
+  } catch { return null; }
+}
 /** Route a share request through sign-in and username setup, preserving where it started. */
 function useShareGate(mode: 'photo' | 'blueprint') {
   const { isSignedIn, isLoaded } = useAuth();
   const cursor = useCursorAccount();
-  const [, setLocation] = useLocation();
-  const { data:profile } = useGetMyProfile({ query:{ enabled:!!isSignedIn, queryKey:getGetMyProfileQueryKey() } });
-  const ready = !!isSignedIn && !!profile?.isUsernameSet;
+  const [location, setLocation] = useLocation();
+  const { data:profile, isError, refetch } = useGetMyProfile({ query:{ enabled:!!isSignedIn, queryKey:getGetMyProfileQueryKey() } });
+  const [profileNotice, setProfileNotice] = useState('');
+  const pendingOpen = useRef<{ open: () => void; intent: string } | null>(null);
+  const cursorRef = useRef(cursor);
+  cursorRef.current = cursor;
+  const profileState: 'loading' | 'error' | 'ready' = !isSignedIn ? 'ready' : profile ? 'ready' : isError ? 'error' : 'loading';
+  const decision = shareGateDecision({
+    authLoaded: !!isLoaded,
+    signedIn: !!isSignedIn,
+    profile: profileState,
+    isUsernameSet: !!profile?.isUsernameSet,
+  });
+  const ready = decision === 'gallery';
   const backFor = (intent: string) => shareReturnPath(intent === 'photo' ? 'photo' : 'blueprint', stripBase(window.location.pathname), window.location.search, window.location.hash);
+  const beginSignIn = (intent: string) => {
+    const back = backFor(intent);
+    const account = cursorRef.current;
+    // A person who logged out in the app still has a Cursor session. Bring
+    // the account back on this page and let the share continue.
+    if (account.signedOutInApp) {
+      rememberShareIntent(back);
+      window.history.replaceState(null, '', `${basePath}${back}`);
+      account.resumeSession();
+      return;
+    }
+    // Keep a local copy too: sign-in can finish on the profile page rather
+    // than the redirect destination, especially during first-user setup.
+    rememberShareIntent(back);
+    window.location.assign(`${basePath}/sign-in?redirect_url=${encodeURIComponent(`${window.location.origin}${basePath}${back}`)}`);
+  };
   useEffect(() => {
     const path = stripBase(window.location.pathname);
     const pending = path === GALLERY_SHARE_PATH || !!parsePlannerPath(path)?.share || new URLSearchParams(window.location.search).has('share');
@@ -242,29 +281,52 @@ function useShareGate(mode: 'photo' | 'blueprint') {
       setLocation(PROFILE_PATH);
     }
   }, [isSignedIn, profile, setLocation, mode]);
-  const request = (open: () => void, intent: string = mode) => {
-    if (!isLoaded) return;
-    const back = backFor(intent);
-    if (!isSignedIn) {
-      // A person who logged out in the app still has a Cursor session. Bring
-      // the account back on this page and let the share continue.
-      if (cursor.signedOutInApp) {
-        rememberShareIntent(back);
-        window.history.replaceState(null, '', `${basePath}${back}`);
-        cursor.resumeSession();
-        return;
-      }
-      // Keep a local copy too: sign-in can finish on the profile page rather
-      // than the redirect destination, especially during first-user setup.
-      rememberShareIntent(back);
-      window.location.assign(`${basePath}/sign-in?redirect_url=${encodeURIComponent(`${window.location.origin}${basePath}${back}`)}`);
+  useEffect(() => {
+    const queued = pendingOpen.current;
+    if (!queued || decision === 'wait') return;
+    pendingOpen.current = null;
+    if (decision === 'username') {
+      rememberShareIntent(backFor(queued.intent));
+      setLocation(PROFILE_PATH);
       return;
     }
-    if (!profile?.isUsernameSet) { rememberShareIntent(back); setLocation(PROFILE_PATH); return; }
+    if (decision === 'gallery') {
+      takeShareIntent();
+      queued.open();
+      return;
+    }
+    if (decision === 'retry') {
+      setProfileNotice(PROFILE_SHARE_NOTICE);
+      return;
+    }
+    if (decision === 'sign-in') beginSignIn(queued.intent);
+  }, [decision, setLocation, mode]);
+  useEffect(() => {
+    if (decision !== 'retry') {
+      setProfileNotice('');
+      return;
+    }
+    const path = stripBase(location);
+    const pendingShare = path === GALLERY_SHARE_PATH || !!parsePlannerPath(path)?.share || new URLSearchParams(window.location.search).has('share');
+    if (pendingShare) setProfileNotice(PROFILE_SHARE_NOTICE);
+  }, [decision, location]);
+  const request = (open: () => void, intent: string = mode) => {
+    if (decision === 'wait') {
+      if (isLoaded && isSignedIn && profileState === 'loading') {
+        pendingOpen.current = { open, intent };
+        setProfileNotice('');
+      }
+      return;
+    }
+    if (decision === 'sign-in') { beginSignIn(intent); return; }
+    if (decision === 'retry') { setProfileNotice(PROFILE_SHARE_NOTICE); return; }
+    if (decision === 'username') { rememberShareIntent(backFor(intent)); setLocation(PROFILE_PATH); return; }
     takeShareIntent();
+    setProfileNotice('');
     open();
   };
-  return { ready, request };
+  const retryProfile = () => { void refetch(); };
+  return { ready, request, profileNotice, retryProfile };
 }
 
 function roomColor(hex: string) {
@@ -365,12 +427,24 @@ function keepsRulesOpen(target: Element, pop: HTMLElement | null, button: HTMLEl
     || target.closest('.rules-pop, .random-rules') !== null;
 }
 
+function ShareProfileNotice({ notice, onRetry }: { notice?: string; onRetry?: () => void }) {
+  if (!notice) return null;
+  return <div className="share-notice" role="alert" data-testid="share-profile-notice">
+    <span>{notice}</span>
+    {onRetry && <button type="button" className="button light small" onClick={onRetry}>Try again</button>}
+  </div>;
+}
+
 function Configurator({
   onPublish,
   onSceneChange,
+  shareNotice,
+  onRetryShare,
 }: {
   onPublish: (scene: Scene) => void;
   onSceneChange: (scene: Scene) => void;
+  shareNotice?: string;
+  onRetryShare?: () => void;
 }) {
   const [scene, setScene] = useState<Scene>(() => initialScene());
   const [selected, setSelected] = useState(-1);
@@ -855,9 +929,10 @@ function Configurator({
               </ColorPicker>
             </div>
           </details>
+          <ShareProfileNotice notice={shareNotice} onRetry={onRetryShare}/>
           <section className="section cta-row">
             <button className="link-copy-button" onClick={saveShareLink} aria-label="Copy link to this design" title="Copy link to this design"><LinkIcon size={14}/></button>
-            <button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share your bookcase</button>
+            <button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share to the gallery</button>
           </section>
         </div>
       </div>
@@ -868,7 +943,8 @@ function Configurator({
           const detail = nextShelf === 0 ? 'Lowest shelf' : nextShelf === progress.length - 1 ? 'Top shelf' : `${shelf.height.toFixed(1)}″ up`;
           return <div className="build-step-card"><div className="build-step-head">{iconPlan(shelf.dir, 24)}<div><h3>Shelf {nextShelf + 1}</h3><p><b>Faces {shelf.label.toLowerCase()}</b> · {detail}</p></div></div><div className="build-step-actions"><button className="button light small" onClick={undoLastShelf} disabled={steps.doneShelves <= 0}>Back</button><button className="button small" onClick={completeNextShelf}>Done, next</button></div></div>;
         })()}</section>
-        <section className="section build-tools"><button className="button light small" onClick={() => { const reset = Array(progress.length).fill(false); setCompleted(reset); window.Story3D.setProgress(scene.model, []); }}>Start over</button><button className="button light small" onClick={() => S.printBuildSheet(scene.model)}>Print sheet</button><button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share your bookcase</button></section>
+        <ShareProfileNotice notice={shareNotice} onRetry={onRetryShare}/>
+        <section className="section build-tools"><button className="button light small" onClick={() => { const reset = Array(progress.length).fill(false); setCompleted(reset); window.Story3D.setProgress(scene.model, []); }}>Start over</button><button className="button light small" onClick={() => S.printBuildSheet(scene.model)}>Print sheet</button><button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share to the gallery</button></section>
       </div>
     </section>
   </div>;
@@ -903,6 +979,7 @@ function Gallery() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'recent' | 'popular'>('recent');
   const [shareOpen, setShareOpen] = useState(false);
+  const [attachedBlueprint, setAttachedBlueprint] = useState<BuildConfiguration | null>(null);
   const gate = useShareGate('photo');
   const client = useQueryClient();
   const [location, setLocation] = useLocation();
@@ -913,10 +990,11 @@ function Gallery() {
     const pending = location === GALLERY_SHARE_PATH || new URLSearchParams(window.location.search).has('share');
     if (!pending) return;
     takeShareIntent();
+    setAttachedBlueprint(takeGalleryBlueprint());
     window.history.replaceState(null, '', locationWithoutShare(basePath, window.location.pathname, window.location.search, ''));
     setShareOpen(true);
   }, [gate.ready, location]);
-  const openShare = () => gate.request(() => setShareOpen(true));
+  const openShare = () => gate.request(() => { setAttachedBlueprint(null); setShareOpen(true); });
   return <div className="tw-shell"><Header/><main className="gallery-page">
     <section className="gallery-hero"><h1>Shelfies from the community.</h1></section>
     <div className="gallery-tools"><label className="search-box"><Search size={17}/><input aria-label="Search bookcases" data-testid="input-search" placeholder="Search a bookcase, maker, or detail…" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
@@ -932,7 +1010,7 @@ function Gallery() {
     </div>
     {isLoading ? <LoadingCards/> : isError ? <div className="empty-state"><h2>We couldn't load the gallery.</h2><p>Your inspiration is still here; try once more.</p><button className="button" onClick={() => refetch()}>Try again</button></div> : builds?.length ? <div className="build-grid">{builds.map((build: Build) => <BuildCard key={build.id} build={build}/>)}</div> :
       <div className="empty-state"><Camera size={23}/><h2>No shelfies in this corner yet.</h2><p>Try another search, or be the first to share one.</p><button className="button coral" onClick={openShare} data-testid="button-share-room">Share your design</button></div>}
-    {shareOpen && <PublishDialog source="gallery" close={() => setShareOpen(false)} blueprint={null} attachByDefault={false} onSaved={(build) => {
+    {shareOpen && <PublishDialog source="gallery" close={() => { setShareOpen(false); setAttachedBlueprint(null); }} blueprint={attachedBlueprint} attachByDefault={!!attachedBlueprint} blueprintPreview={attachedBlueprint ? <span style={{ backgroundColor:attachedBlueprint.wallColor }}><BookcaseSketch color={attachedBlueprint.color} dirs={attachedBlueprint.shelfDirections} tall={attachedBlueprint.size === 'tall'}/></span> : undefined} onSaved={(build) => {
       client.invalidateQueries({ queryKey:getListBuildsQueryKey() }); client.invalidateQueries({ queryKey:getGetCommunitySummaryQueryKey() }); setLocation(`/build/${build.id}`);
     }}/>}
   </main></div>;
@@ -1149,19 +1227,19 @@ function referenceOnPlanner() {
   return parsePlannerPath(stripBase(window.location.pathname))?.referenceId ?? readReferenceId(window.location.search);
 }
 function Home() {
-  const [location] = useLocation();
-  const [publish, setPublish] = useState<{ attach: boolean } | null>(null);
-  const [published, setPublished] = useState<Build | null>(null);
+  const [location, setLocation] = useLocation();
   const [refId, setRefId] = useState<number | null>(referenceOnPlanner);
   const sceneRef = useRef<Scene>(initialScene());
-  const [blueprint, setBlueprint] = useState<BuildConfiguration | null>(null);
-  const queryClient = useQueryClient();
   const gate = useShareGate('blueprint');
   const syncScene = useCallback((scene: Scene) => {
     sceneRef.current = scene;
     completeInspirationHandoff('blueprint');
   }, []);
-  const openPublish = (attach: boolean) => gate.request(() => { setBlueprint(sceneBlueprint(sceneRef.current)); setPublish({ attach }); }, attach ? 'blueprint' : 'photo');
+  const openGalleryShare = () => {
+    stashGalleryBlueprint(sceneRef.current);
+    setLocation(GALLERY_SHARE_PATH, { replace: true });
+  };
+  const openPublish = () => gate.request(openGalleryShare);
   useEffect(() => { setRefId(referenceOnPlanner()); }, [location]);
   useEffect(() => {
     if (!gate.ready) return;
@@ -1169,10 +1247,8 @@ function Home() {
     const pending = !!parsePlannerPath(stripBase(window.location.pathname))?.share || !!legacy;
     if (!pending) return;
     takeShareIntent();
-    window.history.replaceState(null, '', locationWithoutShare(basePath, window.location.pathname, window.location.search, window.location.hash));
-    setBlueprint(sceneBlueprint(sceneRef.current));
-    setPublish({ attach: legacy !== 'photo' });
-  }, [gate.ready, location]);
+    openGalleryShare();
+  }, [gate.ready, location, setLocation]);
   const setReference = (id: number | null) => {
     const path = stripBase(window.location.pathname);
     const parsed = parsePlannerPath(path) ?? { tab: plannerTabFromPath(path), code: null, referenceId: null, share: false };
@@ -1182,20 +1258,12 @@ function Home() {
     window.history.replaceState(null, '', `${pathname}${search}${window.location.hash}`);
     setRefId(id);
   };
-  const onBuildSaved = (build: Build) => {
-    setPublished(build);
-    queryClient.invalidateQueries({ queryKey:getListBuildsQueryKey() });
-    queryClient.invalidateQueries({ queryKey:getGetCommunitySummaryQueryKey() });
-  };
-  const preview = blueprint ? <span style={{ backgroundColor:blueprint.wallColor }}><BookcaseSketch color={blueprint.color} dirs={blueprint.shelfDirections} tall={blueprint.size === 'tall'}/></span> : null;
   return <div className="tw-shell"><Header/><main className={`page-wrap ${refId ? 'has-reference' : ''}`}>
     {refId && <ReferenceCard id={refId} onDismiss={() => {
       setReference(null);
       trackEvent('inspiration_reference_dismissed', { source:'playroom', type:'reference' });
     }}/>}
-    <Configurator onPublish={(scene) => { sceneRef.current = scene; openPublish(true); }} onSceneChange={syncScene}/>
-    {published && <div style={{ color:'var(--muted-ink)', fontSize:12, padding:'16px 8px 0' }}>“{published.title}” is in the gallery. <Link href={`/build/${published.id}`}>See it</Link></div>}
-    {publish && <PublishDialog source="playroom" close={() => setPublish(null)} blueprint={blueprint} attachByDefault={publish.attach} blueprintPreview={preview} onSaved={onBuildSaved}/>}
+    <Configurator shareNotice={gate.profileNotice} onRetryShare={gate.retryProfile} onPublish={(scene) => { sceneRef.current = scene; openPublish(); }} onSceneChange={syncScene}/>
   </main></div>;
 }
 
