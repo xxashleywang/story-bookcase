@@ -103,9 +103,9 @@ export function PublishDialog({ close, blueprint, attachByDefault, blueprintPrev
   };
   return <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) close(); }}>
     <form ref={ref} className="modal share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title" aria-busy={busy} onSubmit={submit} noValidate tabIndex={-1}>
-      <div className="modal-head"><div><span className="eyebrow">Show us your setup</span><h2 id="share-title">Share your bookcase</h2></div>
+      <div className="modal-head"><div><span className="eyebrow">The finished bookcase</span><h2 id="share-title">Share to the gallery</h2></div>
         <button type="button" aria-label="Close" className="icon-button" onClick={close} disabled={busy} data-testid="button-close-share"><X size={18} /></button></div>
-      <PhotoUploader items={photos.items} errors={photos.errors} onAdd={photos.add} onRemove={photos.remove} disabled={busy} progress={busy ? progress : ''} />
+      <PhotoUploader label="Photo of the finished bookcase" emptyText="A photo of the finished, decorated bookcase." items={photos.items} errors={photos.errors} onAdd={photos.add} onRemove={photos.remove} disabled={busy} progress={busy ? progress : ''} />
       <div className="form-grid">
         <div className="field full"><label htmlFor="share-title-input">Title</label>
           <input id="share-title-input" data-autofocus data-testid="input-share-title" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} placeholder="The reading corner, finally" /></div>
@@ -115,7 +115,7 @@ export function PublishDialog({ close, blueprint, attachByDefault, blueprintPrev
       {blueprint && <label className={`blueprint-toggle ${attach ? 'on' : ''}`}>
         <input type="checkbox" checked={attach} disabled={busy} onChange={(e) => setAttach(e.target.checked)} data-testid="checkbox-attach-blueprint" />
         <span className="blueprint-preview" aria-hidden="true">{blueprintPreview}</span>
-        <span><b>Attach my current blueprint</b><small>Optional. Others can open your exact shelf arrangement, size, finish, wall and floor in their Playroom.</small></span>
+        <span><b>The design you just built is attached</b><small>Others can open this shelf arrangement, size, finish, wall and floor in their Playroom.</small></span>
         <i className="toggle" aria-hidden="true" />
       </label>}
       {error && <p className="status error" role="alert" data-testid="status-share-error">{error}</p>}

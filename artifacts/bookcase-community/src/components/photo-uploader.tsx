@@ -33,9 +33,9 @@ export function usePhotoItems() {
   return { items, errors, add, remove, clear, setErrors };
 }
 
-export function PhotoUploader({ items, errors, onAdd, onRemove, disabled, label = 'Room photos', progress }: {
+export function PhotoUploader({ items, errors, onAdd, onRemove, disabled, label = 'Room photos', emptyText = 'Your room, the way you live in it.', progress }: {
   items: PhotoItem[]; errors: string[]; onAdd: (files: File[]) => void; onRemove: (id: string) => void;
-  disabled?: boolean; label?: string; progress?: string;
+  disabled?: boolean; label?: string; emptyText?: string; progress?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -66,7 +66,7 @@ export function PhotoUploader({ items, errors, onAdd, onRemove, disabled, label 
       </li>)}
       {Array.from({ length: MAX_PHOTOS - items.length }, (_, i) => <li key={`slot-${i}`} className="uploader-slot" aria-hidden="true" />)}
     </ul> : <button type="button" className="uploader-empty" onClick={() => inputRef.current?.click()} tabIndex={-1} aria-hidden="true">
-      <ImagePlus size={22} /><span>Your room, the way you live in it.</span>
+      <ImagePlus size={22} /><span>{emptyText}</span>
     </button>}
     {progress && <p className="uploader-progress" role="status">{progress}</p>}
     {errors.length > 0 && <ul className="uploader-errors" id={errorId} role="alert" data-testid="status-photo-errors">{errors.map((e) => <li key={e}>{e}</li>)}</ul>}

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   MAX_PHOTO_BYTES, addressHash, blueprintHash, createPayload, mergePhotoSelection, photoCountLabel,
-  readReferenceId, referenceHref, safePhotos, updatePayload, validateShare, withoutParam,
+  readGalleryBlueprint, readReferenceId, referenceHref, safePhotos, shareGateDecision, updatePayload,
+  validateShare, withoutParam,
 } from '../src/lib/community.ts';
 
 const file = (name, size = 1000, type = 'image/jpeg', lastModified = 1) => ({ name, size, type, lastModified });
@@ -63,6 +64,38 @@ test('blueprint hash keeps size, dirs, color, wall and floor', () => {
   const hash = blueprintHash({ size: 'standard', color: '#E2B062', shelfDirections: ['F', 'L'], wallColor: '#CFE0EE', floorId: 'custom', floorKind: 'Carpet', customFloorColor: '#112233' },
     (m) => `${m.size}-${m.color}-${m.dirs.join('')}`);
   assert.equal(hash, 'standard-#E2B062-FL~CFE0EE~custom~Carpet~112233');
+});
+
+test('share gate waits for auth and profile, then chooses sign-in, retry, username, or gallery', () => {
+  const base = { authLoaded: true, signedIn: true, profile: 'ready', isUsernameSet: true };
+  assert.equal(shareGateDecision({ ...base, authLoaded: false, signedIn: false, profile: 'error', isUsernameSet: false }), 'wait');
+  assert.equal(shareGateDecision({ ...base, authLoaded: false }), 'wait');
+  assert.equal(shareGateDecision({ ...base, signedIn: false, profile: 'error', isUsernameSet: false }), 'sign-in');
+  assert.equal(shareGateDecision({ ...base, profile: 'loading', isUsernameSet: false }), 'wait');
+  assert.equal(shareGateDecision({ ...base, profile: 'error', isUsernameSet: true }), 'retry');
+  assert.equal(shareGateDecision({ ...base, isUsernameSet: false }), 'username');
+  assert.equal(shareGateDecision(base), 'gallery');
+});
+
+test('readGalleryBlueprint keeps a stashed design and rejects a bad shape', () => {
+  const good = {
+    size: 'tall', color: '#E2B062', shelfDirections: ['F', 'L'],
+    wallColor: '#F6F4F0', floorId: 'pale', floorKind: 'Laminate', customFloorColor: null,
+  };
+  assert.deepEqual(readGalleryBlueprint(JSON.stringify(good)), good);
+  assert.deepEqual(readGalleryBlueprint(JSON.stringify({ ...good, floorKind: undefined, customFloorColor: undefined })), {
+    size: 'tall', color: '#E2B062', shelfDirections: ['F', 'L'], wallColor: '#F6F4F0', floorId: 'pale',
+  });
+  assert.equal(readGalleryBlueprint(null), null);
+  assert.equal(readGalleryBlueprint(''), null);
+  assert.equal(readGalleryBlueprint('{'), null);
+  assert.equal(readGalleryBlueprint('[]'), null);
+  assert.equal(readGalleryBlueprint(JSON.stringify({ ...good, size: 'huge' })), null);
+  assert.equal(readGalleryBlueprint(JSON.stringify({ ...good, shelfDirections: [] })), null);
+  assert.equal(readGalleryBlueprint(JSON.stringify({ ...good, shelfDirections: ['Z'] })), null);
+  assert.equal(readGalleryBlueprint(JSON.stringify({ ...good, floorKind: 'Tile' })), null);
+  assert.equal(readGalleryBlueprint(JSON.stringify({ ...good, color: '' })), null);
+  assert.equal(readGalleryBlueprint(JSON.stringify({ ...good, customFloorColor: 12 })), null);
 });
 
 test('reference handoff helpers and safe photo fallback', () => {

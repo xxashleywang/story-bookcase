@@ -17,6 +17,63 @@ export type BlueprintLike = {
   customFloorColor?: string | null;
 };
 
+export type ShareGateProfile = 'loading' | 'error' | 'ready';
+export type ShareGateDecision = 'wait' | 'sign-in' | 'retry' | 'username' | 'gallery';
+
+/** Where a share click should go. Loading is not the same thing as a missing username. */
+export function shareGateDecision(input: {
+  authLoaded: boolean;
+  signedIn: boolean;
+  profile: ShareGateProfile;
+  isUsernameSet: boolean;
+}): ShareGateDecision {
+  if (!input.authLoaded) return 'wait';
+  if (!input.signedIn) return 'sign-in';
+  if (input.profile === 'loading') return 'wait';
+  if (input.profile === 'error') return 'retry';
+  if (!input.isUsernameSet) return 'username';
+  return 'gallery';
+}
+
+const SHELF_DIRECTIONS = ['F', 'L', 'B', 'R'] as const;
+type ShelfDirection = typeof SHELF_DIRECTIONS[number];
+const FLOOR_KINDS = ['Laminate', 'Carpet', 'Custom'] as const;
+
+function isShelfDirection(value: unknown): value is ShelfDirection {
+  return typeof value === 'string' && (SHELF_DIRECTIONS as readonly string[]).includes(value);
+}
+
+/** A stashed BuildConfiguration, or null when the stored value is missing or the wrong shape. */
+export function readGalleryBlueprint(raw: string | null): (BlueprintLike & { shelfDirections: ShelfDirection[] }) | null {
+  if (!raw) return null;
+  let value: unknown;
+  try { value = JSON.parse(raw); } catch { return null; }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (record.size !== 'standard' && record.size !== 'tall') return null;
+  if (typeof record.color !== 'string' || record.color.length === 0) return null;
+  if (typeof record.wallColor !== 'string' || record.wallColor.length === 0) return null;
+  if (typeof record.floorId !== 'string' || record.floorId.length === 0) return null;
+  if (!Array.isArray(record.shelfDirections) || record.shelfDirections.length === 0) return null;
+  if (!record.shelfDirections.every(isShelfDirection)) return null;
+  const blueprint: BlueprintLike & { shelfDirections: ShelfDirection[] } = {
+    size: record.size,
+    color: record.color,
+    shelfDirections: record.shelfDirections,
+    wallColor: record.wallColor,
+    floorId: record.floorId,
+  };
+  if (record.floorKind !== undefined) {
+    if (typeof record.floorKind !== 'string' || !(FLOOR_KINDS as readonly string[]).includes(record.floorKind)) return null;
+    blueprint.floorKind = record.floorKind as BlueprintLike['floorKind'];
+  }
+  if (record.customFloorColor !== undefined) {
+    if (record.customFloorColor !== null && typeof record.customFloorColor !== 'string') return null;
+    blueprint.customFloorColor = record.customFloorColor;
+  }
+  return blueprint;
+}
+
 type FileLike = { name: string; size: number; type: string; lastModified?: number };
 
 export function photoKey(file: FileLike) {
