@@ -8,6 +8,8 @@ const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"] as c
 const MAX_BYTES = 12_000_000;
 const MAX_PHOTOS = 4;
 const MAX_STORED = 40;
+// A gallery read that cannot finish should fail here, not after a host-level timeout.
+const LIST_WAIT_MS = 8_000;
 
 type PhotoType = (typeof PHOTO_TYPES)[number];
 
@@ -259,16 +261,19 @@ export async function listBuilds(viewer: Viewer, search: URLSearchParams) {
   const tag = search.get("tag")?.trim();
   if (tag) where.push(`b.tags @> array[${hold(tag)}]::text[]`);
   params.push(limit);
-  const rows = await sql<BuildRow>(
-    `select b.*, p.username as creator_username
-     from ${table("builds")} b
-     inner join ${table("profiles")} p on p.user_id = b.user_id
-     ${where.length ? `where ${where.join(" and ")}` : ""}
-     order by ${sort === "popular" ? "b.likes_count desc, b.created_at desc" : "b.created_at desc"}
-     limit $${params.length}`,
-    params,
-  );
-  return decorate(sql, rows, viewer.id);
+  return transaction(async (query) => {
+    await query(`select set_config('statement_timeout', $1, true)`, [String(LIST_WAIT_MS)]);
+    const rows = await query<BuildRow>(
+      `select b.*, p.username as creator_username
+       from ${table("builds")} b
+       inner join ${table("profiles")} p on p.user_id = b.user_id
+       ${where.length ? `where ${where.join(" and ")}` : ""}
+       order by ${sort === "popular" ? "b.likes_count desc, b.created_at desc" : "b.created_at desc"}
+       limit $${params.length}`,
+      params,
+    );
+    return decorate(query, rows, viewer.id);
+  });
 }
 
 export async function getBuild(viewer: Viewer, id: number) {
