@@ -448,9 +448,10 @@ html,body,#root { min-height:100%; } body { margin:0; background:var(--cream); c
   .has-reference .playroom { height:calc(100dvh - 160px); min-height:460px; }
 }
 @media(max-width:430px) {
-  .brand { flex-shrink:0; white-space:nowrap; }
-  .top-actions { min-width:0; }
-  .top-actions .button { max-width:130px; overflow:hidden; text-overflow:ellipsis; }
+  .topbar { height:auto; min-height:62px; flex-wrap:wrap; align-items:center; padding-top:12px; padding-bottom:10px; row-gap:8px; }
+  .brand { flex:1 1 auto; flex-shrink:0; white-space:nowrap; }
+  .top-actions { flex:1 1 100%; margin-left:0; min-width:0; justify-content:flex-start; }
+  .top-actions .button { max-width:none; overflow:visible; text-overflow:clip; flex:none; }
 }
 
 /* Profile, favourites and account actions */
