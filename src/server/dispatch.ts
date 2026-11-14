@@ -48,6 +48,11 @@ function integerId(raw: string | undefined) {
   return Number(raw);
 }
 
+function errorCode(error: unknown) {
+  if (typeof error === "object" && error && "code" in error) return String((error as { code: unknown }).code);
+  return error instanceof Error ? error.name : "error";
+}
+
 function cursorOf(search: URLSearchParams) {
   const raw = search.get("cursor");
   if (!raw) return null;
@@ -95,7 +100,14 @@ export async function dispatch(method: string, request: Request, path: string[])
   }
 
   if (key === "GET builds") {
-    return withViewer(request, false, async (viewer) => send(await gallery.listBuilds(viewer, url.searchParams)));
+    return withViewer(request, false, async (viewer) => {
+      try {
+        return send(await gallery.listBuilds(viewer, url.searchParams));
+      } catch (error) {
+        console.error("gallery list failed", errorCode(error));
+        return json({ error: "Could not load the gallery." }, 500);
+      }
+    });
   }
 
   if (key === "POST builds") {

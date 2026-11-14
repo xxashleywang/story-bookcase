@@ -1,9 +1,11 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { readdir, readFile } from "node:fs/promises";
-import { PGlite } from "@electric-sql/pglite";
+import type { PGlite } from "@electric-sql/pglite";
 import pg from "pg";
 
 const databaseUrl = process.env.DATABASE_URL?.trim() ?? "";
+// A host that never answers must not hold the gallery open until the platform kills it.
+const CONNECT_WAIT_MS = 8_000;
 let pool: pg.Pool | undefined;
 let local: Promise<PGlite> | undefined;
 
@@ -40,13 +42,26 @@ export function withSchema<T>(
   return schemaStore.run(stage === "preview" ? "preview" : "public", fn);
 }
 
+function postgres(): pg.Pool {
+  if (!pool) {
+    pool = new pg.Pool({
+      connectionString: databaseUrl,
+      max: 5,
+      connectionTimeoutMillis: CONNECT_WAIT_MS,
+    });
+    pool.on("error", (error: Error & { code?: string }) => {
+      console.error("gallery database connection dropped", error.code ?? error.name);
+    });
+  }
+  return pool;
+}
+
 export async function sql<T = Record<string, unknown>>(
   text: string,
   params: unknown[] = [],
 ): Promise<T[]> {
   if (databaseUrl !== "") {
-    pool ??= new pg.Pool({ connectionString: databaseUrl, max: 5 });
-    return (await pool.query(text, params)).rows as T[];
+    return (await postgres().query(text, params)).rows as T[];
   }
   local ??= startLocal().catch((error: unknown) => {
     local = undefined;
@@ -57,8 +72,7 @@ export async function sql<T = Record<string, unknown>>(
 
 export async function transaction<T>(fn: (query: Query) => Promise<T>): Promise<T> {
   if (databaseUrl !== "") {
-    pool ??= new pg.Pool({ connectionString: databaseUrl, max: 5 });
-    const client = await pool.connect();
+    const client = await postgres().connect();
     const query: Query = async <T = Record<string, unknown>>(text: string, params: unknown[] = []) =>
       (await client.query(text, params)).rows as T[];
     try {
@@ -85,6 +99,8 @@ export async function transaction<T>(fn: (query: Query) => Promise<T>): Promise<
 }
 
 async function startLocal(): Promise<PGlite> {
+  // Production uses Postgres. Loading the in-memory engine there only delays the first gallery read.
+  const { PGlite } = await import("@electric-sql/pglite");
   const db = new PGlite();
   const files = (await readdir("migrations").catch(() => [])).filter((f) => f.endsWith(".sql")).sort();
   for (const file of files) {

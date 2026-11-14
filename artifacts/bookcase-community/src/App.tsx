@@ -20,12 +20,13 @@ import { CursorAccountProvider, useCursorAccount } from '@/lib/cursor-account';
 import { clerkConfigured } from '@/lib/local-clerk';
 import { EditBuildDialog, PublishDialog } from '@/components/share-dialog';
 import { addressHash, blueprintHref, readReferenceId, referenceHref, safePhotos, withoutParam } from '@/lib/community';
+import { galleryPhase, withGalleryDeadline } from '@/lib/gallery-state';
 import { completeInspirationHandoff, inspirationHref, trackEvent } from '@/lib/analytics';
 import type { InspirationHandoff } from '@/lib/analytics';
 import {
   getCheckUsernameAvailabilityQueryKey, getGetBuildQueryKey, getGetCommunitySummaryQueryKey,
   getGetMyProfileQueryKey, getListBuildsQueryKey, getListMyBuildsQueryKey, getListMyFavouritesQueryKey,
-  useCheckUsernameAvailability, useDeleteBuild, useGetBuild, useGetMyProfile, useListBuilds,
+  listBuilds, useCheckUsernameAvailability, useDeleteBuild, useGetBuild, useGetMyProfile, useListBuilds,
   useListMyBuilds, useListMyFavourites, useRetryPhotoCleanup, useUpdateBuild, useUpdateMyProfile,
 } from '@workspace/api-client-react';
 import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } from 'wouter';
@@ -879,6 +880,12 @@ function BuildCard({ build, children }: { build: Build; children?: ReactNode }) 
   </article>;
 }
 function LoadingCards() { return <div className="loading-grid" aria-label="Loading community bookcases">{[0,1,2,3,4,5].map((i) => <div className="skeleton" key={i}/>)}</div>; }
+function GalleryLoadError({ onRetry }: { onRetry: () => void }) {
+  return <div className="empty-state" role="alert" data-testid="gallery-error"><h2>We couldn't load the gallery.</h2><p>Your inspiration is still here; try once more.</p><button className="button" onClick={onRetry}>Try again</button></div>;
+}
+function GalleryEmpty({ onUpload }: { onUpload: () => void }) {
+  return <div className="empty-state" role="status" data-testid="gallery-empty"><Camera size={23}/><h2>No shelfies in this corner yet.</h2><p>Try another search, or be the first to share one.</p><button className="button coral" onClick={onUpload} data-testid="button-share-room"><Upload size={16}/>Upload your design</button></div>;
+}
 function Gallery() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'recent' | 'popular'>('recent');
@@ -887,7 +894,15 @@ function Gallery() {
   const client = useQueryClient();
   const [, setLocation] = useLocation();
   const params = useMemo(() => ({ q:search.trim() || undefined, sort, limit:40 }), [search, sort]);
-  const { data:builds, isLoading, isError, refetch } = useListBuilds(params);
+  const { data:builds, isPending, isError, refetch } = useListBuilds(params, {
+    query: {
+      retry: false,
+      networkMode: 'always',
+      queryFn: ({ signal }: { signal: AbortSignal }) => withGalleryDeadline(signal, (limited) => listBuilds(params, { signal: limited })),
+    },
+  });
+  const posts = Array.isArray(builds) ? builds : [];
+  const phase = galleryPhase({ pending: isPending, failed: isError, count: posts.length });
   useEffect(() => {
     if (!gate.ready || !new URLSearchParams(window.location.search).has('share')) return;
     takeShareIntent();
@@ -908,8 +923,7 @@ function Gallery() {
         </SelectContent>
       </Select>
     </div>
-    {isLoading ? <LoadingCards/> : isError ? <div className="empty-state"><h2>We couldn't load the gallery.</h2><p>Your inspiration is still here; try once more.</p><button className="button" onClick={() => refetch()}>Try again</button></div> : builds?.length ? <div className="build-grid">{builds.map((build: Build) => <BuildCard key={build.id} build={build}/>)}</div> :
-      <div className="empty-state"><Camera size={23}/><h2>No shelfies in this corner yet.</h2><p>Try another search, or be the first to share one.</p><button className="button coral" onClick={openShare} data-testid="button-share-room">Share your design</button></div>}
+    {phase === 'loading' ? <LoadingCards/> : phase === 'error' ? <GalleryLoadError onRetry={() => refetch()}/> : phase === 'posts' ? <div className="build-grid">{posts.map((build: Build) => <BuildCard key={build.id} build={build}/>)}</div> : <GalleryEmpty onUpload={openShare}/>}
     {shareOpen && <PublishDialog source="gallery" close={() => setShareOpen(false)} blueprint={null} attachByDefault={false} onSaved={(build) => {
       client.invalidateQueries({ queryKey:getListBuildsQueryKey() }); client.invalidateQueries({ queryKey:getGetCommunitySummaryQueryKey() }); setLocation(`/build/${build.id}`);
     }}/>}
