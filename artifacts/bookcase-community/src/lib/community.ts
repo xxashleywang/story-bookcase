@@ -1,5 +1,7 @@
 // Pure helpers for photo-first community sharing. Kept framework-free so they can be unit tested with node --test.
 
+import { encodeDesign } from './design-url.ts';
+
 export const MAX_PHOTOS = 4;
 export const MAX_PHOTO_BYTES = 12_000_000;
 export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'] as const;
@@ -14,6 +16,63 @@ export type BlueprintLike = {
   floorKind?: 'Laminate' | 'Carpet' | 'Custom';
   customFloorColor?: string | null;
 };
+
+export type ShareGateProfile = 'loading' | 'error' | 'ready';
+export type ShareGateDecision = 'wait' | 'sign-in' | 'retry' | 'username' | 'gallery';
+
+/** Where a share click should go. Loading is not the same thing as a missing username. */
+export function shareGateDecision(input: {
+  authLoaded: boolean;
+  signedIn: boolean;
+  profile: ShareGateProfile;
+  isUsernameSet: boolean;
+}): ShareGateDecision {
+  if (!input.authLoaded) return 'wait';
+  if (!input.signedIn) return 'sign-in';
+  if (input.profile === 'loading') return 'wait';
+  if (input.profile === 'error') return 'retry';
+  if (!input.isUsernameSet) return 'username';
+  return 'gallery';
+}
+
+const SHELF_DIRECTIONS = ['F', 'L', 'B', 'R'] as const;
+type ShelfDirection = typeof SHELF_DIRECTIONS[number];
+const FLOOR_KINDS = ['Laminate', 'Carpet', 'Custom'] as const;
+
+function isShelfDirection(value: unknown): value is ShelfDirection {
+  return typeof value === 'string' && (SHELF_DIRECTIONS as readonly string[]).includes(value);
+}
+
+/** A stashed BuildConfiguration, or null when the stored value is missing or the wrong shape. */
+export function readGalleryBlueprint(raw: string | null): (BlueprintLike & { shelfDirections: ShelfDirection[] }) | null {
+  if (!raw) return null;
+  let value: unknown;
+  try { value = JSON.parse(raw); } catch { return null; }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (record.size !== 'standard' && record.size !== 'tall') return null;
+  if (typeof record.color !== 'string' || record.color.length === 0) return null;
+  if (typeof record.wallColor !== 'string' || record.wallColor.length === 0) return null;
+  if (typeof record.floorId !== 'string' || record.floorId.length === 0) return null;
+  if (!Array.isArray(record.shelfDirections) || record.shelfDirections.length === 0) return null;
+  if (!record.shelfDirections.every(isShelfDirection)) return null;
+  const blueprint: BlueprintLike & { shelfDirections: ShelfDirection[] } = {
+    size: record.size,
+    color: record.color,
+    shelfDirections: record.shelfDirections,
+    wallColor: record.wallColor,
+    floorId: record.floorId,
+  };
+  if (record.floorKind !== undefined) {
+    if (typeof record.floorKind !== 'string' || !(FLOOR_KINDS as readonly string[]).includes(record.floorKind)) return null;
+    blueprint.floorKind = record.floorKind as BlueprintLike['floorKind'];
+  }
+  if (record.customFloorColor !== undefined) {
+    if (record.customFloorColor !== null && typeof record.customFloorColor !== 'string') return null;
+    blueprint.customFloorColor = record.customFloorColor;
+  }
+  return blueprint;
+}
 
 type FileLike = { name: string; size: number; type: string; lastModified?: number };
 
@@ -85,7 +144,9 @@ export function blueprintHash(config: BlueprintLike, encodeUnit: (m: { size: str
 }
 
 export function blueprintHref(base: string, config: BlueprintLike, encodeUnit: (m: { size: string; color: string; dirs: string[] }) => string) {
-  return `${base || ''}/#${blueprintHash(config, encodeUnit)}`;
+  const configHash = blueprintHash(config, encodeUnit);
+  const code = encodeDesign(configHash);
+  return code ? `${base || ''}/d/${code}` : `${base || ''}/#${configHash}`;
 }
 
 /** Empty for the factory default, so the address bar stays the bare domain. Any other design is `#` plus its config. */
@@ -93,9 +154,9 @@ export function addressHash(config: string, defaultConfig: string) {
   return config.toLowerCase() === defaultConfig.toLowerCase() ? '' : `#${config}`;
 }
 
-/** Photo-only handoff: keep whatever design the visitor already has, only add a reference id. */
+/** Photo-only handoff: keep whatever design the visitor already has, and name the reference in the path. */
 export function referenceHref(base: string, buildId: number) {
-  return `${base || ''}/?ref=${buildId}`;
+  return `${base || ''}/from/${buildId}`;
 }
 
 export function readReferenceId(search: string) {

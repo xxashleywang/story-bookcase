@@ -19,8 +19,10 @@ import { cleanupMessage, privateListKey } from '@/lib/account';
 import { CursorAccountProvider, useCursorAccount } from '@/lib/cursor-account';
 import { clerkConfigured } from '@/lib/local-clerk';
 import { EditBuildDialog, PublishDialog } from '@/components/share-dialog';
-import { addressHash, blueprintHref, readReferenceId, referenceHref, safePhotos, withoutParam } from '@/lib/community';
+import { blueprintHref, readGalleryBlueprint, readReferenceId, referenceHref, safePhotos, shareGateDecision, withoutParam } from '@/lib/community';
+import { designConfigFromLocation, encodeDesign, formatPlannerPath, locationWithoutShare, parsePlannerPath, shareHref, shareReturnPath } from '@/lib/design-url';
 import { galleryPhase, withGalleryDeadline } from '@/lib/gallery-state';
+import { GALLERY_PATH, GALLERY_SHARE_PATH, PROFILE_PATH, legacyPageTarget, profilePath, profileTab } from '@/lib/pages';
 import { completeInspirationHandoff, inspirationHref, trackEvent } from '@/lib/analytics';
 import type { InspirationHandoff } from '@/lib/analytics';
 import {
@@ -146,8 +148,9 @@ function createDefaultScene(S: any) {
 
 function initialScene() {
   const S = window.Story;
-  let source = window.location.hash.slice(1);
-  if (!source) { try { source = window.localStorage.getItem(LAST_SCENE_KEY) || ''; } catch { source = ''; } }
+  let stored = '';
+  try { stored = window.localStorage.getItem(LAST_SCENE_KEY) || ''; } catch { stored = ''; }
+  const source = designConfigFromLocation(stripBase(window.location.pathname), window.location.hash, stored);
   let parsed = null;
   try { parsed = source.split('~')[0] ? S.decodeUnit(source.split('~')[0]) : null; } catch { parsed = null; }
   const extras = parsed ? source.split('~') : [];
@@ -180,12 +183,26 @@ function sceneConfig(scene: { model: any; wall: string; floor: { id: string }; f
 
 function hashFor(scene: Scene) {
   const config = sceneConfig(scene);
-  const hash = addressHash(config, sceneConfig(createDefaultScene(window.Story)));
-  // Keep the current path (/ or /build-it). Tab clicks set it; design edits must not bounce it back to /.
-  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${hash}`);
+  const defaults = sceneConfig(createDefaultScene(window.Story));
+  const same = config.toLowerCase() === defaults.toLowerCase();
+  // Keep the current tab. A design edit writes /d/<code> and must not bounce Build it back to Style it.
+  const parsed = parsePlannerPath(stripBase(window.location.pathname))
+    ?? { tab: 'style' as const, code: null, referenceId: null, share: false };
+  const code = same ? null : encodeDesign(config);
+  const next = formatPlannerPath({
+    tab: parsed.tab,
+    code,
+    referenceId: parsed.referenceId ?? readReferenceId(window.location.search),
+    share: parsed.share,
+  });
+  const pathname = next === '/' ? `${basePath}/` : `${basePath}${next}`;
+  const hash = !same && !code ? `#${config}` : '';
+  const nextUrl = `${pathname}${withoutParam(window.location.search, 'ref')}${hash}`;
+  const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (here !== nextUrl) window.history.replaceState(null, '', nextUrl);
   try {
-    if (hash) window.localStorage.setItem(LAST_SCENE_KEY, config);
-    else window.localStorage.removeItem(LAST_SCENE_KEY);
+    if (same) window.localStorage.removeItem(LAST_SCENE_KEY);
+    else window.localStorage.setItem(LAST_SCENE_KEY, config);
   } catch { /* storage may be unavailable */ }
 }
 function sceneBlueprint(scene: Scene): BuildConfiguration {
@@ -198,55 +215,119 @@ function sceneBlueprint(scene: Scene): BuildConfiguration {
 const encodeUnit = (m: { size:string; color:string; dirs:string[] }) => window.Story.encodeUnit(m);
 /** Single handoff for attached blueprints: a full load so the configurator re-initialises from the hash. */
 function openBlueprint(config: BuildConfiguration, handoff?: InspirationHandoff) {
-  const alreadyHome = stripBase(window.location.pathname) === '/';
   const href = blueprintHref(basePath, config, encodeUnit);
   const target = handoff ? inspirationHref(href, handoff) : href;
-  const sameDocument = alreadyHome && new URL(target, window.location.origin).search === window.location.search;
+  const next = new URL(target, window.location.origin);
+  const sameDocument = next.pathname === window.location.pathname && next.search === window.location.search;
   window.location.assign(target);
-  // On the homepage this is only a hash change; remount to consume the new blueprint.
+  // A path change loads the design. The same document only happens for a leftover hash.
   if (sameDocument) window.location.reload();
 }
 const photoUrl = (path: string) => `/api/storage${path}`;
 const SHARE_INTENT_KEY = 'twistory:share-intent';
+const GALLERY_BLUEPRINT_KEY = 'twistory:gallery-blueprint';
+const PROFILE_SHARE_NOTICE = 'Your design is safe. We couldn\'t load your page. Try again.';
 function rememberShareIntent(path: string) { try { window.sessionStorage.setItem(SHARE_INTENT_KEY, path); } catch { /* ignore */ } }
 function takeShareIntent() { try { const v = window.sessionStorage.getItem(SHARE_INTENT_KEY); window.sessionStorage.removeItem(SHARE_INTENT_KEY); return v; } catch { return null; } }
+function stashGalleryBlueprint(scene: Scene) {
+  try { window.sessionStorage.setItem(GALLERY_BLUEPRINT_KEY, JSON.stringify(sceneBlueprint(scene))); } catch { /* storage may be unavailable */ }
+}
+function takeGalleryBlueprint(): BuildConfiguration | null {
+  try {
+    const raw = window.sessionStorage.getItem(GALLERY_BLUEPRINT_KEY);
+    window.sessionStorage.removeItem(GALLERY_BLUEPRINT_KEY);
+    return readGalleryBlueprint(raw);
+  } catch { return null; }
+}
 /** Route a share request through sign-in and username setup, preserving where it started. */
 function useShareGate(mode: 'photo' | 'blueprint') {
   const { isSignedIn, isLoaded } = useAuth();
   const cursor = useCursorAccount();
-  const [, setLocation] = useLocation();
-  const { data:profile } = useGetMyProfile({ query:{ enabled:!!isSignedIn, queryKey:getGetMyProfileQueryKey() } });
-  const ready = !!isSignedIn && !!profile?.isUsernameSet;
-  useEffect(() => {
-    if (isSignedIn && profile && !profile.isUsernameSet && new URLSearchParams(window.location.search).has('share')) {
-      rememberShareIntent(`${stripBase(window.location.pathname)}${window.location.search}${window.location.hash}`);
-      setLocation('/profile');
-    }
-  }, [isSignedIn, profile, setLocation]);
-  const request = (open: () => void, intent: string = mode) => {
-    if (!isLoaded) return;
-    const here = `${stripBase(window.location.pathname)}${withoutParam(window.location.search, 'share')}`;
-    const back = `${here}${here.includes('?') ? '&' : '?'}share=${intent}`;
-    if (!isSignedIn) {
-      // A person who logged out in the app still has a Cursor session. Bring
-      // the account back on this page and let the share continue.
-      if (cursor.signedOutInApp) {
-        rememberShareIntent(`${back}${window.location.hash}`);
-        window.history.replaceState(null, '', `${window.location.pathname}${back.includes('?') ? back.slice(back.indexOf('?')) : ''}${window.location.hash}`);
-        cursor.resumeSession();
-        return;
-      }
-      // Keep a local copy too: sign-in can finish on the profile page rather
-      // than the redirect destination, especially during first-user setup.
-      rememberShareIntent(`${back}${window.location.hash}`);
-      window.location.assign(`${basePath}/sign-in?redirect_url=${encodeURIComponent(`${window.location.origin}${basePath}${back}${window.location.hash}`)}`);
+  const [location, setLocation] = useLocation();
+  const { data:profile, isError, refetch } = useGetMyProfile({ query:{ enabled:!!isSignedIn, queryKey:getGetMyProfileQueryKey() } });
+  const [profileNotice, setProfileNotice] = useState('');
+  const pendingOpen = useRef<{ open: () => void; intent: string } | null>(null);
+  const cursorRef = useRef(cursor);
+  cursorRef.current = cursor;
+  const profileState: 'loading' | 'error' | 'ready' = !isSignedIn ? 'ready' : profile ? 'ready' : isError ? 'error' : 'loading';
+  const decision = shareGateDecision({
+    authLoaded: !!isLoaded,
+    signedIn: !!isSignedIn,
+    profile: profileState,
+    isUsernameSet: !!profile?.isUsernameSet,
+  });
+  const ready = decision === 'gallery';
+  const backFor = (intent: string) => shareReturnPath(intent === 'photo' ? 'photo' : 'blueprint', stripBase(window.location.pathname), window.location.search, window.location.hash);
+  const beginSignIn = (intent: string) => {
+    const back = backFor(intent);
+    const account = cursorRef.current;
+    // A person who logged out in the app still has a Cursor session. Bring
+    // the account back on this page and let the share continue.
+    if (account.signedOutInApp) {
+      rememberShareIntent(back);
+      window.history.replaceState(null, '', `${basePath}${back}`);
+      account.resumeSession();
       return;
     }
-    if (!profile?.isUsernameSet) { rememberShareIntent(`${back}${window.location.hash}`); setLocation('/profile'); return; }
+    // Keep a local copy too: sign-in can finish on the profile page rather
+    // than the redirect destination, especially during first-user setup.
+    rememberShareIntent(back);
+    window.location.assign(`${basePath}/sign-in?redirect_url=${encodeURIComponent(`${window.location.origin}${basePath}${back}`)}`);
+  };
+  useEffect(() => {
+    const path = stripBase(window.location.pathname);
+    const pending = path === GALLERY_SHARE_PATH || !!parsePlannerPath(path)?.share || new URLSearchParams(window.location.search).has('share');
+    if (isSignedIn && profile && !profile.isUsernameSet && pending) {
+      rememberShareIntent(backFor(mode));
+      setLocation(PROFILE_PATH);
+    }
+  }, [isSignedIn, profile, setLocation, mode]);
+  useEffect(() => {
+    const queued = pendingOpen.current;
+    if (!queued || decision === 'wait') return;
+    pendingOpen.current = null;
+    if (decision === 'username') {
+      rememberShareIntent(backFor(queued.intent));
+      setLocation(PROFILE_PATH);
+      return;
+    }
+    if (decision === 'gallery') {
+      takeShareIntent();
+      queued.open();
+      return;
+    }
+    if (decision === 'retry') {
+      setProfileNotice(PROFILE_SHARE_NOTICE);
+      return;
+    }
+    if (decision === 'sign-in') beginSignIn(queued.intent);
+  }, [decision, setLocation, mode]);
+  useEffect(() => {
+    if (decision !== 'retry') {
+      setProfileNotice('');
+      return;
+    }
+    const path = stripBase(location);
+    const pendingShare = path === GALLERY_SHARE_PATH || !!parsePlannerPath(path)?.share || new URLSearchParams(window.location.search).has('share');
+    if (pendingShare) setProfileNotice(PROFILE_SHARE_NOTICE);
+  }, [decision, location]);
+  const request = (open: () => void, intent: string = mode) => {
+    if (decision === 'wait') {
+      if (isLoaded && isSignedIn && profileState === 'loading') {
+        pendingOpen.current = { open, intent };
+        setProfileNotice('');
+      }
+      return;
+    }
+    if (decision === 'sign-in') { beginSignIn(intent); return; }
+    if (decision === 'retry') { setProfileNotice(PROFILE_SHARE_NOTICE); return; }
+    if (decision === 'username') { rememberShareIntent(backFor(intent)); setLocation(PROFILE_PATH); return; }
     takeShareIntent();
+    setProfileNotice('');
     open();
   };
-  return { ready, request };
+  const retryProfile = () => { void refetch(); };
+  return { ready, request, profileNotice, retryProfile };
 }
 
 function roomColor(hex: string) {
@@ -285,12 +366,12 @@ function Header() {
   const { isSignedIn, isLoaded } = useAuth();
   const cursor = useCursorAccount();
   const [location] = useLocation();
-  const inGallery = location.startsWith('/inspiration');
+  const inGallery = location.startsWith(GALLERY_PATH) || location.startsWith('/build/');
   return <header className="topbar">
     <Link className="brand" href="/"><BrandWordmark/></Link>
     <span className="tagline">Design first. Build once.</span>
     <nav className="top-actions">
-      <Link className={`nav-link${inGallery ? ' is-current' : ''}`} href="/inspiration" aria-current={inGallery ? 'page' : undefined}>Gallery</Link>
+      <Link className={`nav-link${inGallery ? ' is-current' : ''}`} href={GALLERY_PATH} aria-current={inGallery ? 'page' : undefined}>Gallery</Link>
       {!isLoaded ? null : isSignedIn ? <AccountMenu/> : cursor.signedOutInApp
         ? <button type="button" className="button small" onClick={cursor.resumeSession}>Log in</button>
         : <Link className="button small" href="/sign-in">Log in</Link>}
@@ -347,12 +428,24 @@ function keepsRulesOpen(target: Element, pop: HTMLElement | null, button: HTMLEl
     || target.closest('.rules-pop, .random-rules') !== null;
 }
 
+function ShareProfileNotice({ notice, onRetry }: { notice?: string; onRetry?: () => void }) {
+  if (!notice) return null;
+  return <div className="share-notice" role="alert" data-testid="share-profile-notice">
+    <span>{notice}</span>
+    {onRetry && <button type="button" className="button light small" onClick={onRetry}>Try again</button>}
+  </div>;
+}
+
 function Configurator({
   onPublish,
   onSceneChange,
+  shareNotice,
+  onRetryShare,
 }: {
   onPublish: (scene: Scene) => void;
   onSceneChange: (scene: Scene) => void;
+  shareNotice?: string;
+  onRetryShare?: () => void;
 }) {
   const [scene, setScene] = useState<Scene>(() => initialScene());
   const [selected, setSelected] = useState(-1);
@@ -360,7 +453,7 @@ function Configurator({
   const [tab, setTab] = useState<PlannerTab>(() => plannerTabFromPath(stripBase(window.location.pathname)));
   const selectTab = (next: PlannerTab) => {
     // Replace the current history entry so Home stays mounted. Search and the design hash stay.
-    window.history.replaceState(null, '', plannerAddress(basePath, next, window.location.search, window.location.hash));
+    window.history.replaceState(null, '', plannerAddress(basePath, next, window.location.pathname, window.location.search, window.location.hash));
     setTab(next);
   };
   useEffect(() => {
@@ -532,7 +625,8 @@ function Configurator({
       selectable: tab === 'style',
       build: tab === 'build' ? { installed: progress, style: 'wire', next: nextShelf } : null,
     });
-  }, [scene, selected, tab, progress, nextShelf]);
+    // location is included so a logo click or back button cannot leave the address behind the design.
+  }, [scene, selected, tab, progress, nextShelf, location]);
 
   useEffect(() => onSceneChange(scene), [scene, onSceneChange]);
 
@@ -724,7 +818,7 @@ function Configurator({
   };
 
   const saveShareLink = async () => {
-    const url = window.location.href;
+    const url = shareHref(window.location.origin, basePath, sceneConfig(scene), sceneConfig(createDefaultScene(S)));
     try { await navigator.clipboard.writeText(url); window.alert('Build link copied.'); }
     catch { window.prompt('Copy your build link', url); }
   };
@@ -836,9 +930,10 @@ function Configurator({
               </ColorPicker>
             </div>
           </details>
+          <ShareProfileNotice notice={shareNotice} onRetry={onRetryShare}/>
           <section className="section cta-row">
             <button className="link-copy-button" onClick={saveShareLink} aria-label="Copy link to this design" title="Copy link to this design"><LinkIcon size={14}/></button>
-            <button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share your bookcase</button>
+            <button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share to the gallery</button>
           </section>
         </div>
       </div>
@@ -849,7 +944,8 @@ function Configurator({
           const detail = nextShelf === 0 ? 'Lowest shelf' : nextShelf === progress.length - 1 ? 'Top shelf' : `${shelf.height.toFixed(1)}″ up`;
           return <div className="build-step-card"><div className="build-step-head">{iconPlan(shelf.dir, 24)}<div><h3>Shelf {nextShelf + 1}</h3><p><b>Faces {shelf.label.toLowerCase()}</b> · {detail}</p></div></div><div className="build-step-actions"><button className="button light small" onClick={undoLastShelf} disabled={steps.doneShelves <= 0}>Back</button><button className="button small" onClick={completeNextShelf}>Done, next</button></div></div>;
         })()}</section>
-        <section className="section build-tools"><button className="button light small" onClick={() => { const reset = Array(progress.length).fill(false); setCompleted(reset); window.Story3D.setProgress(scene.model, []); }}>Start over</button><button className="button light small" onClick={() => S.printBuildSheet(scene.model)}>Print sheet</button><button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share your bookcase</button></section>
+        <ShareProfileNotice notice={shareNotice} onRetry={onRetryShare}/>
+        <section className="section build-tools"><button className="button light small" onClick={() => { const reset = Array(progress.length).fill(false); setCompleted(reset); window.Story3D.setProgress(scene.model, []); }}>Start over</button><button className="button light small" onClick={() => S.printBuildSheet(scene.model)}>Print sheet</button><button className="button coral small" onClick={() => onPublish(scene)}><Sparkles size={14}/>Share to the gallery</button></section>
       </div>
     </section>
   </div>;
@@ -890,9 +986,10 @@ function Gallery() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'recent' | 'popular'>('recent');
   const [shareOpen, setShareOpen] = useState(false);
+  const [attachedBlueprint, setAttachedBlueprint] = useState<BuildConfiguration | null>(null);
   const gate = useShareGate('photo');
   const client = useQueryClient();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const params = useMemo(() => ({ q:search.trim() || undefined, sort, limit:40 }), [search, sort]);
   const { data:builds, isPending, isError, refetch } = useListBuilds(params, {
     query: {
@@ -904,12 +1001,15 @@ function Gallery() {
   const posts = Array.isArray(builds) ? builds : [];
   const phase = galleryPhase({ pending: isPending, failed: isError, count: posts.length });
   useEffect(() => {
-    if (!gate.ready || !new URLSearchParams(window.location.search).has('share')) return;
+    if (!gate.ready) return;
+    const pending = location === GALLERY_SHARE_PATH || new URLSearchParams(window.location.search).has('share');
+    if (!pending) return;
     takeShareIntent();
-    window.history.replaceState(null, '', `${window.location.pathname}${withoutParam(window.location.search, 'share')}`);
+    setAttachedBlueprint(takeGalleryBlueprint());
+    window.history.replaceState(null, '', locationWithoutShare(basePath, window.location.pathname, window.location.search, ''));
     setShareOpen(true);
-  }, [gate.ready]);
-  const openShare = () => gate.request(() => setShareOpen(true));
+  }, [gate.ready, location]);
+  const openShare = () => gate.request(() => { setAttachedBlueprint(null); setShareOpen(true); });
   return <div className="tw-shell"><Header/><main className="gallery-page">
     <section className="gallery-hero"><h1>Shelfies from the community.</h1></section>
     <div className="gallery-tools"><label className="search-box"><Search size={17}/><input aria-label="Search bookcases" data-testid="input-search" placeholder="Search a bookcase, maker, or detail…" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
@@ -924,7 +1024,7 @@ function Gallery() {
       </Select>
     </div>
     {phase === 'loading' ? <LoadingCards/> : phase === 'error' ? <GalleryLoadError onRetry={() => refetch()}/> : phase === 'posts' ? <div className="build-grid">{posts.map((build: Build) => <BuildCard key={build.id} build={build}/>)}</div> : <GalleryEmpty onUpload={openShare}/>}
-    {shareOpen && <PublishDialog source="gallery" close={() => setShareOpen(false)} blueprint={null} attachByDefault={false} onSaved={(build) => {
+    {shareOpen && <PublishDialog source="gallery" close={() => { setShareOpen(false); setAttachedBlueprint(null); }} blueprint={attachedBlueprint} attachByDefault={!!attachedBlueprint} blueprintPreview={attachedBlueprint ? <span style={{ backgroundColor:attachedBlueprint.wallColor }}><BookcaseSketch color={attachedBlueprint.color} dirs={attachedBlueprint.shelfDirections} tall={attachedBlueprint.size === 'tall'}/></span> : undefined} onSaved={(build) => {
       client.invalidateQueries({ queryKey:getListBuildsQueryKey() }); client.invalidateQueries({ queryKey:getGetCommunitySummaryQueryKey() }); setLocation(`/build/${build.id}`);
     }}/>}
   </main></div>;
@@ -936,18 +1036,18 @@ function DetailPage() {
   const [active, setActive] = useState(0);
   const { data:build, isLoading, isError, refetch } = useGetBuild(buildId, { query:{ enabled:Number.isFinite(buildId) && buildId > 0, queryKey:getGetBuildQueryKey(buildId) } });
   if (isLoading) return <div className="tw-shell"><Header/><main className="gallery-page"><div className="skeleton"/></main></div>;
-  if (isError || !build) return <div className="tw-shell"><Header/><main className="gallery-page empty-state"><h1>That bookcase post isn't here.</h1><p>It may have been removed by its maker.</p><button className="button" onClick={() => refetch()}>Try again</button> <Link href="/inspiration" className="button light">Back to the gallery</Link></main></div>;
+  if (isError || !build) return <div className="tw-shell"><Header/><main className="gallery-page empty-state"><h1>That bookcase post isn't here.</h1><p>It may have been removed by its maker.</p><button className="button" onClick={() => refetch()}>Try again</button> <Link href={GALLERY_PATH} className="button light">Back to the gallery</Link></main></div>;
   const photos = safePhotos(build);
   const current = photos[Math.min(active, photos.length - 1)];
   const config = build.configuration;
   return <div className="tw-shell"><Header/><main className="gallery-page">
-    <Link href="/inspiration" className="button light small"><ArrowLeft size={15}/>Back to the gallery</Link>
+    <Link href={GALLERY_PATH} className="button light small"><ArrowLeft size={15}/>Back to the gallery</Link>
     <div className="detail-layout">
       <div>{current ? <img className="detail-photo" src={photoUrl(current)} alt={`${build.title}, photo ${active + 1} of ${photos.length}`} data-testid="img-detail-photo"/> : <BuildVisual build={build} className="detail-photo"/>}
         {photos.length > 1 && <div className="detail-thumbs" role="group" aria-label="Choose a photo">{photos.map((p, i) => <button key={`${p}-${i}`} className={i === active ? 'active' : ''} aria-pressed={i === active} aria-label={`Show photo ${i + 1} of ${photos.length}`} data-testid={`button-photo-${i}`} onClick={() => setActive(i)}><img src={photoUrl(p)} alt="" loading="lazy"/></button>)}</div>}</div>
       <section className="detail-copy"><span className="eyebrow">A community bookcase</span><h1>{build.title}</h1><p>By @{build.creatorUsername} · {new Date(build.createdAt).toLocaleDateString(undefined,{ year:'numeric',month:'long',day:'numeric' })} · <Heart size={12} style={{ verticalAlign:'-1px' }}/> {build.likesCount}</p>
         <div className="detail-actions"><FavouriteButton build={build} variant="detail"/>
-          {build.isOwner && <Link href="/profile" className="button light small"><PencilLine size={14}/>Manage in your profile</Link>}</div>
+          {build.isOwner && <Link href={PROFILE_PATH} className="button light small"><PencilLine size={14}/>Manage in your profile</Link>}</div>
         {build.description && <p className="detail-description">{build.description}</p>}
         {config ? <div className="detail-config"><span className="eyebrow">Blueprint attached</span><div className="detail-config-row"><div className="detail-config-sketch" style={{ backgroundColor:config.wallColor }}><BookcaseSketch color={config.color} dirs={config.shelfDirections} tall={config.size === 'tall'}/></div><p>{config.size === 'tall' ? 'Tall' : 'Standard'} · {config.shelfDirections.length} shelves · {window.Story.colorName(config.color)} finish</p></div>
           <button className="button coral" onClick={() => openBlueprint(config, 'blueprint_detail')} data-testid="button-use-blueprint"><Sparkles size={16}/>Use this blueprint</button></div>
@@ -1011,8 +1111,8 @@ function BuildChunk({ kind, userId, cursor, isLast, onMore, renderActions, onPag
 }
 function ProfileEmpty({ kind }: { kind: ListKind }) {
   return kind === 'uploads'
-    ? <div className="profile-empty"><span className="profile-empty-icon"><Upload size={22}/></span><h3>Nothing on the wall yet.</h3><p>Share a design you built or love.</p><Link href="/inspiration?share=photo" className="button coral small"><Camera size={14}/>Share your design</Link></div>
-    : <div className="profile-empty"><span className="profile-empty-icon"><Bookmark size={22}/></span><h3>No saved designs yet.</h3><p>Tap the bookmark on any post in the gallery. It will wait for you here, private to you.</p><Link href="/inspiration" className="button coral small">Browse the gallery</Link></div>;
+    ? <div className="profile-empty"><span className="profile-empty-icon"><Upload size={22}/></span><h3>Nothing on the wall yet.</h3><p>Share a design you built or love.</p><Link href={GALLERY_SHARE_PATH} className="button coral small"><Camera size={14}/>Share your design</Link></div>
+    : <div className="profile-empty"><span className="profile-empty-icon"><Bookmark size={22}/></span><h3>No saved designs yet.</h3><p>Tap the bookmark on any post in the gallery. It will wait for you here, private to you.</p><Link href={GALLERY_PATH} className="button coral small">Browse the gallery</Link></div>;
 }
 function PagedBuilds({ kind, userId, renderActions, onFirstPage }: { kind: ListKind; userId: string; renderActions?: (build: Build) => ReactNode; onFirstPage?: (page: BuildPage) => void }) {
   const [cursors, setCursors] = useState<(number | undefined)[]>([undefined]);
@@ -1051,10 +1151,10 @@ function ProfilePage() {
   const userId = isSignedIn ? user?.id ?? null : null;
   const queryClient = useQueryClient();
   const { data:profile, isLoading:profileLoading, isError:profileError, refetch } = useGetMyProfile({ query:{ enabled:!!userId, queryKey:getGetMyProfileQueryKey() } });
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const updateBuild = useUpdateBuild();
   const deleteBuild = useDeleteBuild();
-  const [tab, setTabState] = useState<ListKind>(() => new URLSearchParams(window.location.search).get('tab') === 'favourites' ? 'favourites' : 'uploads');
+  const tab = profileTab(location);
   const [editingName, setEditingName] = useState(false);
   const [editBuild, setEditBuild] = useState<Build | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Build | null>(null);
@@ -1068,11 +1168,7 @@ function ProfilePage() {
     }
   }, [isSignedIn, profile?.isUsernameSet, setLocation]);
   const setTab = (next: ListKind) => {
-    setTabState(next);
-    const params = new URLSearchParams(window.location.search);
-    if (next === 'favourites') params.set('tab', 'favourites'); else params.delete('tab');
-    const rest = params.toString();
-    window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}`);
+    window.history.replaceState(null, '', `${basePath}${profilePath(next)}`);
   };
   const onTabKey = (e: React.KeyboardEvent) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
@@ -1141,48 +1237,47 @@ function ReferenceCard({ id, onDismiss }: { id: number; onDismiss: () => void })
   </aside>;
 }
 
+function referenceOnPlanner() {
+  return parsePlannerPath(stripBase(window.location.pathname))?.referenceId ?? readReferenceId(window.location.search);
+}
 function Home() {
-  const [publish, setPublish] = useState<{ attach: boolean } | null>(null);
-  const [published, setPublished] = useState<Build | null>(null);
-  const [refId, setRefId] = useState<number | null>(() => readReferenceId(window.location.search));
+  const [location, setLocation] = useLocation();
+  const [refId, setRefId] = useState<number | null>(referenceOnPlanner);
   const sceneRef = useRef<Scene>(initialScene());
-  const [blueprint, setBlueprint] = useState<BuildConfiguration | null>(null);
-  const queryClient = useQueryClient();
   const gate = useShareGate('blueprint');
   const syncScene = useCallback((scene: Scene) => {
     sceneRef.current = scene;
     completeInspirationHandoff('blueprint');
   }, []);
-  const openPublish = (attach: boolean) => gate.request(() => { setBlueprint(sceneBlueprint(sceneRef.current)); setPublish({ attach }); }, attach ? 'blueprint' : 'photo');
+  const openGalleryShare = () => {
+    stashGalleryBlueprint(sceneRef.current);
+    setLocation(GALLERY_SHARE_PATH, { replace: true });
+  };
+  const openPublish = () => gate.request(openGalleryShare);
+  useEffect(() => { setRefId(referenceOnPlanner()); }, [location]);
   useEffect(() => {
     if (!gate.ready) return;
-    const mode = new URLSearchParams(window.location.search).get('share');
-    if (!mode) return;
+    const legacy = new URLSearchParams(window.location.search).get('share');
+    const pending = !!parsePlannerPath(stripBase(window.location.pathname))?.share || !!legacy;
+    if (!pending) return;
     takeShareIntent();
-    window.history.replaceState(null, '', `${window.location.pathname}${withoutParam(window.location.search, 'share')}${window.location.hash}`);
-    setBlueprint(sceneBlueprint(sceneRef.current));
-    setPublish({ attach:mode === 'blueprint' });
-  }, [gate.ready]);
+    openGalleryShare();
+  }, [gate.ready, location, setLocation]);
   const setReference = (id: number | null) => {
+    const path = stripBase(window.location.pathname);
+    const parsed = parsePlannerPath(path) ?? { tab: plannerTabFromPath(path), code: null, referenceId: null, share: false };
+    const next = formatPlannerPath({ ...parsed, referenceId: id });
     const search = withoutParam(id ? window.location.search : withoutParam(window.location.search, 'inspiration'), 'ref');
-    const next = id ? `${search ? `${search}&` : '?'}ref=${id}` : search;
-    window.history.replaceState(null, '', `${window.location.pathname}${next}${window.location.hash}`);
+    const pathname = next === '/' ? `${basePath}/` : `${basePath}${next}`;
+    window.history.replaceState(null, '', `${pathname}${search}${window.location.hash}`);
     setRefId(id);
   };
-  const onBuildSaved = (build: Build) => {
-    setPublished(build);
-    queryClient.invalidateQueries({ queryKey:getListBuildsQueryKey() });
-    queryClient.invalidateQueries({ queryKey:getGetCommunitySummaryQueryKey() });
-  };
-  const preview = blueprint ? <span style={{ backgroundColor:blueprint.wallColor }}><BookcaseSketch color={blueprint.color} dirs={blueprint.shelfDirections} tall={blueprint.size === 'tall'}/></span> : null;
   return <div className="tw-shell"><Header/><main className={`page-wrap ${refId ? 'has-reference' : ''}`}>
     {refId && <ReferenceCard id={refId} onDismiss={() => {
       setReference(null);
       trackEvent('inspiration_reference_dismissed', { source:'playroom', type:'reference' });
     }}/>}
-    <Configurator onPublish={(scene) => { sceneRef.current = scene; openPublish(true); }} onSceneChange={syncScene}/>
-    {published && <div style={{ color:'var(--muted-ink)', fontSize:12, padding:'16px 8px 0' }}>“{published.title}” is in the gallery. <Link href={`/build/${published.id}`}>See it</Link></div>}
-    {publish && <PublishDialog source="playroom" close={() => setPublish(null)} blueprint={blueprint} attachByDefault={publish.attach} blueprintPreview={preview} onSaved={onBuildSaved}/>}
+    <Configurator shareNotice={gate.profileNotice} onRetryShare={gate.retryProfile} onPublish={(scene) => { sceneRef.current = scene; openPublish(); }} onSceneChange={syncScene}/>
   </main></div>;
 }
 
@@ -1206,15 +1301,26 @@ function ClerkQueryClientCacheInvalidator() {
   }, [addListener, client]);
   return null;
 }
+function LegacyRedirect() {
+  const [location, setLocation] = useLocation();
+  useEffect(() => {
+    const next = legacyPageTarget(location, window.location.search);
+    if (next) setLocation(next, { replace: true });
+  }, [location, setLocation]);
+  return null;
+}
 /**
- * / and /build-it are the same planner. A router change between them would
- * unmount Home and replay the shelf intro, so tab clicks use replaceState
- * and both paths render this one Home. The key is the signed-in identity,
- * so an account change still remounts the planner. The path does not.
+ * / and /build-it are the same planner, and so is /d/<code>. A router change
+ * between them would unmount Home and replay the shelf intro, so those paths
+ * all render this one Home. Gallery and profile stay mounted across their
+ * own plain paths for the same reason. The key is the signed-in identity.
  */
 function PlannerOrSwitch({ switchKey, children }: { switchKey?: string; children: ReactNode }) {
   const [location] = useLocation();
-  if (isPlannerPath(location)) return <Home key={switchKey} />;
+  const path = location.length > 1 ? location.replace(/\/+$/, '') : (location || '/');
+  if (isPlannerPath(path)) return <Home key={switchKey} />;
+  if (path === GALLERY_PATH || path === GALLERY_SHARE_PATH) return <Gallery key={switchKey} />;
+  if (path === PROFILE_PATH || path === profilePath('favourites')) return <ProfilePage key={switchKey} />;
   return <Switch key={switchKey}>{children}</Switch>;
 }
 /** Separate cache instances and component state at the identity boundary.
@@ -1229,9 +1335,9 @@ function AccountRoutes() {
   return <QueryClientProvider client={client}>
     <ClerkQueryClientCacheInvalidator key={`cache-${identity}`}/>
     <PlannerOrSwitch switchKey={identity}>
-      <Route path="/inspiration" component={Gallery}/>
+      <Route path="/inspiration" component={LegacyRedirect}/>
+      <Route path="/profile" component={LegacyRedirect}/>
       <Route path="/build/:id" component={DetailPage}/>
-      <Route path="/profile" component={ProfilePage}/>
       <Route path="/sign-in/*?" component={BrandedSignIn}/>
       <Route path="/sign-up/*?" component={BrandedSignUp}/>
       <Route component={NotFound}/>
@@ -1242,9 +1348,9 @@ function LocalRoutes() {
   const client = useMemo(() => new QueryClient(), []);
   return <QueryClientProvider client={client}>
     <PlannerOrSwitch>
-      <Route path="/inspiration" component={Gallery}/>
+      <Route path="/inspiration" component={LegacyRedirect}/>
+      <Route path="/profile" component={LegacyRedirect}/>
       <Route path="/build/:id" component={DetailPage}/>
-      <Route path="/profile" component={ProfilePage}/>
       <Route path="/sign-in/*?" component={LocalAuthDisabled}/>
       <Route path="/sign-up/*?" component={LocalAuthDisabled}/>
       <Route component={NotFound}/>
@@ -1293,9 +1399,9 @@ function CursorRoutes() {
   return <QueryClientProvider client={client}>
     <AuthContext.Provider value={{ isSignedIn: session.isSignedIn, isLoaded: true, user: session.user }}>
       <PlannerOrSwitch switchKey={identity}>
-        <Route path="/inspiration" component={Gallery}/>
+        <Route path="/inspiration" component={LegacyRedirect}/>
+        <Route path="/profile" component={LegacyRedirect}/>
         <Route path="/build/:id" component={DetailPage}/>
-        <Route path="/profile" component={ProfilePage}/>
         <Route path="/sign-in/*?" component={CursorSignIn}/>
         <Route path="/sign-up/*?" component={CursorSignIn}/>
         <Route component={NotFound}/>
