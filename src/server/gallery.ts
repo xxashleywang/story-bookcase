@@ -154,6 +154,21 @@ function cleanText(value: unknown, max: number) {
   return trimmed;
 }
 
+/** Hashtags typed in a caption. Same rule as captionTags in the community client. */
+function captionTags(caption: string | null) {
+  if (!caption) return [];
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const match of caption.matchAll(/(?:^|\s)#([A-Za-z0-9_]{1,32})/g)) {
+    const tag = match[1].toLowerCase();
+    if (seen.has(tag)) continue;
+    seen.add(tag);
+    tags.push(tag);
+    if (tags.length === 12) break;
+  }
+  return tags;
+}
+
 /** Same quiet label as shareTitle in the community client. Used only when create omits a title. */
 function fallbackTitle(now = new Date()) {
   return now.toLocaleDateString("en-US", { month: "long", day: "numeric" });
@@ -330,9 +345,9 @@ export async function createBuild(viewer: Viewer, body: Record<string, unknown>)
       if (!(await claimPhotos(query, viewer.id, paths as string[]))) return null;
       const rows = await query<BuildRow>(
         `insert into ${table("builds")} (user_id, title, description, category, tags, photo_paths, configuration)
-         values ($1, $2, $3, 'bookcase', '{}', $4::text[], $5::jsonb)
+         values ($1, $2, $3, 'bookcase', $6::text[], $4::text[], $5::jsonb)
          returning *`,
-        [viewer.id, title, description, paths, config.value === undefined ? null : JSON.stringify(config.value)],
+        [viewer.id, title, description, paths, config.value === undefined ? null : JSON.stringify(config.value), captionTags(description)],
       );
       return rows[0];
     });
@@ -416,7 +431,10 @@ export async function updateBuild(viewer: Viewer, id: number, body: Record<strin
         sets.push(`${column} = $${params.length}${cast}`);
       };
       if (typeof title === "string") set("title", title);
-      if (description !== undefined) set("description", description);
+      if (description !== undefined) {
+        set("description", description);
+        set("tags", captionTags(description), "::text[]");
+      }
       if (config) set("configuration", config.value === null ? null : JSON.stringify(config.value), "::jsonb");
       if (Array.isArray(remove) || Array.isArray(replacement)) set("photo_paths", nextPaths, "::text[]");
       params.push(id, viewer.id);

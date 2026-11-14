@@ -74,6 +74,7 @@ export function PublishDialog({ close, blueprint, attachByDefault, blueprintPrev
   const create = useCreateBuild();
   const upload = useUploadPhotos();
   const photos = usePhotoItems();
+  const [caption, setCaption] = useState('');
   const [attach, setAttach] = useState(!!blueprint && attachByDefault);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');
@@ -90,7 +91,7 @@ export function PublishDialog({ close, blueprint, attachByDefault, blueprintPrev
     try {
       const photoPaths = await upload(photos.items, setProgress);
       setProgress('Publishing…');
-      const data = createPayload({ photoPaths, blueprint: attach ? blueprint : null }) as BuildInput;
+      const data = createPayload({ description: caption, photoPaths, blueprint: attach ? blueprint : null }) as BuildInput;
       const build = await create.mutateAsync({ data });
       trackEvent('room_published', { source, type: build.configuration ? 'blueprint_backed' : 'photo_only' });
       onSaved(build); close();
@@ -104,6 +105,12 @@ export function PublishDialog({ close, blueprint, attachByDefault, blueprintPrev
       <div className="modal-head"><div><span className="eyebrow">The finished bookcase</span><h2 id="share-title">Share to the gallery</h2></div>
         <button type="button" aria-label="Close" className="icon-button" onClick={close} disabled={busy} data-testid="button-close-share"><X size={18} /></button></div>
       <PhotoUploader compose label="Photos" items={photos.items} errors={photos.errors} onAdd={photos.add} onRemove={photos.remove} onMakeCover={photos.makeCover} disabled={busy} progress={busy ? progress : ''} />
+      <div className="form-grid">
+        <div className="field full">
+          <label htmlFor="share-caption">Caption</label>
+          <textarea id="share-caption" data-autofocus data-testid="input-share-caption" maxLength={1200} value={caption} onChange={(e) => setCaption(e.target.value)} disabled={busy} placeholder="Add a caption..." />
+        </div>
+      </div>
       {blueprint && <label className={`blueprint-toggle ${attach ? 'on' : ''}`}>
         <input type="checkbox" checked={attach} disabled={busy} onChange={(e) => setAttach(e.target.checked)} data-testid="checkbox-attach-blueprint" />
         <span className="blueprint-preview" aria-hidden="true">{blueprintPreview}</span>

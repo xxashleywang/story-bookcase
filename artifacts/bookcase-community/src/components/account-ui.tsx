@@ -10,6 +10,7 @@ import type { Build } from '@workspace/api-client-react';
 import { getGetBuildQueryKey, useRemoveFavourite, useSaveFavourite } from '@workspace/api-client-react';
 import { useDialogFocus } from '@/components/share-dialog';
 import { cursorLogoutDestination, isAccountAffectedKey, readSaveIntent, saveIntentHref } from '@/lib/account';
+import { isDateTitle } from '@/lib/community';
 import { useCursorAccount } from '@/lib/cursor-account';
 import { clerkConfigured } from '@/lib/local-clerk';
 
@@ -189,7 +190,8 @@ function FavouriteControl({ build, variant = 'card', isSignedIn, userId }: { bui
     }
     void run(!pressed);
   };
-  const label = pressed ? `Saved: remove "${build.title}" from favourites` : `Save "${build.title}" to favourites`;
+  const name = isDateTitle(build.title, build.createdAt) ? (build.description?.trim() || 'this bookcase') : build.title;
+  const label = pressed ? `Saved: remove "${name}" from favourites` : `Save "${name}" to favourites`;
   return <span className={`fav-wrap ${variant}`}>
     <button type="button" className={`fav-button ${variant} ${pressed ? 'on' : ''}`} aria-pressed={pressed} aria-label={variant === 'card' ? label : undefined}
       aria-describedby={error ? errorId : undefined} aria-busy={busy} onClick={toggle} data-testid={`button-favourite-${build.id}`}>

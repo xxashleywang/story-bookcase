@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   MAX_PHOTO_BYTES, addressHash, blueprintHash, createPayload, mergePhotoSelection, photoCountLabel,
-  readGalleryBlueprint, readReferenceId, referenceHref, safePhotos, shareGateDecision, shareTitle, updatePayload,
+  captionParts, captionTags, isDateTitle, readGalleryBlueprint, readReferenceId, referenceHref, safePhotos, shareGateDecision, shareTitle, updatePayload,
   validateShare, withCoverFirst, withoutParam,
 } from '../src/lib/community.ts';
 
@@ -39,8 +39,7 @@ test('count label and share validation', () => {
 
 test('photo-only create payload carries no invented configuration or tags', () => {
   const payload = createPayload({ title: ' Nook ', description: ' ', photoPaths: ['/objects/1'], blueprint: null });
-  assert.deepEqual(payload, { title: 'Nook', description: null, photoPaths: ['/objects/1'], configuration: null });
-  assert.equal('tags' in payload, false);
+  assert.deepEqual(payload, { title: 'Nook', description: null, tags: [], photoPaths: ['/objects/1'], configuration: null });
 });
 
 test('a photo share can skip the title, and a blank title becomes a date label', () => {
@@ -53,6 +52,18 @@ test('a photo share can skip the title, and a blank title becomes a date label',
   const quiet = createPayload({ photoPaths: ['/objects/1'], blueprint: null, now });
   assert.equal(quiet.title, 'November 14');
   assert.equal(quiet.description, null);
+  assert.deepEqual(quiet.tags, []);
+  const noted = createPayload({ description: 'A corner #Nook for #reading', photoPaths: ['/objects/1'], blueprint: null, now });
+  assert.equal(noted.description, 'A corner #Nook for #reading');
+  assert.deepEqual(noted.tags, ['nook', 'reading']);
+  assert.equal(isDateTitle('November 14', new Date(2026, 10, 14, 12)), true);
+  assert.equal(isDateTitle('The reading corner', new Date(2026, 10, 14, 12)), false);
+  assert.deepEqual(captionParts('A corner #Nook.'), [
+    { text: 'A corner ' },
+    { text: '#Nook', tag: 'nook' },
+    { text: '.' },
+  ]);
+  assert.deepEqual(captionTags('#Reading #reading #other_room'), ['reading', 'other_room']);
 });
 
 test('the chosen photo moves to the front and becomes the cover', () => {
