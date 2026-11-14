@@ -19,7 +19,7 @@ import { cleanupMessage, privateListKey } from '@/lib/account';
 import { CursorAccountProvider, useCursorAccount } from '@/lib/cursor-account';
 import { clerkConfigured } from '@/lib/local-clerk';
 import { EditBuildDialog, PublishDialog } from '@/components/share-dialog';
-import { blueprintHref, readGalleryBlueprint, readReferenceId, referenceHref, safePhotos, shareGateDecision, withoutParam } from '@/lib/community';
+import { blueprintHref, captionParts, isDateTitle, readGalleryBlueprint, readReferenceId, referenceHref, safePhotos, shareGateDecision, withoutParam } from '@/lib/community';
 import { designConfigFromLocation, encodeDesign, formatPlannerPath, locationWithoutShare, parsePlannerPath, shareHref, shareReturnPath } from '@/lib/design-url';
 import { galleryPhase, withGalleryDeadline } from '@/lib/gallery-state';
 import { GALLERY_PATH, GALLERY_SHARE_PATH, PROFILE_PATH, legacyPageTarget, profilePath, profileTab } from '@/lib/pages';
@@ -951,9 +951,28 @@ function Configurator({
   </div>;
 }
 
+function postHeading(build: Build) {
+  return isDateTitle(build.title, build.createdAt) ? null : build.title;
+}
+
+function postAlt(build: Build) {
+  const heading = postHeading(build);
+  if (heading) return `${heading}, shared by @${build.creatorUsername}`;
+  const caption = build.description?.trim();
+  if (caption) return `${caption}, shared by @${build.creatorUsername}`;
+  return `Bookcase shared by @${build.creatorUsername}`;
+}
+
+function CaptionText({ text, className }: { text: string; className?: string }) {
+  const parts = captionParts(text);
+  return <p className={className}>{parts.map((part, index) => part.tag
+    ? <Link key={index} className="caption-tag" href={`${GALLERY_PATH}?tag=${encodeURIComponent(part.tag)}`}>{part.text}</Link>
+    : <span key={index}>{part.text}</span>)}</p>;
+}
+
 function BuildVisual({ build, className, alt }: { build: Build; className: string; alt?: string }) {
   const photo = safePhotos(build)[0];
-  if (photo) return <img className={className} src={photoUrl(photo)} alt={alt || `${build.title}, shared by @${build.creatorUsername}`} loading="lazy" />;
+  if (photo) return <img className={className} src={photoUrl(photo)} alt={alt || postAlt(build)} loading="lazy" />;
   const config = build.configuration;
   if (config) return <div className={`${className} placeholder`} style={{ backgroundColor:config.wallColor }}><BookcaseSketch color={config.color} dirs={config.shelfDirections} tall={config.size === 'tall'} /></div>;
   return <div className={`${className} placeholder empty-photo`} aria-label="No photo available"><ImageOff size={22}/></div>;
@@ -961,16 +980,20 @@ function BuildVisual({ build, className, alt }: { build: Build; className: strin
 
 function BuildCard({ build, children }: { build: Build; children?: ReactNode }) {
   const count = safePhotos(build).length;
+  const heading = postHeading(build);
+  const caption = build.description?.trim() || '';
   return <article className="build-card-shell">
-    <Link href={`/build/${build.id}`} className="build-card" data-testid={`card-build-${build.id}`}>
+    <div className="build-card">
+    <Link href={`/build/${build.id}`} className="build-card-link" data-testid={`card-build-${build.id}`}>
       <div className="build-card-media"><BuildVisual build={build} className="build-image"/>
         {count > 1 && <span className="photo-count-badge"><Images size={12}/>{count}</span>}</div>
-      <div className="build-info"><div className="build-info-head"><h3>{build.title}</h3><span className="heart-count" aria-label={`${build.likesCount} likes`}><Heart size={12}/>{build.likesCount}</span></div>
+      <div className="build-info"><div className="build-info-head">{heading ? <h3>{heading}</h3> : null}<span className="heart-count" aria-label={`${build.likesCount} likes`}><Heart size={12}/>{build.likesCount}</span></div>
         <p>by @{build.creatorUsername}</p>
-        {build.description && <p className="build-desc">{build.description}</p>}
         {build.configuration && <span className="blueprint-chip"><Ruler size={11}/>Blueprint attached</span>}
       </div>
     </Link>
+    {caption ? <CaptionText text={caption} className="build-desc build-caption" /> : null}
+    </div>
     <FavouriteButton build={build}/>
     {children}
   </article>;
@@ -990,7 +1013,11 @@ function Gallery() {
   const gate = useShareGate('photo');
   const client = useQueryClient();
   const [location, setLocation] = useLocation();
-  const params = useMemo(() => ({ q:search.trim() || undefined, sort, limit:40 }), [search, sort]);
+  const tag = useMemo(() => {
+    const query = location.includes('?') ? location.slice(location.indexOf('?') + 1) : window.location.search.slice(1);
+    return new URLSearchParams(query).get('tag')?.replace(/^#/, '').trim().toLowerCase() || '';
+  }, [location]);
+  const params = useMemo(() => ({ q:search.trim() || undefined, sort, limit:40, tag: tag || undefined }), [search, sort, tag]);
   const { data:builds, isPending, isError, refetch } = useListBuilds(params, {
     query: {
       retry: false,
@@ -1023,6 +1050,7 @@ function Gallery() {
         </SelectContent>
       </Select>
     </div>
+    {tag ? <p className="tag-filter">Showing <b>#{tag}</b> <Link href={GALLERY_PATH}>Show every post</Link></p> : null}
     {phase === 'loading' ? <LoadingCards/> : phase === 'error' ? <GalleryLoadError onRetry={() => refetch()}/> : phase === 'posts' ? <div className="build-grid">{posts.map((build: Build) => <BuildCard key={build.id} build={build}/>)}</div> : <GalleryEmpty onUpload={openShare}/>}
     {shareOpen && <PublishDialog source="gallery" close={() => { setShareOpen(false); setAttachedBlueprint(null); }} blueprint={attachedBlueprint} attachByDefault={!!attachedBlueprint} blueprintPreview={attachedBlueprint ? <span style={{ backgroundColor:attachedBlueprint.wallColor }}><BookcaseSketch color={attachedBlueprint.color} dirs={attachedBlueprint.shelfDirections} tall={attachedBlueprint.size === 'tall'}/></span> : undefined} onSaved={(build) => {
       client.invalidateQueries({ queryKey:getListBuildsQueryKey() }); client.invalidateQueries({ queryKey:getGetCommunitySummaryQueryKey() }); setLocation(`/build/${build.id}`);
@@ -1043,12 +1071,12 @@ function DetailPage() {
   return <div className="tw-shell"><Header/><main className="gallery-page">
     <Link href={GALLERY_PATH} className="button light small"><ArrowLeft size={15}/>Back to the gallery</Link>
     <div className="detail-layout">
-      <div>{current ? <img className="detail-photo" src={photoUrl(current)} alt={`${build.title}, photo ${active + 1} of ${photos.length}`} data-testid="img-detail-photo"/> : <BuildVisual build={build} className="detail-photo"/>}
+      <div>{current ? <img className="detail-photo" src={photoUrl(current)} alt={`${postHeading(build) || build.description?.trim() || 'Bookcase'}, photo ${active + 1} of ${photos.length}`} data-testid="img-detail-photo"/> : <BuildVisual build={build} className="detail-photo"/>}
         {photos.length > 1 && <div className="detail-thumbs" role="group" aria-label="Choose a photo">{photos.map((p, i) => <button key={`${p}-${i}`} className={i === active ? 'active' : ''} aria-pressed={i === active} aria-label={`Show photo ${i + 1} of ${photos.length}`} data-testid={`button-photo-${i}`} onClick={() => setActive(i)}><img src={photoUrl(p)} alt="" loading="lazy"/></button>)}</div>}</div>
-      <section className="detail-copy"><span className="eyebrow">A community bookcase</span><h1>{build.title}</h1><p>By @{build.creatorUsername} · {new Date(build.createdAt).toLocaleDateString(undefined,{ year:'numeric',month:'long',day:'numeric' })} · <Heart size={12} style={{ verticalAlign:'-1px' }}/> {build.likesCount}</p>
+      <section className="detail-copy"><span className="eyebrow">A community bookcase</span>{postHeading(build) ? <h1>{postHeading(build)}</h1> : null}<p>By @{build.creatorUsername} · {new Date(build.createdAt).toLocaleDateString(undefined,{ year:'numeric',month:'long',day:'numeric' })} · <Heart size={12} style={{ verticalAlign:'-1px' }}/> {build.likesCount}</p>
         <div className="detail-actions"><FavouriteButton build={build} variant="detail"/>
           {build.isOwner && <Link href={PROFILE_PATH} className="button light small"><PencilLine size={14}/>Manage in your profile</Link>}</div>
-        {build.description && <p className="detail-description">{build.description}</p>}
+        {build.description?.trim() ? <CaptionText text={build.description.trim()} className="detail-description" /> : null}
         {config ? <div className="detail-config"><span className="eyebrow">Blueprint attached</span><div className="detail-config-row"><div className="detail-config-sketch" style={{ backgroundColor:config.wallColor }}><BookcaseSketch color={config.color} dirs={config.shelfDirections} tall={config.size === 'tall'}/></div><p>{config.size === 'tall' ? 'Tall' : 'Standard'} · {config.shelfDirections.length} shelves · {window.Story.colorName(config.color)} finish</p></div>
           <button className="button coral" onClick={() => openBlueprint(config, 'blueprint_detail')} data-testid="button-use-blueprint"><Sparkles size={16}/>Use this blueprint</button></div>
         : <div className="detail-config"><span className="eyebrow">Photo only</span><p>No blueprint was shared with this post. Keep the photo beside your Playroom while you set up your own arrangement.</p>
@@ -1231,7 +1259,7 @@ function ReferenceCard({ id, onDismiss }: { id: number; onDismiss: () => void })
     {isLoading ? <div className="reference-thumb skeleton"/> : photo ? <img key={id} className="reference-thumb" src={photoUrl(photo)} onLoad={() => {
       if (!isError && build?.id === id) completeInspirationHandoff('reference');
     }} alt={build ? `Reference photo: ${build.title}` : 'Reference photo'}/> : <div className="reference-thumb empty-photo"><ImageOff size={16}/></div>}
-    <div className="reference-text">{isError ? <><b>That reference isn't available.</b><span>It may have been removed.</span></> : build ? <><span className="eyebrow">Your reference</span><b>{build.title}</b><span>Photo by @{build.creatorUsername}<span className="reference-explanation">. Set the shelves yourself; your design is untouched.</span></span></> : <b>Loading reference…</b>}</div>
+    <div className="reference-text">{isError ? <><b>That reference isn't available.</b><span>It may have been removed.</span></> : build ? <><span className="eyebrow">Your reference</span>{postHeading(build) ? <b>{postHeading(build)}</b> : build.description?.trim() ? <b>{build.description.trim()}</b> : null}<span>Photo by @{build.creatorUsername}<span className="reference-explanation">. Set the shelves yourself; your design is untouched.</span></span></> : <b>Loading reference…</b>}</div>
     {build && <Link className="button light small" href={`/build/${build.id}`}>View post</Link>}
     <button className="icon-button" aria-label="Dismiss reference" onClick={onDismiss} data-testid="button-dismiss-reference"><X size={16}/></button>
   </aside>;

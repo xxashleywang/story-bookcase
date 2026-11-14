@@ -74,8 +74,7 @@ export function PublishDialog({ close, blueprint, attachByDefault, blueprintPrev
   const create = useCreateBuild();
   const upload = useUploadPhotos();
   const photos = usePhotoItems();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [caption, setCaption] = useState('');
   const [attach, setAttach] = useState(!!blueprint && attachByDefault);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');
@@ -86,13 +85,13 @@ export function PublishDialog({ close, blueprint, attachByDefault, blueprintPrev
     event.preventDefault();
     if (busy) return;
     if (photos.errors.length) { setError('Fix the photo selection above before sharing.'); return; }
-    const invalid = validateShare({ title, photoCount: photos.items.length });
+    const invalid = validateShare({ photoCount: photos.items.length, requireTitle: false });
     if (invalid) { setError(invalid); return; }
     setError(''); setBusy(true);
     try {
       const photoPaths = await upload(photos.items, setProgress);
       setProgress('Publishing…');
-      const data = createPayload({ title, description, photoPaths, blueprint: attach ? blueprint : null }) as BuildInput;
+      const data = createPayload({ description: caption, photoPaths, blueprint: attach ? blueprint : null }) as BuildInput;
       const build = await create.mutateAsync({ data });
       trackEvent('room_published', { source, type: build.configuration ? 'blueprint_backed' : 'photo_only' });
       onSaved(build); close();
@@ -105,12 +104,12 @@ export function PublishDialog({ close, blueprint, attachByDefault, blueprintPrev
     <form ref={ref} className="modal share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title" aria-busy={busy} onSubmit={submit} noValidate tabIndex={-1}>
       <div className="modal-head"><div><span className="eyebrow">The finished bookcase</span><h2 id="share-title">Share to the gallery</h2></div>
         <button type="button" aria-label="Close" className="icon-button" onClick={close} disabled={busy} data-testid="button-close-share"><X size={18} /></button></div>
-      <PhotoUploader label="Photo of the finished bookcase" emptyText="A photo of the finished, decorated bookcase." items={photos.items} errors={photos.errors} onAdd={photos.add} onRemove={photos.remove} disabled={busy} progress={busy ? progress : ''} />
+      <PhotoUploader compose label="Photos" items={photos.items} errors={photos.errors} onAdd={photos.add} onRemove={photos.remove} onMakeCover={photos.makeCover} disabled={busy} progress={busy ? progress : ''} />
       <div className="form-grid">
-        <div className="field full"><label htmlFor="share-title-input">Title</label>
-          <input id="share-title-input" data-autofocus data-testid="input-share-title" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} placeholder="The reading corner, finally" /></div>
-        <div className="field full"><label htmlFor="share-description">A few words about it <span className="optional">optional</span></label>
-          <textarea id="share-description" data-testid="input-share-description" maxLength={1200} value={description} onChange={(e) => setDescription(e.target.value)} disabled={busy} placeholder="What's on the shelves, where the light comes from, what you'd do again." /></div>
+        <div className="field full">
+          <label htmlFor="share-caption">Caption</label>
+          <textarea id="share-caption" data-autofocus data-testid="input-share-caption" maxLength={1200} value={caption} onChange={(e) => setCaption(e.target.value)} disabled={busy} placeholder="Add a caption..." />
+        </div>
       </div>
       {blueprint && <label className={`blueprint-toggle ${attach ? 'on' : ''}`}>
         <input type="checkbox" checked={attach} disabled={busy} onChange={(e) => setAttach(e.target.checked)} data-testid="checkbox-attach-blueprint" />
@@ -203,7 +202,7 @@ export function EditBuildDialog({ build, close, onSave, onDelete }: { build: Bui
         <p className="uploader-help">{existing.length > MAX_PHOTOS ? `This post keeps all ${existing.length} photos unless you remove or replace them. New sets hold up to ${MAX_PHOTOS}.` : 'Remove single photos, or replace the whole set.'}</p>
         <button type="button" className="button light small" disabled={busy} onClick={() => { setRemoved([]); setAsking(null); setReplacing(true); }} data-testid="button-replace-photos">Replace photos</button>
       </div> : <>
-        <PhotoUploader label="Replacement photos" items={photos.items} errors={photos.errors} onAdd={photos.add} onRemove={photos.remove} disabled={busy} progress={busy ? progress : ''} />
+        <PhotoUploader label="Replacement photos" items={photos.items} errors={photos.errors} onAdd={photos.add} onRemove={photos.remove} onMakeCover={photos.makeCover} disabled={busy} progress={busy ? progress : ''} />
         <button type="button" className="button light small keep-photos" disabled={busy} onClick={() => { photos.clear(); setReplacing(false); }}>Keep current photos</button>
       </>}
       {hadBlueprint && <label className={`blueprint-toggle ${!removeBlueprint ? 'on' : ''}`}>

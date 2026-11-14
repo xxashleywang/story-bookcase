@@ -103,20 +103,90 @@ export function photoCountLabel(count: number, max = MAX_PHOTOS) {
   return `${count} of ${max} photos`;
 }
 
+/** Move the chosen photo to the front. Index 0 is the cover, and the gallery shows that photo largest. */
+export function withCoverFirst<T>(items: readonly T[], index: number): T[] {
+  if (!Number.isInteger(index) || index <= 0 || index >= items.length) return items as T[];
+  return [items[index], ...items.slice(0, index), ...items.slice(index + 1)];
+}
+
+/** Hidden title used when the share form does not ask for one. Month and day, no year. */
+export function dateTitle(now = new Date(), timeZone?: string) {
+  return now.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    ...(timeZone ? { timeZone } : {}),
+  });
+}
+
+/**
+ * The share form does not ask for a title. The builds table still requires one,
+ * so a blank title becomes a short date label that is never shown as a heading.
+ */
+export function shareTitle(title = '', now = new Date()) {
+  const trimmed = title.trim();
+  if (trimmed.length >= 2) return trimmed;
+  return dateTitle(now);
+}
+
+/** True when the stored title is only the hidden date label for that post. */
+export function isDateTitle(title: string, createdAt: string | Date) {
+  const created = new Date(createdAt);
+  if (Number.isNaN(created.getTime())) return false;
+  const name = title.trim();
+  return name === dateTitle(created) || name === dateTitle(created, 'UTC');
+}
+
+const CAPTION_HASHTAG = /(?:^|\s)#([A-Za-z0-9_]{1,32})/g;
+
+/** Hashtags typed in a caption. Stored without the mark, lowercased, twelve at most. */
+export function captionTags(caption: string) {
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const match of caption.matchAll(CAPTION_HASHTAG)) {
+    const tag = match[1].toLowerCase();
+    if (seen.has(tag)) continue;
+    seen.add(tag);
+    tags.push(tag);
+    if (tags.length === 12) break;
+  }
+  return tags;
+}
+
+export type CaptionPart = { text: string; tag?: string };
+
+/** Split a caption so each hashtag can be drawn and opened on its own. */
+export function captionParts(caption: string): CaptionPart[] {
+  const parts: CaptionPart[] = [];
+  const re = new RegExp(CAPTION_HASHTAG.source, 'g');
+  let last = 0;
+  for (const match of caption.matchAll(re)) {
+    const hashAt = match.index + match[0].length - match[1].length - 1;
+    if (hashAt > last) parts.push({ text: caption.slice(last, hashAt) });
+    parts.push({ text: caption.slice(hashAt, hashAt + match[1].length + 1), tag: match[1].toLowerCase() });
+    last = hashAt + match[1].length + 1;
+  }
+  if (last < caption.length) parts.push({ text: caption.slice(last) });
+  return parts;
+}
+
 /** Validate the text + photo part of a share before any upload starts. */
-export function validateShare(input: { title: string; photoCount: number }) {
-  const title = input.title.trim();
-  if (title.length < 2) return 'Give it a title with at least 2 characters.';
-  if (title.length > 80) return 'Keep the title under 80 characters.';
+export function validateShare(input: { title?: string; photoCount: number; requireTitle?: boolean }) {
+  if (input.requireTitle !== false) {
+    const title = (input.title ?? '').trim();
+    if (title.length < 2) return 'Give it a title with at least 2 characters.';
+    if (title.length > 80) return 'Keep the title under 80 characters.';
+  }
   if (input.photoCount < 1) return 'Add at least one room photo.';
   if (input.photoCount > MAX_PHOTOS) return `Choose up to ${MAX_PHOTOS} photos.`;
   return null;
 }
 
-export function createPayload(input: { title: string; description: string; photoPaths: string[]; blueprint: BlueprintLike | null }) {
+export function createPayload(input: { title?: string; description?: string; photoPaths: string[]; blueprint: BlueprintLike | null; now?: Date }) {
+  const description = (input.description ?? '').trim() || null;
   return {
-    title: input.title.trim(),
-    description: input.description.trim() || null,
+    title: shareTitle(input.title ?? '', input.now),
+    description,
+    tags: captionTags(description ?? ''),
     photoPaths: input.photoPaths,
     configuration: input.blueprint,
   };
@@ -126,9 +196,11 @@ export function createPayload(input: { title: string; description: string; photo
 export function updatePayload(input: {
   title: string; description: string; removeBlueprint: boolean; hadBlueprint: boolean; replacementPhotoPaths: string[] | null;
 }) {
-  const data: { title: string; description: string | null; configuration?: null; photoPaths?: string[] } = {
+  const description = input.description.trim() || null;
+  const data: { title: string; description: string | null; tags: string[]; configuration?: null; photoPaths?: string[] } = {
     title: input.title.trim(),
-    description: input.description.trim() || null,
+    description,
+    tags: captionTags(description ?? ''),
   };
   if (input.hadBlueprint && input.removeBlueprint) data.configuration = null;
   if (input.replacementPhotoPaths) data.photoPaths = input.replacementPhotoPaths;
