@@ -30,6 +30,7 @@ import {
 } from '@workspace/api-client-react';
 import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } from 'wouter';
 import NotFound from '@/pages/not-found';
+import FeedbackPage from '@/pages/feedback';
 import { ColorPicker } from '@/components/color-picker';
 import { BuildCelebration } from '@/components/build-celebration';
 import { SHELF_HINT_SIZE, ShelfKeyHint } from '@/components/shelf-key-hint';
@@ -282,11 +283,13 @@ function Header() {
   const cursor = useCursorAccount();
   const [location] = useLocation();
   const inGallery = location.startsWith('/inspiration');
+  const inFeedback = location.startsWith('/feedback');
   return <header className="topbar">
     <Link className="brand" href="/"><BrandWordmark/></Link>
     <span className="tagline">Design first. Build once.</span>
     <nav className="top-actions">
       <Link className={`nav-link${inGallery ? ' is-current' : ''}`} href="/inspiration" aria-current={inGallery ? 'page' : undefined}>Gallery</Link>
+      <Link className={`nav-link${inFeedback ? ' is-current' : ''}`} href="/feedback" aria-current={inFeedback ? 'page' : undefined}>Feedback</Link>
       {!isLoaded ? null : isSignedIn ? <AccountMenu/> : cursor.signedOutInApp
         ? <button type="button" className="button small" onClick={cursor.resumeSession}>Log in</button>
         : <Link className="button small" href="/sign-in">Log in</Link>}
@@ -1158,6 +1161,10 @@ function Home() {
   </main></div>;
 }
 
+function FeedbackRoute() {
+  return <FeedbackPage header={<Header/>}/>;
+}
+
 function BrandedSignIn() {
   return <main className="auth-frame"><Link className="brand auth-mark" href="/"><BrandWordmark/></Link><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></main>;
 }
@@ -1192,6 +1199,7 @@ function AccountRoutes() {
     <Switch key={identity}>
       <Route path="/" component={Home}/>
       <Route path="/inspiration" component={Gallery}/>
+      <Route path="/feedback" component={FeedbackRoute}/>
       <Route path="/build/:id" component={DetailPage}/>
       <Route path="/profile" component={ProfilePage}/>
       <Route path="/sign-in/*?" component={BrandedSignIn}/>
@@ -1206,6 +1214,7 @@ function LocalRoutes() {
     <Switch>
       <Route path="/" component={Home}/>
       <Route path="/inspiration" component={Gallery}/>
+      <Route path="/feedback" component={FeedbackRoute}/>
       <Route path="/build/:id" component={DetailPage}/>
       <Route path="/profile" component={ProfilePage}/>
       <Route path="/sign-in/*?" component={LocalAuthDisabled}/>
@@ -1258,6 +1267,7 @@ function CursorRoutes() {
       <Switch key={identity}>
         <Route path="/" component={Home}/>
         <Route path="/inspiration" component={Gallery}/>
+        <Route path="/feedback" component={FeedbackRoute}/>
         <Route path="/build/:id" component={DetailPage}/>
         <Route path="/profile" component={ProfilePage}/>
         <Route path="/sign-in/*?" component={CursorSignIn}/>
